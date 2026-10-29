@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123b2a">
+<title>K124 | Parte diario</title>
+<style>
+:root{--verde:#123b2a;--verde-claro:#e7f4ec;--fondo:#f3f6f4;--texto:#202820;--borde:#dce5df}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:var(--verde);color:white;padding:25px 18px;text-align:center}
+header h1{margin:0;font-size:28px;letter-spacing:2px}header p{margin:7px 0 0;opacity:.85;font-size:15px}
+main{width:min(100% - 24px,760px);margin:20px auto 36px}
+.panel{background:white;border:1px solid var(--borde);border-radius:16px;padding:17px;margin-bottom:15px;box-shadow:0 3px 12px #183b2910}
+h2{font-size:19px;margin:0 0 12px}.ayuda{color:#647168;font-size:14px;line-height:1.5}
+input[type=file]{width:100%;margin:12px 0;font-size:14px}
+button{border:0;border-radius:10px;padding:13px 15px;font-size:15px;font-weight:600;cursor:pointer}
+.principal{width:100%;background:var(--verde);color:white}
+.secundario{background:#e7eee9;color:var(--verde);margin-top:8px;width:100%}
+.resultado{display:none}.fecha{color:#607168;margin:-4px 0 13px;font-size:14px}
+.fila{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--borde);gap:12px}
+.fila:last-child{border-bottom:0}.combustible{font-weight:600}.litros{font-size:17px;font-weight:700;white-space:nowrap}
+.total{background:var(--verde-claro);margin:14px -3px 0;padding:15px 12px;border-radius:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.total strong:last-child{font-size:22px;color:var(--verde);white-space:nowrap}
+.mensaje{display:none;padding:12px;border-radius:10px;background:#fff2df;color:#754500;font-size:14px;line-height:1.5;margin-top:12px}
+.ok{background:#e7f4ec;color:#123b2a}
+.tabla-contenedor{overflow-x:auto;width:100%}
+table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}
+th,td{padding:10px 9px;border-bottom:1px solid var(--borde);text-align:right}
+th{background:#eef4f0;color:#34483b;font-weight:700}
+th:first-child,td:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:0}.total-tabla td{font-weight:800;background:var(--verde-claro)}
+.vacio{color:#647168;font-size:14px;line-height:1.5}
+.acciones{display:flex;gap:8px;flex-wrap:wrap}.acciones button{flex:1;min-width:145px}
+.pie{text-align:center;color:#748078;font-size:12px;padding:8px}
+small{color:#647168}
+</style>
+</head>
+<body>
+<header><h1>K124</h1><p>Control del parte diario</p></header>
+<main>
+<section class="panel">
+<h2>📄 Cargar parte diario</h2>
+<p class="ayuda">Selecciona el archivo TXT del parte de la gasolinera. K124 leerá las ventas y añadirá ese día al historial.</p>
+<input id="archivo" type="file" accept=".txt,text/plain">
+<button class="principal" id="procesar">Leer y guardar parte diario</button>
+<div class="mensaje" id="mensaje" role="status"></div>
+</section>
+
+<section class="panel resultado" id="resultado">
+<h2>⛽ Ventas del parte cargado</h2><p class="fecha" id="fecha"></p>
+<div class="fila"><span class="combustible">Diésel E+</span><span class="litros" id="eplus">—</span></div>
+<div class="fila"><span class="combustible">Diésel E+10</span><span class="litros" id="eplus10">—</span></div>
+<div class="fila"><span class="combustible">Gasolina 95</span><span class="litros" id="g95">—</span></div>
+<div class="fila"><span class="combustible">Gasolina 98</span><span class="litros" id="g98">—</span></div>
+<div class="total"><strong>Total vendido</strong><strong id="total">—</strong></div>
+</section>
+
+<section class="panel" id="historialPanel">
+<h2>📅 Historial de partes diarios</h2>
+<p class="ayuda">Cada parte que importes se guarda en este iPhone/navegador. Si importas de nuevo una fecha existente, sus datos se sustituyen y no se duplica.</p>
+<div class="tabla-contenedor">
+<table>
+<thead><tr><th>Fecha</th><th>E+ (L)</th><th>E+10 (L)</th><th>G95 (L)</th><th>G98 (L)</th><th>Total (L)</th></tr></thead>
+<tbody id="filasHistorial"></tbody>
+<tfoot id="pieTabla"></tfoot>
+</table>
+</div>
+<p class="vacio" id="sinHistorial">Todavía no has guardado ningún parte.</p>
+<div class="acciones">
+<button class="secundario" id="exportar">Guardar copia de seguridad</button>
+<button class="secundario" id="importarCopiaBtn">Restaurar copia</button>
+<input id="importarCopia" type="file" accept=".json,application/json" hidden>
+</div>
+<p class="ayuda">Consejo: guarda una copia de seguridad de vez en cuando, especialmente antes de cambiar de móvil o navegador.</p>
+</section>
+<p class="pie">K124 · Herramienta de uso interno</p>
+</main>
+<script>
+const archivo=document.getElementById("archivo"),boton=document.getElementById("procesar"),mensaje=document.getElementById("mensaje"),resultado=document.getElementById("resultado");
+const CLAVE="k124_historial_partes_v1";
+function mostrarMensaje(texto,ok=false){mensaje.textContent=texto;mensaje.className="mensaje"+(ok?" ok":"");mensaje.style.display="block"}
+function numeroES(valor){return Number(valor).toLocaleString("es-ES",{maximumFractionDigits:2})}
+function leerHistorial(){try{const d=JSON.parse(localStorage.getItem(CLAVE)||"{}");return d&&typeof d==="object"&&!Array.isArray(d)?d:{}}catch(e){return {}}}
+function guardarHistorial(datos){localStorage.setItem(CLAVE,JSON.stringify(datos))}
+function fechaClave(fecha){const m=fecha.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?`${m[3]}-${m[2]}-${m[1]}`:fecha}
+function buscarVentas(texto,nombreArchivo=""){
+ const lineas=texto.replace(/\r/g,"").split("\n");
+ const inicio=lineas.findIndex(linea=>/Pro\s+St\.Mi\.\s+Stock\s+Compras\s+Venta/i.test(linea));
+ if(inicio===-1)throw new Error("No encuentro el bloque de ventas por combustible. Comprueba que has seleccionado el parte diario correcto.");
+ const ventas={};let totalInformado=null,finEncontrado=false;
+ for(let i=inicio+1;i<lineas.length;i++){
+  const linea=lineas[i].trim();
+  if(/^Suma\b/i.test(linea)){
+   const coincidencia=linea.match(/^Suma\s+.*?\s+([\d.,]+)\s+L\./i);
+   if(coincidencia)totalInformado=parseFloat(coincidencia[1].replace(/\./g,"").replace(",","."));
+   finEncontrado=true;break;
+  }
+  const coincidencia=linea.match(/^(E\+10|E\+|G\s*95|G\s*98)\s+.*?\s+(\d+(?:[.,]\d+)?)\s+[\d.,]+\s+[\d.,]+$/i);
+  if(!coincidencia)continue;
+  const clave=coincidencia[1].toUpperCase().replace(/\s/g,"");
+  ventas[clave]=Number(coincidencia[2].replace(",","."));
+ }
+ if(!finEncontrado||!["E+","E+10","G95","G98"].every(k=>Number.isFinite(ventas[k])))throw new Error("No he podido identificar las cuatro ventas y su total. El formato del archivo puede ser distinto.");
+ const suma=ventas["E+"]+ventas["E+10"]+ventas["G95"]+ventas["G98"];
+ if(totalInformado!==null&&suma!==totalInformado)throw new Error("Los litros por combustible no coinciden con el total del parte. No guardaré un resultado dudoso.");
+ let fechaMatch=texto.match(/\b(\d{2}[/-]\d{2}[/-]\d{4})\b/);
+ if(!fechaMatch)fechaMatch=nombreArchivo.match(/\b(\d{2}[/-]\d{2}[/-]\d{4})\b/)||nombreArchivo.match(/parte[_ -](\d{2})-(\d{2})-(\d{4})/i);
+ let fecha="";if(fechaMatch){fecha=fechaMatch[0]?fechaMatch[0].replace(/-/g,"/"):`${fechaMatch[1]}/${fechaMatch[2]}/${fechaMatch[3]}`;}
+ if(!fecha&&nombreArchivo){const f=nombreArchivo.match(/parte[_ -](\d{2})-(\d{2})-(\d{4})/i);if(f)fecha=`${f[1]}/${f[2]}/${f[3]}`;}
+ if(!fecha)throw new Error("No he podido detectar la fecha dentro del parte ni en el nombre del archivo. No lo guardaré para evitar asignarlo al día equivocado.");
+ if(!/^\d{2}\/\d{2}\/\d{4}$/.test(fecha))throw new Error("La fecha detectada no tiene el formato esperado DD/MM/AAAA.");
+ return{fecha,ventas,total:suma};
+}
+function mostrarResultado(datos){
+ document.getElementById("fecha").textContent="Fecha del parte: "+datos.fecha;
+ document.getElementById("eplus").textContent=numeroES(datos.ventas["E+"])+" L";
+ document.getElementById("eplus10").textContent=numeroES(datos.ventas["E+10"])+" L";
+ document.getElementById("g95").textContent=numeroES(datos.ventas["G95"])+" L";
+ document.getElementById("g98").textContent=numeroES(datos.ventas["G98"])+" L";
+ document.getElementById("total").textContent=numeroES(datos.total)+" L";
+ resultado.style.display="block";
+}
+function pintarHistorial(){
+ const historial=leerHistorial(),cuerpo=document.getElementById("filasHistorial"),pie=document.getElementById("pieTabla");
+ cuerpo.innerHTML="";pie.innerHTML="";
+ const lista=Object.values(historial).sort((a,b)=>fechaClave(a.fecha).localeCompare(fechaClave(b.fecha)));
+ document.getElementById("sinHistorial").style.display=lista.length?"none":"block";
+ let sumas={"E+":0,"E+10":0,"G95":0,"G98":0,total:0};
+ for(const d of lista){
+  const tr=document.createElement("tr");
+  const valores=[d.fecha,numeroES(d.ventas["E+"]),numeroES(d.ventas["E+10"]),numeroES(d.ventas["G95"]),numeroES(d.ventas["G98"]),numeroES(d.total)];
+  valores.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v+(i>0?"":"");tr.appendChild(td)});
+  cuerpo.appendChild(tr);
+  for(const k of ["E+","E+10","G95","G98"])sumas[k]+=Number(d.ventas[k]||0);
+  sumas.total+=Number(d.total||0);
+ }
+ if(lista.length){
+  const tr=document.createElement("tr");tr.className="total-tabla";
+  ["TOTAL",numeroES(sumas["E+"]),numeroES(sumas["E+10"]),numeroES(sumas["G95"]),numeroES(sumas["G98"]),numeroES(sumas.total)].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td)});
+  pie.appendChild(tr);
+ }
+}
+boton.addEventListener("click",async()=>{
+ mensaje.style.display="none";
+ const fichero=archivo.files[0];if(!fichero){mostrarMensaje("Primero selecciona el archivo TXT.");return}
+ try{
+  const texto=await fichero.text(),datos=buscarVentas(texto,fichero.name),historial=leerHistorial(),clave=fechaClave(datos.fecha);
+  historial[clave]=datos;guardarHistorial(historial);mostrarResultado(datos);pintarHistorial();
+  mostrarMensaje("Parte del "+datos.fecha+" guardado correctamente. Historial: "+Object.keys(historial).length+" día(s).",true);
+  resultado.scrollIntoView({behavior:"smooth"});
+ }catch(error){mostrarMensaje(error.message||"No se ha podido leer el archivo.")}
+});
+document.getElementById("exportar").addEventListener("click",()=>{
+ const historial=leerHistorial();if(!Object.keys(historial).length){mostrarMensaje("Todavía no hay partes que guardar.");return}
+ const blob=new Blob([JSON.stringify({app:"K124",version:1,exportado:new Date().toISOString(),historial},null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="K124_copia_seguridad.json";document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+ mostrarMensaje("Copia de seguridad preparada. Comprueba que se haya descargado en Archivos.",true);
+});
+document.getElementById("importarCopiaBtn").addEventListener("click",()=>document.getElementById("importarCopia").click());
+document.getElementById("importarCopia").addEventListener("change",async(e)=>{
+ const f=e.target.files[0];if(!f)return;
+ try{
+  const obj=JSON.parse(await f.text()),datos=obj.historial||obj;
+  if(!datos||typeof datos!=="object"||Array.isArray(datos))throw new Error("El archivo no parece una copia de K124.");
+  const actual=leerHistorial();let n=0;
+  for(const [k,d] of Object.entries(datos)){
+   if(d&&d.fecha&&d.ventas&&["E+","E+10","G95","G98"].every(x=>Number.isFinite(Number(d.ventas[x])))){
+    actual[k]=d;actual[k].total=Number(d.total);n++;
+   }
+  }
+  if(!n)throw new Error("La copia no contiene partes válidos.");
+  guardarHistorial(actual);pintarHistorial();mostrarMensaje("Copia restaurada. Se han importado "+n+" día(s).",true);
+ }catch(err){mostrarMensaje(err.message||"No se pudo restaurar la copia.")}finally{e.target.value=""}
+});
+pintarHistorial();
+</script>
+</body>
+</html>
