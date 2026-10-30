@@ -59,6 +59,30 @@ small{color:#68746d}
 .etiqueta-periodo{color:#64748b;font-size:13px;margin:8px 0 14px}
 
 @media(min-width:600px){.resumen{grid-template-columns:repeat(5,minmax(0,1fr))}}
+
+/* Panel anual de previsiones y ventas reales */
+.anual-resumen{grid-template-columns:repeat(2,minmax(0,1fr));margin:14px 0 18px}
+.anual-resumen .tarjeta strong{font-size:clamp(17px,4vw,22px);color:var(--azul)}
+.anual-resumen .tarjeta small{display:block;margin-top:3px}
+.anual-leyenda{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 16px;font-size:13px;color:#52647d}
+.anual-leyenda span{display:flex;align-items:center;gap:6px}
+.punto{width:10px;height:10px;border-radius:3px;display:inline-block}
+.punto.previsto{background:#0879df}.punto.vendido{background:#39a85a}
+.meses-anuales{display:grid;gap:14px}
+.mes-anual{padding-bottom:12px;border-bottom:1px solid var(--borde)}
+.mes-anual:last-child{border-bottom:0}
+.mes-anual-cabecera{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px}
+.mes-anual-nombre{font-weight:700;color:#18345c}
+.mes-anual-valor{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
+.mes-anual-valor .estado{font-size:17px;line-height:1}
+.barra-linea{height:10px;background:#edf2f7;border-radius:99px;overflow:hidden;margin:5px 0}
+.barra-linea>span{display:block;height:100%;border-radius:99px}
+.barra-linea .barra-prevista{background:#0879df}.barra-linea .barra-vendida{background:#39a85a}
+.etiqueta-barra{font-size:11px;color:#718096;margin-top:3px}
+.anual-pie{margin-top:16px;padding:12px;border-radius:12px;background:#f0f6ff;color:#173b70;font-size:14px;line-height:1.5}
+.estado-anual{font-weight:700;margin-top:5px}
+@media(min-width:600px){.anual-resumen{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -92,8 +116,23 @@ small{color:#68746d}
 
 <div class="vista" id="vista-ano">
  <section class="panel">
-  <div class="cabecera-vista"><h2>📊 Ventas por día del año</h2><select id="selectorAno" class="selector-periodo" aria-label="Seleccionar año"></select></div>
+  <div class="cabecera-vista"><h2>📊 Ventas del año</h2><select id="selectorAno" class="selector-periodo" aria-label="Seleccionar año"></select></div>
   <p class="etiqueta-periodo" id="infoAno"></p>
+  <div id="resumenAnual" hidden>
+   <div class="resumen anual-resumen">
+    <div class="tarjeta"><span>Previsión anual</span><strong id="previsionAnual">—</strong><small>Litros</small></div>
+    <div class="tarjeta"><span>Venta acumulada</span><strong id="ventaAnual">—</strong><small>Litros</small></div>
+    <div class="tarjeta"><span>Posible cierre</span><strong id="cierreAnual">—</strong><small>Litros</small></div>
+    <div class="tarjeta"><span>Desviación prevista</span><strong id="desviacionAnual">—</strong><small id="porcentajeAnual">—</small></div>
+   </div>
+   <div class="anual-leyenda"><span><i class="punto previsto"></i>Previstos</span><span><i class="punto vendido"></i>Vendidos</span></div>
+   <div id="mesesAnuales" class="meses-anuales"></div>
+   <div class="anual-pie" id="estadoAnual"></div>
+  </div>
+ </section>
+ <section class="panel">
+  <h2>📅 Detalle diario del año</h2>
+  <p class="etiqueta-periodo" id="infoAnoDiario"></p>
   <div class="tabla-contenedor"><table>
    <thead><tr><th>Fecha</th><th>E+ (L)</th><th>E+10 (L)</th><th>G95 (L)</th><th>G98 (L)</th><th>Total (L)</th></tr></thead>
    <tbody id="filasAno"></tbody>
@@ -133,6 +172,34 @@ const $=id=>document.getElementById(id);
 const archivo=$("archivo"), mensaje=$("mensaje");
 const CLAVE="k124_historial_sondas_v2";
 let historial=leerHistorial();
+
+const CLAVE_ANUAL="k124_resumen_anual_v1";
+const MESES_LARGOS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+let resumenesAnuales=leerResumenesAnuales();
+function leerResumenesAnuales(){try{const d=JSON.parse(localStorage.getItem(CLAVE_ANUAL)||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
+function guardarResumenesAnuales(){localStorage.setItem(CLAVE_ANUAL,JSON.stringify(resumenesAnuales))}
+function numeroEtiqueta(texto,regex){const m=texto.match(regex);return m?Number(m[1].replace(/\./g,"").replace(",",".")):null}
+function leerResumenAnual(texto,anio){
+ const lineas=texto.replace(/\r/g,"").split("\n");
+ const abreviados=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+ const mensuales=Array.from({length:12},(_,i)=>({mes:i,previstos:null,vendidos:null}));
+ for(let i=0;i<lineas.length;i++){
+  const m=lineas[i].trim().match(/^(Ene|Feb|Mar|Abr|May|Jun|Jul|Ago|Sep|Oct|Nov|Dic)\s*(\d+)\s*\|/i);
+  if(!m)continue;
+  const idx=abreviados.findIndex(x=>x.toLowerCase()===m[1].toLowerCase());
+  if(idx<0)continue;
+  mensuales[idx].previstos=Number(m[2]);
+  const real=(lineas[i+1]||"").match(/^_+\s*(\d+)\s*\|/);
+  if(real)mensuales[idx].vendidos=Number(real[1]);
+ }
+ const vendidos=numeroEtiqueta(texto,/Litros vendidos en el Año\.\s*(-?[\d.]+)/i);
+ const previstos=numeroEtiqueta(texto,/Litros Previsiones Año\.\s*(-?[\d.]+)/i);
+ const posible=numeroEtiqueta(texto,/Posible venta de litros Año\.\s*(-?[\d.]+)/i);
+ const des=texto.match(/Posible desviaci[^\\n]*?(-?[\d.]+)\s+(-?[\d.,]+)%/i);
+ if(!mensuales.some(x=>x.previstos!==null)||previstos===null)return null;
+ return {anio:String(anio),mensuales,previstos,vendidos,posible,desviacion:des?Number(des[1].replace(/\./g,"")):null,porcentaje:des?Number(des[2].replace(",",".")):null};
+}
+
 
 function mostrarMensaje(texto,ok=false){mensaje.textContent=texto;mensaje.style.display="block";mensaje.className="mensaje"+(ok?" exito":"")}
 function numeroES(valor){return Number(valor).toLocaleString("es-ES",{maximumFractionDigits:2})}
@@ -234,10 +301,56 @@ function pintarVistas(){
  $("filasMes").innerHTML="";fm.forEach(f=>crearFila(f,$("filasMes")));
  $("filasAno").innerHTML="";fa.forEach(f=>crearFila(f,$("filasAno")));
  $("infoMes").textContent=fm.length?`${fm.length} día(s) con datos registrados.`:"No hay ventas guardadas para este mes.";
- $("infoAno").textContent=fa.length?`${fa.length} día(s) con datos registrados durante ${ano}.`:"No hay ventas guardadas para este año.";
+ $("infoAnoDiario").textContent=fa.length?`${fa.length} día(s) con datos registrados durante ${ano}.`:"No hay ventas diarias guardadas para este año.";
+ const anual=resumenesAnuales[ano];$("resumenAnual").hidden=!anual;
+ $("infoAno").textContent=anual?`Previsiones y ventas reales de ${ano}.`:"Importa un TXT que incluya el resumen anual para mostrar las previsiones de los 12 meses.";
+ if(anual)pintarResumenAnual(anual);
  $("pieMes").hidden=!fm.length;$("pieAno").hidden=!fa.length;
  if(fm.length)sumarFilas(fm,"m");if(fa.length)sumarFilas(fa,"a");
 }
+
+function pintarResumenAnual(a){
+ const fmt=v=>v===null||v===undefined?"—":numeroES(v);
+ $("previsionAnual").textContent=fmt(a.previstos);
+ $("ventaAnual").textContent=fmt(a.vendidos);
+ $("cierreAnual").textContent=fmt(a.posible);
+ $("desviacionAnual").textContent=a.desviacion===null?"—":fmt(a.desviacion)+" L";
+ $("porcentajeAnual").textContent=a.porcentaje===null?"":`${a.porcentaje>0?"+":""}${String(a.porcentaje).replace(".",",")}%`;
+ const max=Math.max(1,...a.mensuales.map(m=>Math.max(m.previstos||0,m.vendidos||0)));
+ const cont=$("mesesAnuales");cont.innerHTML="";
+ a.mensuales.forEach(m=>{
+  const item=document.createElement("div");item.className="mes-anual";
+  const cab=document.createElement("div");cab.className="mes-anual-cabecera";
+  const nombre=document.createElement("span");nombre.className="mes-anual-nombre";nombre.textContent=MESES_LARGOS[m.mes];
+  const valor=document.createElement("span");valor.className="mes-anual-valor";
+  if(m.vendidos!==null){
+   valor.textContent=fmt(m.vendidos)+" L ";
+   const estado=document.createElement("span");estado.className="estado";
+   estado.textContent=m.previstos!==null&&m.vendidos>=m.previstos?"✅":"⭕️";
+   valor.appendChild(estado);
+  }else valor.textContent="Pendiente";
+  cab.append(nombre,valor);item.appendChild(cab);
+  if(m.previstos!==null){
+   const linea=document.createElement("div");linea.className="barra-linea";
+   const barra=document.createElement("span");barra.className="barra-prevista";barra.style.width=(m.previstos/max*100)+"%";linea.appendChild(barra);
+   const etiqueta=document.createElement("div");etiqueta.className="etiqueta-barra";etiqueta.textContent="Previstos: "+fmt(m.previstos)+" L";
+   item.append(linea,etiqueta);
+  }
+  if(m.vendidos!==null){
+   const linea=document.createElement("div");linea.className="barra-linea";
+   const barra=document.createElement("span");barra.className="barra-vendida";barra.style.width=(m.vendidos/max*100)+"%";linea.appendChild(barra);
+   const etiqueta=document.createElement("div");etiqueta.className="etiqueta-barra";etiqueta.textContent="Vendidos: "+fmt(m.vendidos)+" L";
+   item.append(linea,etiqueta);
+  }
+  cont.appendChild(item);
+ });
+ const estado=$("estadoAnual");
+ if(a.vendidos!==null&&a.previstos!==null){
+  const ok=a.vendidos>=a.previstos;
+  estado.innerHTML=`<div><strong>Acumulado anual:</strong> ${fmt(a.vendidos)} de ${fmt(a.previstos)} litros previstos</div><div class="estado-anual">${ok?"✅ Previsión anual alcanzada":"⭕️ Todavía no se ha alcanzado la previsión anual"}</div>`;
+ }else estado.textContent="El informe no incluye los totales anuales necesarios para calcular el objetivo.";
+}
+
 $("procesar").addEventListener("click",async()=>{
  mensaje.style.display="none";const fichero=archivo.files[0];if(!fichero){mostrarMensaje("Primero selecciona el archivo TXT.");return}
  try{
@@ -251,6 +364,7 @@ $("procesar").addEventListener("click",async()=>{
    const v=leerVentaDia(texto),key=claveFecha(fechaParte);
    historial[key]={fecha:fechaParte.texto,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};anadidos=1;
   }
+  const anual=leerResumenAnual(texto,fechaParte.anio);if(anual){resumenesAnuales[String(fechaParte.anio)]=anual;guardarResumenesAnuales()}
   guardar();pintarVistas();
   const venta=leerVentaDia(texto);pintarUltimo(venta,fechaParte.texto);
   mostrarMensaje(mensual.length?`Correcto: se han importado ${mensual.length} días de la tabla mensual. Los días existentes se han actualizado, sin duplicarlos.`:"Correcto: se ha guardado el parte de "+fechaParte.texto+". Este archivo no contiene la tabla mensual de sondas.",true);
@@ -270,7 +384,7 @@ $("copia").addEventListener("change",async()=>{
 });
 $("borrar").addEventListener("click",()=>{
  if(!confirm("¿Seguro que quieres borrar todo el historial guardado en este navegador? Exporta una copia antes si quieres conservarlo."))return;
- historial={};guardar();pintarVistas();mostrarMensaje("Historial borrado.");
+ historial={};resumenesAnuales={};guardar();guardarResumenesAnuales();pintarVistas();mostrarMensaje("Historial borrado.");
 });
 
 document.querySelectorAll(".pestana").forEach(btn=>btn.addEventListener("click",()=>{
