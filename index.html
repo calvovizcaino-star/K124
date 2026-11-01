@@ -595,7 +595,7 @@ function pintarSondasInicio(){
  if(!caja)return;
  caja.innerHTML="";
  if(!sondasActuales){$("fechaSondasInicio").textContent="Importa un parte diario para ver las lecturas de los seis tanques.";return;}
- $("fechaSondasInicio").textContent="Lecturas del parte: "+(sondasActuales.fecha||"fecha no disponible")+" · Capacidad: 30.000 L por tanque.";
+ $("fechaSondasInicio").textContent="Lecturas del parte: "+(sondasActuales[0].fecha||"fecha no disponible")+" · Capacidad: 30.000 L por tanque.";
  sondasActuales.forEach((t,i)=>{
   const pct=Math.max(0,Math.min(100,Number(t.actual||0)/30000*100));
   const card=document.createElement("div");card.className="sonda-pedido";
@@ -641,7 +641,7 @@ function pintarPedido(){
   $("totalPedido").textContent="0 L";
   return;
  }
- $("estadoSondasPedido").textContent="Lecturas del último parte: "+(sondasActuales.fecha||"fecha no disponible")+". Capacidad de cada tanque: 30.000 L.";
+ $("estadoSondasPedido").textContent="Lecturas del último parte: "+(sondasActuales[0].fecha||"fecha no disponible")+". Capacidad de cada tanque: 30.000 L.";
  sondasActuales.forEach((t,i)=>{
   const pct=Math.max(0,Math.min(100,Number(t.actual||0)/30000*100));
   const card=document.createElement("div");card.className="sonda-pedido";
