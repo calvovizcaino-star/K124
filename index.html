@@ -19,13 +19,11 @@ header::before{content:"";position:absolute;z-index:-1;left:-3%;right:-3%;bottom
 header::after{content:"";position:absolute;z-index:-1;left:-3%;right:-3%;bottom:-1px;height:25px;background:linear-gradient(175deg,#fff 0%,#f4f7fb 100%);clip-path:polygon(0 52%,100% 0,100% 100%,0 100%)}
 header h1{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:clamp(54px,12.5vw,76px);line-height:.98;letter-spacing:-1px;font-weight:900;font-style:italic;text-shadow:0 3px 4px #0005;color:#fff}
 header p{margin:7px 0 0;opacity:.98;font-family:Arial,Helvetica,sans-serif;font-size:clamp(14px,3.5vw,19px);line-height:1.15;font-weight:700;white-space:nowrap}
-.marca-repsol{position:absolute;top:19px;width:140px;display:flex;flex-direction:column;align-items:center;gap:2px;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:19px;font-style:italic;font-weight:900;letter-spacing:1px;text-shadow:0 2px 4px #001b46;filter:drop-shadow(0 2px 3px #00152f66)}
-.marca-repsol.izquierda{left:0}.marca-repsol.derecha{right:0}
-.marca-repsol svg{display:block;width:132px;height:91px;overflow:visible}
-.marca-separador{position:absolute;top:25px;height:112px;width:1px;background:#ffffffb8;transform:rotate(7deg)}
-.marca-separador.izquierda{left:calc(50% - 105px)}.marca-separador.derecha{right:calc(50% - 105px)}
-@media(max-width:390px){header{padding-left:112px;padding-right:112px;min-height:182px}.marca-repsol{top:29px;width:104px;font-size:14px;gap:2px}.marca-repsol.izquierda{left:0}.marca-repsol.derecha{right:0}.marca-repsol svg{width:100px;height:75px}header h1{font-size:54px}header p{font-size:11px}.marca-separador.izquierda{left:calc(50% - 82px)}.marca-separador.derecha{right:calc(50% - 82px)}}
-@media(min-width:500px){header{min-height:190px}.marca-repsol{top:36px;width:100px}.marca-repsol svg{width:82px;height:66px}}
+.marca-repsol{position:absolute;top:34px;width:104px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 3px 5px #00152f66)}
+.marca-repsol.izquierda{left:8px}.marca-repsol.derecha{right:8px}
+.marca-repsol img{display:block;width:100%;height:auto;max-height:72px;object-fit:contain}
+@media(max-width:390px){header{padding-left:91px;padding-right:91px;min-height:184px}.marca-repsol{top:39px;width:78px}.marca-repsol.izquierda{left:5px}.marca-repsol.derecha{right:5px}header h1{font-size:53px}header p{font-size:11px}}
+@media(min-width:500px){header{min-height:196px}.marca-repsol{top:37px;width:116px}}
 .menu-icon{position:absolute;right:16px;top:4px;width:64px;height:56px;border:1px solid #ffffff66;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:32px;line-height:1;background:#ffffff0b}
 main{width:min(100% - 24px,900px);margin:20px auto 36px}
 .panel{background:white;border:1px solid var(--borde);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #183b2910}
@@ -185,15 +183,8 @@ small{color:#68746d}
 </head>
 <body>
 <header>
- <div class="marca-repsol izquierda" aria-label="Repsol">
-  <svg viewBox="0 0 160 110" role="img" aria-hidden="true"><defs><linearGradient id="repOrange" x2="0" y2="1"><stop stop-color="#ffb400"/><stop offset="1" stop-color="#ff7900"/></linearGradient><linearGradient id="repRed" x2="0" y2="1"><stop stop-color="#f22942"/><stop offset="1" stop-color="#c9002b"/></linearGradient></defs><path fill="url(#repOrange)" d="M13 48C13 19 38 3 76 3c34 0 61 17 70 47H13Z"/><path fill="#fff" d="M13 45c36 5 91 5 133 0-1 12-7 21-18 27H32C21 65 15 56 13 45Z"/><path fill="url(#repRed)" d="M32 72h96c-10 22-29 35-52 35-21 0-36-13-44-35Z"/></svg>
-  <span>REPSOL</span>
- </div>
- <div class="marca-repsol derecha" aria-label="Repsol">
-  <svg viewBox="0 0 160 110" role="img" aria-hidden="true"><defs><linearGradient id="repOrange" x2="0" y2="1"><stop stop-color="#ffb400"/><stop offset="1" stop-color="#ff7900"/></linearGradient><linearGradient id="repRed" x2="0" y2="1"><stop stop-color="#f22942"/><stop offset="1" stop-color="#c9002b"/></linearGradient></defs><path fill="url(#repOrange)" d="M13 48C13 19 38 3 76 3c34 0 61 17 70 47H13Z"/><path fill="#fff" d="M13 45c36 5 91 5 133 0-1 12-7 21-18 27H32C21 65 15 56 13 45Z"/><path fill="url(#repRed)" d="M32 72h96c-10 22-29 35-52 35-21 0-36-13-44-35Z"/></svg>
-  <span>REPSOL</span>
- </div>
- <span class="marca-separador izquierda" aria-hidden="true"></span><span class="marca-separador derecha" aria-hidden="true"></span>
+ <div class="marca-repsol izquierda" aria-label="Repsol"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Repsol_logo.svg" alt="Repsol"></div>
+ <div class="marca-repsol derecha" aria-label="Repsol"><img src="https://upload.wikimedia.org/wikipedia/commons/e/e8/Repsol_logo.svg" alt="Repsol"></div>
  <h1>K124</h1><p>Control del parte diario</p>
 </header>
 <main>
