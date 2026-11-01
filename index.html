@@ -28,6 +28,12 @@ header p{margin:7px 0 0;opacity:.98;font-family:Arial,Helvetica,sans-serif;font-
 .opcion-menu-resumen:active{background:#eaf3ff}
 .menu-separador{height:1px;background:#e5edf6;margin:5px 7px}
 .panel-herramienta{display:none}
+.fila-cisterna-dia{cursor:pointer;background:#f2f7fd;color:#173b70;font-weight:700}
+.fila-cisterna-dia td{padding:14px 12px}
+.fila-cisterna-dia:active{background:#e4effb}
+.detalle-cisterna-dia td{padding:0 10px 12px;background:#fff}
+.detalle-cisterna-dia table{width:100%;border-collapse:collapse}
+.detalle-cisterna-dia th,.detalle-cisterna-dia td{padding:9px 7px;border-bottom:1px solid #e8eef5;text-align:left}
 body.historial-cisternas main>.vista,body.historial-cisternas .panel-resumen-general{display:none!important}
 body.historial-cisternas #panelHistorialCisternas{display:block}
 .panel-resumen-general{display:none}
@@ -1126,19 +1132,27 @@ $("volverVentasDia").addEventListener("click",()=>{document.body.classList.remov
 function cerrarMenuHerramientas(){ $("menuResumenDesplegable").classList.remove("abierto"); $("botonMenuResumen").setAttribute("aria-expanded","false"); }
 function abrirHistorialCisternas(){
  const tbody=$("filasHistorialCisternas");tbody.innerHTML="";
- const fechas=Object.keys(entregasDiarias||{}).sort().reverse();let registros=0;
+ const fechas=Object.keys(entregasDiarias||{}).sort().reverse();let dias=0,registros=0;
  fechas.forEach(fecha=>{
   const entrega=entregasDiarias[fecha]||{};
-  Object.keys(entrega).sort((a,b)=>Number(a)-Number(b)).forEach(tanque=>{
-   const litros=Number(entrega[tanque]||0);if(litros<=0)return;
-   const tr=document.createElement("tr"),tdFecha=document.createElement("td"),tdTanque=document.createElement("td"),tdLitros=document.createElement("td");
-   tdFecha.textContent=typeof formatoClave==="function"?formatoClave(fecha):fecha;
-   tdTanque.textContent=NOMBRES_TANQUES[Number(tanque)-1]||("Tanque "+tanque);
-   tdLitros.textContent=litrosFmt(litros)+" L";tr.append(tdFecha,tdTanque,tdLitros);tbody.appendChild(tr);registros++;
-  });
+  const lineas=Object.keys(entrega).sort((a,b)=>Number(a)-Number(b)).map(tanque=>({tanque,litros:Number(entrega[tanque]||0)})).filter(x=>x.litros>0);
+  if(!lineas.length)return;
+  dias++;registros+=lineas.length;
+  const fila=document.createElement("tr");fila.className="fila-cisterna-dia";fila.tabIndex=0;fila.setAttribute("role","button");fila.setAttribute("aria-expanded","false");
+  const celda=document.createElement("td");celda.colSpan=3;celda.textContent="▶  "+(typeof formatoClave==="function"?formatoClave(fecha):fecha)+"  ·  "+lineas.length+" tanque(s)";fila.appendChild(celda);
+  const detalle=document.createElement("tr");detalle.className="detalle-cisterna-dia";detalle.hidden=true;
+  const td=document.createElement("td");td.colSpan=3;
+  const tabla=document.createElement("table");const thead=document.createElement("thead"),trh=document.createElement("tr");
+  ["Tanque","Litros recibidos"].forEach(t=>{const th=document.createElement("th");th.textContent=t;trh.appendChild(th)});thead.appendChild(trh);tabla.appendChild(thead);
+  const tb=document.createElement("tbody");
+  lineas.forEach(item=>{const tr=document.createElement("tr"),tn=document.createElement("td"),lt=document.createElement("td");tn.textContent=NOMBRES_TANQUES[Number(item.tanque)-1]||("Tanque "+item.tanque);lt.textContent=litrosFmt(item.litros)+" L";tr.append(tn,lt);tb.appendChild(tr)});
+  tabla.appendChild(tb);td.appendChild(tabla);detalle.appendChild(td);
+  const alternar=()=>{const abierto=!detalle.hidden;detalle.hidden=abierto;fila.setAttribute("aria-expanded",String(!abierto));celda.textContent=(abierto?"▶  ":"▼  ")+(typeof formatoClave==="function"?formatoClave(fecha):fecha)+"  ·  "+lineas.length+" tanque(s)";};
+  fila.addEventListener("click",alternar);fila.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();alternar()}});
+  tbody.append(fila,detalle);
  });
- if(!registros){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=3;td.textContent="Todavía no hay cisternas registradas.";tr.appendChild(td);tbody.appendChild(tr);}
- $("notaHistorialCisternas").textContent=registros+" registro(s) de descarga guardados en este dispositivo.";
+ if(!dias){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=3;td.textContent="Todavía no hay recepciones de cisterna registradas.";tr.appendChild(td);tbody.appendChild(tr);}
+ $("notaHistorialCisternas").textContent=dias+" día(s) con recepción · "+registros+" registro(s) de tanque.";
  document.body.classList.add("historial-cisternas");window.scrollTo(0,0);
 }
 $("cerrarHistorialCisternas").addEventListener("click",()=>{document.body.classList.remove("historial-cisternas");window.scrollTo(0,0)});
