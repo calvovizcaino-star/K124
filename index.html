@@ -1138,8 +1138,13 @@ function abrirHistorialCisternas(){
   const lineas=Object.keys(entrega).sort((a,b)=>Number(a)-Number(b)).map(tanque=>({tanque,litros:Number(entrega[tanque]||0)})).filter(x=>x.litros>0);
   if(!lineas.length)return;
   dias++;registros+=lineas.length;
+  const totalLitros=lineas.reduce((s,x)=>s+x.litros,0);
   const fila=document.createElement("tr");fila.className="fila-cisterna-dia";fila.tabIndex=0;fila.setAttribute("role","button");fila.setAttribute("aria-expanded","false");
-  const celda=document.createElement("td");celda.colSpan=3;celda.textContent="▶  "+(typeof formatoClave==="function"?formatoClave(fecha):fecha)+"  ·  "+lineas.length+" tanque(s)";fila.appendChild(celda);
+  const celdaFecha=document.createElement("td"),celdaTanques=document.createElement("td"),celdaLitros=document.createElement("td");
+  celdaFecha.textContent="▶  "+(typeof formatoClave==="function"?formatoClave(fecha):fecha);
+  celdaTanques.textContent=lineas.length+" tanque(s)";
+  celdaLitros.textContent=litrosFmt(totalLitros)+" L";
+  fila.append(celdaFecha,celdaTanques,celdaLitros);
   const detalle=document.createElement("tr");detalle.className="detalle-cisterna-dia";detalle.hidden=true;
   const td=document.createElement("td");td.colSpan=3;
   const tabla=document.createElement("table");const thead=document.createElement("thead"),trh=document.createElement("tr");
@@ -1147,7 +1152,7 @@ function abrirHistorialCisternas(){
   const tb=document.createElement("tbody");
   lineas.forEach(item=>{const tr=document.createElement("tr"),tn=document.createElement("td"),lt=document.createElement("td");tn.textContent=NOMBRES_TANQUES[Number(item.tanque)-1]||("Tanque "+item.tanque);lt.textContent=litrosFmt(item.litros)+" L";tr.append(tn,lt);tb.appendChild(tr)});
   tabla.appendChild(tb);td.appendChild(tabla);detalle.appendChild(td);
-  const alternar=()=>{const abierto=!detalle.hidden;detalle.hidden=abierto;fila.setAttribute("aria-expanded",String(!abierto));celda.textContent=(abierto?"▶  ":"▼  ")+(typeof formatoClave==="function"?formatoClave(fecha):fecha)+"  ·  "+lineas.length+" tanque(s)";};
+  const alternar=()=>{const abierto=!detalle.hidden;detalle.hidden=abierto;fila.setAttribute("aria-expanded",String(!abierto));celdaFecha.textContent=(abierto?"▶  ":"▼  ")+(typeof formatoClave==="function"?formatoClave(fecha):fecha);};
   fila.addEventListener("click",alternar);fila.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();alternar()}});
   tbody.append(fila,detalle);
  });
