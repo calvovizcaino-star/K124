@@ -839,14 +839,30 @@ function pintarVistas(){
 function pintarResumenAnual(a){
  const fmt=v=>v===null||v===undefined?"—":numeroES(v);
  $("previsionAnual").textContent=fmt(a.previstos);
- $("ventaAnual").textContent=fmt(a.vendidos);
+ $("ventaAnual").textContent=fmt(vendidosAnuales);
  $("cierreAnual").textContent=fmt(a.posible);
  $("desviacionAnual").textContent=a.desviacion===null?"—":(a.desviacion>0?"+":"")+fmt(a.desviacion)+" L";
  $("porcentajeAnual").textContent=a.porcentaje===null?"":`${a.porcentaje>0?"+":""}${String(a.porcentaje).replace(".",",")}%`;
  $("diasTranscurridos").textContent=fmt(a.diasTrans);
  $("diasRestantes").textContent=fmt(a.diasFaltan);
  $("litrosFaltan").textContent=fmt(a.faltan)+" L";
- const meses=a.mensuales.map(m=>{const clave=claveMesAnual(a.anio,m.mes);return {...m,vendidos:Object.prototype.hasOwnProperty.call(correccionesMensuales,clave)?correccionesMensuales[clave]:m.vendidos,corregido:Object.prototype.hasOwnProperty.call(correccionesMensuales,clave),original:m.vendidos,clave}});
+ const hoy=new Date(),mesActual=hoy.getMonth(),anioActual=String(hoy.getFullYear());
+ const meses=a.mensuales.map(m=>{
+  const clave=claveMesAnual(a.anio,m.mes),corregido=Object.prototype.hasOwnProperty.call(correccionesMensuales,clave);
+  let vendidos=corregido?correccionesMensuales[clave]:m.vendidos;
+  // Completa el mes en curso con las ventas de los partes diarios guardados.
+  if(String(a.anio)===anioActual&&m.mes===mesActual&&!corregido){
+   const prefijo=String(a.anio)+"-"+String(m.mes+1).padStart(2,"0")+"-";
+   const diarios=todasLasFilas().filter(f=>f.key.startsWith(prefijo)).map(filaConCorreccionDiaria);
+   if(diarios.length)vendidos=diarios.reduce((s,f)=>s+(Number(f.total)||0),0);
+  }
+  return {...m,vendidos,corregido,original:m.vendidos,clave};
+ });
+ const mesEnCurso=meses.find(m=>String(a.anio)===anioActual&&m.mes===mesActual);
+ let vendidosAnuales=a.vendidos;
+ if(mesEnCurso&&!mesEnCurso.corregido&&mesEnCurso.vendidos!==null&&mesEnCurso.vendidos!==undefined){
+  vendidosAnuales=(Number(a.vendidos)||0)+(Number(mesEnCurso.vendidos)||0)-(Number(mesEnCurso.original)||0);
+ }
  const max=Math.max(1,...meses.map(m=>Math.max(m.previstos||0,m.vendidos||0)));
  const cont=$("mesesAnuales");cont.innerHTML="";
  meses.forEach(m=>{
