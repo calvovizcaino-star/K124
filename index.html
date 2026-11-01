@@ -179,6 +179,19 @@ small{color:#68746d}
 
 
 
+
+/* Centro de estadísticas */
+.estadisticas-indice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.estadisticas-indice button{background:#edf5ff;color:#073b83;border:1px solid #c9def5;text-align:left;padding:12px}
+.estadisticas-filtros{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+.estadisticas-filtros label{display:flex;align-items:center;gap:6px;font-size:13px;color:#52647d}
+.estadisticas-kpis{margin:10px 0}
+.estadisticas-barras{display:grid;gap:10px;margin-top:14px}
+.estadistica-barra{display:grid;grid-template-columns:minmax(75px,1fr) 2fr auto;gap:8px;align-items:center;font-size:13px}
+.estadistica-barra-fondo{height:10px;background:#edf2f7;border-radius:99px;overflow:hidden}
+.estadistica-barra-fondo span{display:block;height:100%;background:linear-gradient(90deg,#0879df,#ff7900);border-radius:99px}
+.estadisticas-comparacion{padding:13px;background:#f1f6fc;border-radius:11px;line-height:1.6;color:#173b70}
+@media(min-width:600px){.estadisticas-indice{grid-template-columns:repeat(5,minmax(0,1fr))}}
 /* Pedidos de carburante */
 .pedido-alerta{display:none;padding:10px 12px;border-radius:11px;background:#fff0d8;color:#874900;font-weight:800;margin:10px 0}
 .pedido-alerta.visible{display:block}
@@ -345,6 +358,45 @@ small{color:#68746d}
  </section>
 </div>
 
+
+<div class="vista" id="vista-estadisticas">
+ <section class="panel">
+  <div class="cabecera-vista"><h2>📈 Centro de estadísticas K124</h2></div>
+  <p class="ayuda">Consulta la evolución de la estación. Cada apartado tiene su propio periodo.</p>
+  <div class="estadisticas-indice">
+   <button type="button" data-ir-estadistica="combustibles">⛽ Combustibles</button>
+   <button type="button" data-ir-estadistica="margenes">💶 Márgenes</button>
+   <button type="button" data-ir-estadistica="tienda">🛒 Tienda</button>
+   <button type="button" data-ir-estadistica="cisternas">🚛 Cisternas</button>
+   <button type="button" data-ir-estadistica="comparativas">📊 Comparativas</button>
+  </div>
+ </section>
+ <section class="panel" id="estadistica-combustibles">
+  <h2>⛽ Combustibles</h2><div class="estadisticas-filtros"><label>Año <select id="estCombAno" class="selector-periodo"></select></label><label>Mes <select id="estCombMes" class="selector-periodo"></select></label></div>
+  <div class="resumen estadisticas-kpis"><div class="tarjeta"><span>Total vendido</span><strong id="estCombTotal">—</strong></div><div class="tarjeta"><span>Producto líder</span><strong id="estCombLider">—</strong></div></div>
+  <div id="estCombBarras" class="estadisticas-barras"></div>
+ </section>
+ <section class="panel" id="estadistica-margenes">
+  <h2>💶 Márgenes</h2><div class="estadisticas-filtros"><label>Año <select id="estMargAno" class="selector-periodo"></select></label><label>Mes <select id="estMargMes" class="selector-periodo"></select></label></div>
+  <div class="resumen estadisticas-kpis"><div class="tarjeta"><span>Margen acumulado</span><strong id="estMargTotal">—</strong></div><div class="tarjeta"><span>Media por día</span><strong id="estMargMedia">—</strong></div><div class="tarjeta"><span>Días registrados</span><strong id="estMargDias">—</strong></div></div>
+  <div id="estMargBarras" class="estadisticas-barras"></div>
+ </section>
+ <section class="panel" id="estadistica-tienda">
+  <h2>🛒 Tienda</h2><div class="estadisticas-filtros"><label>Año <select id="estTiendaAno" class="selector-periodo"></select></label><label>Mes <select id="estTiendaMes" class="selector-periodo"></select></label></div>
+  <div class="resumen estadisticas-kpis"><div class="tarjeta"><span>Facturación</span><strong id="estTiendaTotal">—</strong></div><div class="tarjeta"><span>Efectivo</span><strong id="estTiendaEfectivo">—</strong></div><div class="tarjeta"><span>Tarjeta</span><strong id="estTiendaTarjeta">—</strong></div></div>
+  <div id="estTiendaBarras" class="estadisticas-barras"></div>
+ </section>
+ <section class="panel" id="estadistica-cisternas">
+  <h2>🚛 Cisternas</h2><div class="estadisticas-filtros"><label>Año <select id="estCistAno" class="selector-periodo"></select></label><label>Mes <select id="estCistMes" class="selector-periodo"></select></label></div>
+  <div class="resumen estadisticas-kpis"><div class="tarjeta"><span>Litros recibidos</span><strong id="estCistTotal">—</strong></div><div class="tarjeta"><span>Recepciones</span><strong id="estCistDias">—</strong></div></div>
+  <div id="estCistBarras" class="estadisticas-barras"></div>
+ </section>
+ <section class="panel" id="estadistica-comparativas">
+  <h2>📊 Comparativas</h2><p class="ayuda">Compara dos meses con datos guardados.</p>
+  <div class="estadisticas-filtros"><label>Periodo A <select id="estCompA" class="selector-periodo"></select></label><label>Periodo B <select id="estCompB" class="selector-periodo"></select></label></div>
+  <div id="estCompResultado" class="estadisticas-comparacion">Selecciona dos periodos para compararlos.</div>
+ </section>
+</div>
 <div class="vista" id="vista-pedidos">
  <section class="panel">
   <div class="cabecera-vista"><h2>🚛 Pedidos de carburante</h2></div>
@@ -1175,6 +1227,40 @@ document.querySelectorAll(".pestana").forEach(btn=>btn.addEventListener("click",
  if(btn.dataset.vista!=="dia")pintarVistas();if(btn.dataset.vista==="tienda")pintarTienda();if(btn.dataset.vista==="margen")pintarMargen();
 }));
 
+
+function inicializarEstadisticas(){
+ const meses=Array.from({length:12},(_,i)=>({v:String(i+1).padStart(2,"0"),t:new Date(2020,i,1).toLocaleDateString("es-ES",{month:"long"})}));
+ const claves=[...new Set([...Object.keys(historial),...Object.keys(margenesDiarios),...Object.keys(ventasTienda),...Object.keys(entregasDiarias)].map(k=>k.slice(0,7)).filter(k=>/^\d{4}-\d{2}$/.test(k)))].sort().reverse();
+ const anos=[...new Set(claves.map(k=>k.slice(0,4)))];
+ const preparar=(idAno,idMes)=>{
+  const a=$(idAno),m=$(idMes),prevA=a.value,prevM=m.value;
+  a.innerHTML="";anos.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;a.appendChild(o)});
+  if(anos.includes(prevA))a.value=prevA;else if(anos.length)a.value=anos[0];
+  m.innerHTML="";meses.forEach(x=>{const o=document.createElement("option");o.value=x.v;o.textContent=x.t;m.appendChild(o)});
+  if(meses.some(x=>x.v===prevM))m.value=prevM;else m.value=claves.length?claves[0].slice(5):String(new Date().getMonth()+1).padStart(2,"0");
+ };
+ [["estCombAno","estCombMes"],["estMargAno","estMargMes"],["estTiendaAno","estTiendaMes"],["estCistAno","estCistMes"]].forEach(x=>preparar(...x));
+ const periodos=claves.map(k=>{const [a,m]=k.split("-");return {v:k,t:new Date(+a,+m-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"})}});
+ ["estCompA","estCompB"].forEach((id,i)=>{const el=$(id),old=el.value;el.innerHTML="";periodos.forEach(p=>{const o=document.createElement("option");o.value=p.v;o.textContent=p.t;el.appendChild(o)});if(periodos.some(p=>p.v===old))el.value=old;else if(periodos.length)el.value=periodos[Math.min(i,periodos.length-1)].v});
+}
+function pintarBarrasEstadisticas(id,items,formato){
+ const el=$(id);el.innerHTML="";const max=Math.max(1,...items.map(x=>Math.abs(x.v)));
+ if(!items.length){el.textContent="Sin datos registrados para este periodo.";return}
+ items.forEach(x=>{const fila=document.createElement("div");fila.className="estadistica-barra";const nombre=document.createElement("span");nombre.textContent=x.n;const fondo=document.createElement("div");fondo.className="estadistica-barra-fondo";const barra=document.createElement("span");barra.style.width=Math.max(0,x.v)/max*100+"%";fondo.appendChild(barra);const valor=document.createElement("strong");valor.textContent=formato(x.v);fila.append(nombre,fondo,valor);el.appendChild(fila)});
+}
+function pintarEstadisticas(){
+ const clave=(a,m)=>a.value+"-"+m.value;
+ const kc=clave($("estCombAno"),$("estCombMes")),fc=Object.keys(historial).filter(k=>k.startsWith(kc)).map(k=>historial[k]);
+ const prod=[{n:"E+",v:fc.reduce((s,x)=>s+Number(x.e||0),0)},{n:"E+10",v:fc.reduce((s,x)=>s+Number(x.e10||0),0)},{n:"G95",v:fc.reduce((s,x)=>s+Number(x.g95||0),0)},{n:"G98",v:fc.reduce((s,x)=>s+Number(x.g98||0),0)}];
+ const total=prod.reduce((s,x)=>s+x.v,0);$("estCombTotal").textContent=numeroES(total)+" L";$("estCombLider").textContent=total?prod.slice().sort((a,b)=>b.v-a.v)[0].n:"—";pintarBarrasEstadisticas("estCombBarras",prod,x=>numeroES(x)+" L");
+ const km=clave($("estMargAno"),$("estMargMes")),mks=Object.keys(margenesDiarios).filter(k=>k.startsWith(km)),mt=mks.reduce((s,k)=>s+Number(margenesDiarios[k]||0),0);$("estMargTotal").textContent=euros(mt);$("estMargMedia").textContent=mks.length?euros(mt/mks.length):"—";$("estMargDias").textContent=String(mks.length);pintarBarrasEstadisticas("estMargBarras",mks.sort().map(k=>({n:k.slice(8),v:Number(margenesDiarios[k]||0)})),euros);
+ const kt=clave($("estTiendaAno"),$("estTiendaMes")),td=ventasTienda[kt],tr=td?(td.resumen||td.filas.reduce((r,f)=>({tienda:r.tienda+Number(f.tienda||0),efectivo:r.efectivo+Number(f.efectivo||0),tarjeta:r.tarjeta+Number(f.tarjeta||0)}),{tienda:0,efectivo:0,tarjeta:0})):null;
+ $("estTiendaTotal").textContent=tr?euros(tr.tienda):"—";$("estTiendaEfectivo").textContent=tr?euros(tr.efectivo):"—";$("estTiendaTarjeta").textContent=tr?euros(tr.tarjeta):"—";pintarBarrasEstadisticas("estTiendaBarras",td?td.filas.map(f=>({n:String(f.dia).padStart(2,"0"),v:Number(f.tienda||0)})):[],euros);
+ const kz=clave($("estCistAno"),$("estCistMes")),recep=Object.entries(entregasDiarias).filter(([k])=>k.startsWith(kz)),porTanque=Array(6).fill(0);recep.forEach(([,obj])=>Object.entries(obj||{}).forEach(([t,v])=>{const i=Number(t)-1;if(i>=0&&i<6)porTanque[i]+=Math.max(0,Number(v)||0)}));const ctotal=porTanque.reduce((a,b)=>a+b,0);$("estCistTotal").textContent=numeroES(ctotal)+" L";$("estCistDias").textContent=String(recep.filter(([,o])=>Object.values(o||{}).some(v=>Number(v)>0)).length);pintarBarrasEstadisticas("estCistBarras",porTanque.map((v,i)=>({n:"T"+(i+1),v})),x=>numeroES(x)+" L");
+ const ca=$("estCompA").value,cb=$("estCompB").value,calc=k=>{const f=Object.keys(historial).filter(x=>x.startsWith(k)).map(x=>historial[x]);const litros=f.reduce((s,x)=>s+Number(x.total||0),0);const mk=Object.keys(margenesDiarios).filter(x=>x.startsWith(k));const margen=mk.reduce((s,x)=>s+Number(margenesDiarios[x]||0),0);const ti=ventasTienda[k];const tienda=ti?(ti.resumen?.tienda??ti.filas.reduce((s,x)=>s+Number(x.tienda||0),0)):null;return {litros,margen,tienda}};
+ const A=calc(ca),B=calc(cb),diff=(x,y)=>y-x,pct=(x,y)=>x?((y-x)/x*100).toLocaleString("es-ES",{maximumFractionDigits:1})+"%":(y?"Nuevo":"—");
+ $("estCompResultado").innerHTML="<strong>"+(ca||"—")+"</strong> frente a <strong>"+(cb||"—")+"</strong><br>Combustible: "+numeroES(A.litros)+" L → "+numeroES(B.litros)+" L ("+numeroES(diff(A.litros,B.litros))+" L; "+pct(A.litros,B.litros)+")<br>Margen: "+euros(A.margen)+" → "+euros(B.margen)+" ("+euros(diff(A.margen,B.margen))+"; "+pct(A.margen,B.margen)+")<br>Tienda: "+(A.tienda===null?"—":euros(A.tienda))+" → "+(B.tienda===null?"—":euros(B.tienda))+(A.tienda===null||B.tienda===null?"":" ("+euros(diff(A.tienda,B.tienda))+"; "+pct(A.tienda,B.tienda)+")");
+}
 $("fechaPedido").addEventListener("change",actualizarResumenPedido);
 $("guardarPedidoPrevisto").addEventListener("click",guardarPedidoPrevisto);
 $("copiarPedido").addEventListener("click",async()=>{
