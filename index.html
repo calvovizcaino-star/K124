@@ -270,9 +270,9 @@ small{color:#68746d}
 
 <div class="vista" id="vista-margen">
  <section class="panel">
-  <div class="cabecera-vista"><h2>💶 Margen de carburante</h2><select id="selectorFechaMargen" class="selector-periodo" aria-label="Seleccionar día"></select></div>
-  <p class="etiqueta-periodo" id="infoMargenDia">Margen total del día seleccionado.</p>
-  <div class="tienda-total"><span>Margen total del día</span><strong id="margenDia">—</strong></div>
+  <div class="cabecera-vista"><h2>💶 Margen de carburante</h2><select id="selectorFechaMargen" class="selector-periodo" aria-label="Seleccionar mes"></select></div>
+  <p class="etiqueta-periodo" id="infoMargenDia">Selecciona un mes para consultar los días registrados.</p>
+  <div class="tabla-contenedor"><table><thead><tr><th>Fecha</th><th>Margen total</th></tr></thead><tbody id="filasMargenDias"></tbody></table></div>
  </section>
  <section class="panel">
   <div class="cabecera-vista"><h2>📅 Margen mensual</h2><select id="selectorMesMargen" class="selector-periodo" aria-label="Seleccionar mes de margen"></select></div>
@@ -554,25 +554,27 @@ function pintarDetalleTienda(f,filaTabla){
 
 function pintarMargen(){
  const claves=Object.keys(margenesDiarios).filter(k=>Number.isFinite(Number(margenesDiarios[k]))).sort().reverse();
- const fechaSel=$("selectorFechaMargen"),fechaPrev=fechaSel.value;fechaSel.innerHTML="";
- claves.forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=formatoClave(k);fechaSel.appendChild(o)});
- if(claves.includes(fechaPrev))fechaSel.value=fechaPrev;else if(claves.length)fechaSel.value=claves[0];
- const valorDia=claves.length?margenesDiarios[fechaSel.value]:null;
- $("margenDia").textContent=valorDia===null?"—":euros(valorDia);
- $("infoMargenDia").textContent=claves.length?claves.length+" día(s) con margen guardado.":"Importa un TXT que contenga el apartado «Margen Carburante».";
  const meses=[...new Set(claves.map(k=>k.slice(0,7)))].sort().reverse();
- const mesSel=$("selectorMesMargen"),mesPrev=mesSel.value;mesSel.innerHTML="";
+ const mesSel=$("selectorFechaMargen"),mesPrev=mesSel.value;mesSel.innerHTML="";
  meses.forEach(k=>{const [a,m]=k.split("-");const o=document.createElement("option");o.value=k;o.textContent=new Date(+a,+m-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"});mesSel.appendChild(o)});
  if(meses.includes(mesPrev))mesSel.value=mesPrev;else if(meses.length)mesSel.value=meses[0];
- const mes=mesSel.value,delMes=claves.filter(k=>k.startsWith(mes));const totalMes=delMes.reduce((s,k)=>s+Number(margenesDiarios[k]||0),0);
+ const mes=mesSel.value,delMes=claves.filter(k=>k.startsWith(mes)).sort().reverse();
+ $("infoMargenDia").textContent=mes?delMes.length+" día(s) con margen guardado en "+mesSel.options[mesSel.selectedIndex].text+".":"Importa un TXT que contenga el apartado «Margen Carburante».";
+ const filasDias=$("filasMargenDias");filasDias.innerHTML="";
+ delMes.forEach(k=>{const tr=document.createElement("tr"),f=document.createElement("td"),v=document.createElement("td");f.textContent=formatoClave(k);v.textContent=euros(margenesDiarios[k]);tr.append(f,v);filasDias.appendChild(tr)});
+ const totalMes=delMes.reduce((s,k)=>s+Number(margenesDiarios[k]||0),0);
  $("margenMes").textContent=mes?euros(totalMes):"—";$("margenDiasMes").textContent=mes?String(delMes.length):"—";$("margenMediaMes").textContent=delMes.length?euros(totalMes/delMes.length):"—";
- const filasMes=$("filasMargenMes");filasMes.innerHTML="";delMes.sort().reverse().forEach(k=>{const tr=document.createElement("tr");const f=document.createElement("td");f.textContent=formatoClave(k);const v=document.createElement("td");v.textContent=euros(margenesDiarios[k]);tr.append(f,v);filasMes.appendChild(tr)});
+ const mesSel2=$("selectorMesMargen"),mesPrev2=mesSel2.value;mesSel2.innerHTML="";
+ meses.forEach(k=>{const [a,m]=k.split("-");const o=document.createElement("option");o.value=k;o.textContent=new Date(+a,+m-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"});mesSel2.appendChild(o)});
+ if(meses.includes(mesPrev2))mesSel2.value=mesPrev2;else if(mes)mesSel2.value=mes;
+ const filasMes=$("filasMargenMes");filasMes.innerHTML="";
+ const delMes2=claves.filter(k=>k.startsWith(mesSel2.value)).sort().reverse();
+ delMes2.forEach(k=>{const tr=document.createElement("tr"),f=document.createElement("td"),v=document.createElement("td");f.textContent=formatoClave(k);v.textContent=euros(margenesDiarios[k]);tr.append(f,v);filasMes.appendChild(tr)});
  const anos=[...new Set(claves.map(k=>k.slice(0,4)))].sort().reverse();const anoSel=$("selectorAnoMargen"),anoPrev=anoSel.value;anoSel.innerHTML="";anos.forEach(a=>{const o=document.createElement("option");o.value=a;o.textContent=a;anoSel.appendChild(o)});if(anos.includes(anoPrev))anoSel.value=anoPrev;else if(anos.length)anoSel.value=anos[0];
  const ano=anoSel.value,filasAno=$("filasMargenAno");filasAno.innerHTML="";let totalAno=0;
  for(let m=1;m<=12;m++){const pref=ano+"-"+String(m).padStart(2,"0"),ks=claves.filter(k=>k.startsWith(pref));if(!ks.length)continue;const suma=ks.reduce((v,k)=>v+Number(margenesDiarios[k]||0),0);totalAno+=suma;const tr=document.createElement("tr"),n=document.createElement("td"),v=document.createElement("td");n.textContent=new Date(+ano,m-1,1).toLocaleDateString("es-ES",{month:"long"});v.textContent=euros(suma);tr.append(n,v);filasAno.appendChild(tr)}
  $("margenAno").textContent=ano?euros(totalAno):"—";
 }
-
 function pintarTienda(){
  const selector=$("selectorMesTienda"),prev=selector.value;
  const claves=Object.keys(ventasTienda).sort().reverse();
