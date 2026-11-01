@@ -1089,8 +1089,8 @@ function pintarResumenGeneral(){
  $("resumenLitros").textContent=numeroES(litros)+" L";
  $("resumenMargen").textContent=euros(margen);
  $("resumenTienda").textContent=tienda===null?"—":euros(tienda);
- $("resumenMediaMargen").textContent=margenes.length?euros(margen/margenes.length):"—";
- $("resumenNota").textContent="Datos calculados a partir de "+filas.length+" día(s) de ventas y "+margenes.length+" día(s) con margen registrado. "+(tienda===null?"No hay datos de tienda importados para este mes.":"Ventas de tienda según el resumen mensual importado.");
+ $("resumenMediaMargen").textContent=filas.length?euros(margen/filas.length):"—";
+ $("resumenNota").textContent="Media diaria calculada dividiendo el margen mensual entre "+filas.length+" día(s) con ventas. "+(tienda===null?"No hay datos de tienda importados para este mes.":"Ventas de tienda según el resumen mensual importado.");
 }
 $("selectorMesResumen").addEventListener("change",pintarResumenGeneral);
 $("abrirResumen").addEventListener("click",()=>{pintarResumenGeneral();document.body.classList.add("resumen-abierto");window.scrollTo(0,0)});
