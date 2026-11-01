@@ -19,6 +19,20 @@ header::before{content:"";position:absolute;z-index:-1;left:-3%;right:-3%;bottom
 header::after{content:"";position:absolute;z-index:-1;left:-3%;right:-3%;bottom:-1px;height:25px;background:linear-gradient(175deg,#fff 0%,#f4f7fb 100%);clip-path:polygon(0 52%,100% 0,100% 100%,0 100%)}
 header h1{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:clamp(54px,12.5vw,76px);line-height:.98;letter-spacing:-1px;font-weight:900;font-style:italic;text-shadow:0 3px 4px #0005;color:#fff}
 header p{margin:7px 0 0;opacity:.98;font-family:Arial,Helvetica,sans-serif;font-size:clamp(14px,3.5vw,19px);line-height:1.15;font-weight:700;white-space:nowrap}
+
+.boton-resumen-header{position:absolute;right:16px;top:12px;display:flex;align-items:center;gap:6px;padding:9px 11px;background:#ffffff18;border:1px solid #ffffff70;color:#fff;border-radius:11px;font-size:13px}
+.panel-resumen-general{display:none}
+body.resumen-abierto .panel-resumen-general{display:block}
+body.resumen-abierto main>.vista,body.resumen-abierto .barra-pestanas{display:none!important}
+.resumen-cabecera{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.resumen-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.resumen-kpi{padding:13px;border:1px solid var(--borde);border-radius:12px;background:linear-gradient(145deg,#fff,#f0f6ff);min-width:0}
+.resumen-kpi span{display:block;color:#64748b;font-size:12px}
+.resumen-kpi strong{display:block;color:#073b83;font-size:clamp(19px,5vw,24px);margin-top:5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.resumen-kpi small{display:block;margin-top:3px}
+.resumen-comparacion{margin-top:12px;padding:13px;border-radius:12px;background:#f1f6fc;color:#173b70;line-height:1.5}
+@media(min-width:600px){.resumen-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
 .menu-icon{position:absolute;right:16px;top:4px;width:64px;height:56px;border:1px solid #ffffff66;border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:32px;line-height:1;background:#ffffff0b}
 main{width:min(100% - 24px,900px);margin:20px auto 36px}
 .panel{background:white;border:1px solid var(--borde);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #183b2910}
@@ -178,9 +192,20 @@ small{color:#68746d}
 </head>
 <body>
 <header>
- <h1>K124</h1><p>Control del parte diario</p>
+ <h1>K124</h1><p>Control del parte diario</p><button type="button" class="boton-resumen-header" id="abrirResumen"><span>📊</span> Resumen</button>
 </header>
 <main>
+<section class="panel panel-resumen-general" id="panelResumenGeneral">
+ <div class="resumen-cabecera"><h2>📊 Resumen general</h2><button type="button" class="secundario" id="volverVentasDia">← Volver</button></div>
+ <p class="etiqueta-periodo" id="periodoResumen"></p>
+ <div class="resumen-kpis">
+  <div class="resumen-kpi"><span>Litros vendidos</span><strong id="resumenLitros">—</strong><small>Carburante este mes</small></div>
+  <div class="resumen-kpi"><span>Margen carburante</span><strong id="resumenMargen">—</strong><small>Este mes</small></div>
+  <div class="resumen-kpi"><span>Ventas tienda</span><strong id="resumenTienda">—</strong><small>Este mes</small></div>
+  <div class="resumen-kpi"><span>Media diaria de margen</span><strong id="resumenMediaMargen">—</strong><small>Por día registrado</small></div>
+ </div>
+ <div class="resumen-comparacion" id="resumenNota">Los indicadores se calculan con los partes y datos importados que tienes guardados en este dispositivo.</div>
+</section>
 <div class="vista activa" id="vista-dia">
  <section class="panel" id="ultimoPanel">
   <h2>⛽ Ventas por día</h2>
@@ -1035,6 +1060,23 @@ $("borrar").addEventListener("click",()=>{
  if(!confirm("¿Seguro que quieres borrar todo el historial guardado en este navegador? Exporta una copia antes si quieres conservarlo."))return;
  historial={};margenesDiarios={};guardarMargenesDiarios();resumenesAnuales={};correccionesMensuales={};correccionesDiarias={};entregasDiarias={};guardarEntregasDiarias();guardar();guardarResumenesAnuales();guardarCorreccionesMensuales();guardarCorreccionesDiarias();guardarCorreccionesDiarias();pintarVistas();mostrarMensaje("Historial borrado.");
 });
+
+function pintarResumenGeneral(){
+ const ahora=new Date(),mes=String(ahora.getMonth()+1).padStart(2,"0"),ano=String(ahora.getFullYear()),pref=ano+"-"+mes;
+ const filas=Object.keys(historial).filter(k=>k.startsWith(pref)).map(k=>({key:k,...historial[k]}));
+ const litros=filas.reduce((s,f)=>s+Number(f.total||0),0);
+ const margenes=Object.keys(margenesDiarios).filter(k=>k.startsWith(pref)&&Number.isFinite(Number(margenesDiarios[k])));
+ const margen=margenes.reduce((s,k)=>s+Number(margenesDiarios[k]||0),0);
+ const datosTienda=ventasTienda[pref],tienda=datosTienda?(datosTienda.resumen?.tienda??datosTienda.filas.reduce((s,f)=>s+Number(f.tienda||0),0)):null;
+ $("periodoResumen").textContent=ahora.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+ $("resumenLitros").textContent=numeroES(litros)+" L";
+ $("resumenMargen").textContent=euros(margen);
+ $("resumenTienda").textContent=tienda===null?"—":euros(tienda);
+ $("resumenMediaMargen").textContent=margenes.length?euros(margen/margenes.length):"—";
+ $("resumenNota").textContent="Datos calculados a partir de "+filas.length+" día(s) de ventas y "+margenes.length+" día(s) con margen registrado. "+(tienda===null?"No hay datos de tienda importados para este mes.":"Ventas de tienda según el resumen mensual importado.");
+}
+$("abrirResumen").addEventListener("click",()=>{pintarResumenGeneral();document.body.classList.add("resumen-abierto");window.scrollTo(0,0)});
+$("volverVentasDia").addEventListener("click",()=>{document.body.classList.remove("resumen-abierto");window.scrollTo(0,0)});
 
 document.querySelectorAll(".pestana").forEach(btn=>btn.addEventListener("click",()=>{
  document.querySelectorAll(".pestana").forEach(b=>b.classList.toggle("activa",b===btn));
