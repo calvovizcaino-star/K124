@@ -839,7 +839,6 @@ function pintarVistas(){
 function pintarResumenAnual(a){
  const fmt=v=>v===null||v===undefined?"—":numeroES(v);
  $("previsionAnual").textContent=fmt(a.previstos);
- $("ventaAnual").textContent=fmt(vendidosAnuales);
  $("cierreAnual").textContent=fmt(a.posible);
  $("desviacionAnual").textContent=a.desviacion===null?"—":(a.desviacion>0?"+":"")+fmt(a.desviacion)+" L";
  $("porcentajeAnual").textContent=a.porcentaje===null?"":`${a.porcentaje>0?"+":""}${String(a.porcentaje).replace(".",",")}%`;
@@ -863,6 +862,7 @@ function pintarResumenAnual(a){
  if(mesEnCurso&&!mesEnCurso.corregido&&mesEnCurso.vendidos!==null&&mesEnCurso.vendidos!==undefined){
   vendidosAnuales=(Number(a.vendidos)||0)+(Number(mesEnCurso.vendidos)||0)-(Number(mesEnCurso.original)||0);
  }
+ $("ventaAnual").textContent=fmt(vendidosAnuales);
  const max=Math.max(1,...meses.map(m=>Math.max(m.previstos||0,m.vendidos||0)));
  const cont=$("mesesAnuales");cont.innerHTML="";
  meses.forEach(m=>{
