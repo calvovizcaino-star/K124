@@ -20,7 +20,8 @@ header::after{content:"";position:absolute;z-index:-1;left:-3%;right:-3%;bottom:
 header h1{margin:0;font-family:Arial,Helvetica,sans-serif;font-size:clamp(54px,12.5vw,76px);line-height:.98;letter-spacing:-1px;font-weight:900;font-style:italic;text-shadow:0 3px 4px #0005;color:#fff}
 header p{margin:7px 0 0;opacity:.98;font-family:Arial,Helvetica,sans-serif;font-size:clamp(14px,3.5vw,19px);line-height:1.15;font-weight:700;white-space:nowrap}
 
-.boton-resumen-header{position:absolute;right:16px;top:12px;display:flex;align-items:center;gap:6px;padding:9px 11px;background:#ffffff18;border:1px solid #ffffff70;color:#fff;border-radius:11px;font-size:13px}
+.acceso-resumen{display:flex;justify-content:flex-end;margin:0 0 12px}
+.boton-resumen-header{display:flex;align-items:center;gap:7px;padding:10px 15px;background:linear-gradient(110deg,#0879df,#073b83);color:#fff;border-radius:11px;font-size:14px;box-shadow:0 3px 8px #073b8324}
 .panel-resumen-general{display:none}
 body.resumen-abierto .panel-resumen-general{display:block}
 body.resumen-abierto main>.vista,body.resumen-abierto .barra-pestanas{display:none!important}
@@ -192,9 +193,10 @@ small{color:#68746d}
 </head>
 <body>
 <header>
- <h1>K124</h1><p>Control del parte diario</p><button type="button" class="boton-resumen-header" id="abrirResumen"><span>📊</span> Resumen</button>
+ <h1>K124</h1><p>Control del parte diario</p>
 </header>
 <main>
+<div class="acceso-resumen"><button type="button" class="boton-resumen-header" id="abrirResumen"><span>📊</span> Resumen general</button></div>
 <section class="panel panel-resumen-general" id="panelResumenGeneral">
  <div class="resumen-cabecera"><h2>📊 Resumen general</h2><button type="button" class="secundario" id="volverVentasDia">← Volver</button></div>
  <div class="cabecera-vista" style="margin:12px 0"><p class="etiqueta-periodo" id="periodoResumen" style="margin:0"></p><select id="selectorMesResumen" class="selector-periodo" aria-label="Seleccionar mes del resumen"></select></div>
