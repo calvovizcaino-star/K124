@@ -1169,6 +1169,7 @@ document.querySelectorAll("[data-menu-action]").forEach(btn=>btn.addEventListene
  if(accion==="copias"||accion==="configuracion"){document.body.classList.remove("resumen-abierto","historial-cisternas");document.querySelector('.pestana[data-vista="dia"]').click();$("exportar").closest("section").scrollIntoView({behavior:"smooth",block:"start"});}
 }));
 document.querySelectorAll(".pestana").forEach(btn=>btn.addEventListener("click",()=>{
+ document.body.classList.remove("historial-cisternas","resumen-abierto");
  document.querySelectorAll(".pestana").forEach(b=>b.classList.toggle("activa",b===btn));
  document.querySelectorAll(".vista").forEach(v=>v.classList.toggle("activa",v.id==="vista-"+btn.dataset.vista));
  if(btn.dataset.vista!=="dia")pintarVistas();if(btn.dataset.vista==="tienda")pintarTienda();if(btn.dataset.vista==="margen")pintarMargen();
