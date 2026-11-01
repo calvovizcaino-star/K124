@@ -26,6 +26,10 @@ header p{margin:7px 0 0;opacity:.98;font-family:Arial,Helvetica,sans-serif;font-
 .menu-resumen-desplegable.abierto{display:block}
 .opcion-menu-resumen{display:flex;width:100%;align-items:center;gap:10px;padding:12px 13px;background:#fff;color:#173b70;text-align:left;font-size:15px;border-radius:8px}
 .opcion-menu-resumen:active{background:#eaf3ff}
+.menu-separador{height:1px;background:#e5edf6;margin:5px 7px}
+.panel-herramienta{display:none}
+body.historial-cisternas main>.vista,body.historial-cisternas .panel-resumen-general{display:none!important}
+body.historial-cisternas #panelHistorialCisternas{display:block}
 .panel-resumen-general{display:none}
 body.resumen-abierto .panel-resumen-general{display:block}
 body.resumen-abierto main>.vista,body.resumen-abierto .barra-pestanas{display:none!important}
@@ -202,6 +206,12 @@ small{color:#68746d}
   <button type="button" class="boton-menu-resumen" id="botonMenuResumen" aria-label="Abrir menú" aria-expanded="false">☰</button>
   <div class="menu-resumen-desplegable" id="menuResumenDesplegable">
    <button type="button" class="opcion-menu-resumen" id="abrirResumen"><span>📊</span> Resumen general</button>
+   <button type="button" class="opcion-menu-resumen" data-menu-action="estadisticas"><span>📈</span> Estadísticas</button>
+   <button type="button" class="opcion-menu-resumen" data-menu-action="cisternas"><span>🚛</span> Historial de cisternas</button>
+   <button type="button" class="opcion-menu-resumen" data-menu-action="pedidos"><span>📦</span> Pedidos</button>
+   <div class="menu-separador"></div>
+   <button type="button" class="opcion-menu-resumen" data-menu-action="copias"><span>💾</span> Copias de seguridad</button>
+   <button type="button" class="opcion-menu-resumen" data-menu-action="configuracion"><span>⚙️</span> Configuración</button>
   </div>
  </div>
 </header>
@@ -216,6 +226,12 @@ small{color:#68746d}
   <div class="resumen-kpi"><span>Margen medio por día</span><strong id="resumenMediaMargen">—</strong><small>Por día registrado</small></div>
  </div>
  <div class="resumen-comparacion" id="resumenNota">Los indicadores se calculan con los partes y datos importados que tienes guardados en este dispositivo.</div>
+</section>
+<section class="panel panel-herramienta" id="panelHistorialCisternas">
+ <div class="resumen-cabecera"><h2>🚛 Historial de cisternas</h2><button type="button" class="secundario" id="cerrarHistorialCisternas">← Volver</button></div>
+ <p class="ayuda">Entregas registradas al importar los partes diarios. Solo aparecen los días en los que se introdujeron litros recibidos.</p>
+ <div class="tabla-contenedor"><table><thead><tr><th>Fecha</th><th>Tanque</th><th>Litros recibidos</th></tr></thead><tbody id="filasHistorialCisternas"></tbody></table></div>
+ <p class="ayuda" id="notaHistorialCisternas"></p>
 </section>
 <div class="vista activa" id="vista-dia">
  <section class="panel" id="ultimoPanel">
@@ -371,8 +387,8 @@ Selecciona la fecha prevista para completar el mensaje.</div>
 </section>
 
 <section class="panel">
- <h2>💾 Copias de seguridad</h2>
- <p class="ayuda">Guarda una copia de tus datos o restaura una copia anterior.</p>
+ <h2>💾 Copias de seguridad y configuración</h2>
+ <p class="ayuda">Los datos se guardan en este dispositivo. Desde aquí puedes exportar una copia, restaurarla o borrar el historial.</p>
  <div class="acciones">
   <button class="secundario" id="exportar">Exportar copia</button>
   <button class="secundario" id="importarCopia">Restaurar copia</button>
@@ -1107,7 +1123,32 @@ $("selectorMesResumen").addEventListener("change",pintarResumenGeneral);
 $("botonMenuResumen").addEventListener("click",()=>{const menu=$("menuResumenDesplegable");const abierto=menu.classList.toggle("abierto");$("botonMenuResumen").setAttribute("aria-expanded",String(abierto));});
 $("abrirResumen").addEventListener("click",()=>{$("menuResumenDesplegable").classList.remove("abierto");$("botonMenuResumen").setAttribute("aria-expanded","false");pintarResumenGeneral();document.body.classList.add("resumen-abierto");window.scrollTo(0,0)});
 $("volverVentasDia").addEventListener("click",()=>{document.body.classList.remove("resumen-abierto");window.scrollTo(0,0)});
-
+function cerrarMenuHerramientas(){ $("menuResumenDesplegable").classList.remove("abierto"); $("botonMenuResumen").setAttribute("aria-expanded","false"); }
+function abrirHistorialCisternas(){
+ const tbody=$("filasHistorialCisternas");tbody.innerHTML="";
+ const fechas=Object.keys(entregasDiarias||{}).sort().reverse();let registros=0;
+ fechas.forEach(fecha=>{
+  const entrega=entregasDiarias[fecha]||{};
+  Object.keys(entrega).sort((a,b)=>Number(a)-Number(b)).forEach(tanque=>{
+   const litros=Number(entrega[tanque]||0);if(litros<=0)return;
+   const tr=document.createElement("tr"),tdFecha=document.createElement("td"),tdTanque=document.createElement("td"),tdLitros=document.createElement("td");
+   tdFecha.textContent=typeof formatoClave==="function"?formatoClave(fecha):fecha;
+   tdTanque.textContent=NOMBRES_TANQUES[Number(tanque)-1]||("Tanque "+tanque);
+   tdLitros.textContent=litrosFmt(litros)+" L";tr.append(tdFecha,tdTanque,tdLitros);tbody.appendChild(tr);registros++;
+  });
+ });
+ if(!registros){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=3;td.textContent="Todavía no hay cisternas registradas.";tr.appendChild(td);tbody.appendChild(tr);}
+ $("notaHistorialCisternas").textContent=registros+" registro(s) de descarga guardados en este dispositivo.";
+ document.body.classList.add("historial-cisternas");window.scrollTo(0,0);
+}
+$("cerrarHistorialCisternas").addEventListener("click",()=>{document.body.classList.remove("historial-cisternas");window.scrollTo(0,0)});
+document.querySelectorAll("[data-menu-action]").forEach(btn=>btn.addEventListener("click",()=>{
+ const accion=btn.dataset.menuAction;cerrarMenuHerramientas();
+ if(accion==="cisternas"){abrirHistorialCisternas();return;}
+ if(accion==="estadisticas"){document.body.classList.remove("resumen-abierto","historial-cisternas");document.querySelector('.pestana[data-vista="ano"]').click();window.scrollTo(0,0);return;}
+ if(accion==="pedidos"){document.body.classList.remove("resumen-abierto","historial-cisternas");document.querySelector('.pestana[data-vista="pedidos"]').click();window.scrollTo(0,0);return;}
+ if(accion==="copias"||accion==="configuracion"){document.body.classList.remove("resumen-abierto","historial-cisternas");document.querySelector('.pestana[data-vista="dia"]').click();$("exportar").closest("section").scrollIntoView({behavior:"smooth",block:"start"});}
+}));
 document.querySelectorAll(".pestana").forEach(btn=>btn.addEventListener("click",()=>{
  document.querySelectorAll(".pestana").forEach(b=>b.classList.toggle("activa",b===btn));
  document.querySelectorAll(".vista").forEach(v=>v.classList.toggle("activa",v.id==="vista-"+btn.dataset.vista));
