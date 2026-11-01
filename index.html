@@ -1067,7 +1067,7 @@ function pintarResumenGeneral(){
   ...Object.keys(margenesDiarios).map(k=>k.slice(0,7)),
   ...Object.keys(ventasTienda)
  ]);
- const meses=[...mesesDisponibles].filter(k=>/^\\d{4}-\\d{2}$/.test(k)).sort().reverse();
+ const meses=[...mesesDisponibles].filter(k=>k.length===7&&k[4]==="-"&&Number(k.slice(0,4))>0&&Number(k.slice(5))>=1&&Number(k.slice(5))<=12).sort().reverse();
  const selector=$("selectorMesResumen"),anterior=selector.value;
  selector.innerHTML="";
  meses.forEach(k=>{const [a,m]=k.split("-");const op=document.createElement("option");op.value=k;op.textContent=new Date(+a,+m-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"});selector.appendChild(op)});
