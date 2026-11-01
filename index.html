@@ -499,11 +499,11 @@ function leerResumenAnual(texto,anio){
 function leerVentasTienda(){try{const d=JSON.parse(localStorage.getItem(CLAVE_TIENDA)||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
 function guardarVentasTienda(){localStorage.setItem(CLAVE_TIENDA,JSON.stringify(ventasTienda))}
 function leerMargenCarburante(texto){
- const bloque=texto.match(/Margen\\s+Carburante([\\s\\S]*?)(?=\\n\\s*Salidas\\s+Entradas|$)/i);
+ const bloque=texto.match(/Margen\s+Carburante([\s\S]*?)(?=\n\s*Salidas\s+Entradas|$)/i);
  if(!bloque)return null;
- const lineas=bloque[1].split(/\\r?\\n/);
+ const lineas=bloque[1].split(/\r?\n/);
  for(const linea of lineas){
-  const m=linea.trim().match(/^Suma\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)/i);
+  const m=linea.trim().match(/^Suma\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)/i);
   if(m)return parseIntES(m[5]);
  }
  return null;
