@@ -53,7 +53,7 @@ small{color:#68746d}
 
 .vista{display:none}
 .vista.activa{display:block}
-.barra-pestanas{position:sticky;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:8px;margin:18px 0 0;background:#ffffffed;border:1px solid var(--borde);border-radius:16px;box-shadow:0 -3px 16px #17365b12;backdrop-filter:blur(10px)}
+.barra-pestanas{position:sticky;bottom:0;z-index:20;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;padding:8px;margin:18px 0 0;background:#ffffffed;border:1px solid var(--borde);border-radius:16px;box-shadow:0 -3px 16px #17365b12;backdrop-filter:blur(10px)}
 .pestana{background:transparent;color:#52647d;padding:10px 2px;font-size:12px;border-radius:11px;min-width:0}
 .pestana .emoji{display:block;font-size:19px;margin-bottom:3px}
 .pestana.activa{background:#e3f2ff;color:#073b83;box-shadow:inset 0 0 0 1px #c4e1ff}
@@ -268,6 +268,25 @@ small{color:#68746d}
  </section>
 </div>
 
+<div class="vista" id="vista-margen">
+ <section class="panel">
+  <div class="cabecera-vista"><h2>💶 Margen de carburante</h2><select id="selectorFechaMargen" class="selector-periodo" aria-label="Seleccionar día"></select></div>
+  <p class="etiqueta-periodo" id="infoMargenDia">Margen total del día seleccionado.</p>
+  <div class="tienda-total"><span>Margen total del día</span><strong id="margenDia">—</strong></div>
+ </section>
+ <section class="panel">
+  <div class="cabecera-vista"><h2>📅 Margen mensual</h2><select id="selectorMesMargen" class="selector-periodo" aria-label="Seleccionar mes de margen"></select></div>
+  <div class="tienda-total"><span>Margen acumulado del mes</span><strong id="margenMes">—</strong></div>
+  <div class="tienda-kpis"><div class="tienda-kpi"><span>Días registrados</span><strong id="margenDiasMes">—</strong></div><div class="tienda-kpi"><span>Media diaria</span><strong id="margenMediaMes">—</strong></div></div>
+  <div class="tabla-contenedor"><table><thead><tr><th>Fecha</th><th>Margen total</th></tr></thead><tbody id="filasMargenMes"></tbody></table></div>
+ </section>
+ <section class="panel">
+  <div class="cabecera-vista"><h2>📊 Margen anual</h2><select id="selectorAnoMargen" class="selector-periodo" aria-label="Seleccionar año de margen"></select></div>
+  <div class="tienda-total"><span>Margen acumulado del año</span><strong id="margenAno">—</strong></div>
+  <div class="tabla-contenedor"><table><thead><tr><th>Mes</th><th>Margen total</th></tr></thead><tbody id="filasMargenAno"></tbody></table></div>
+ </section>
+</div>
+
 <div class="vista" id="vista-pedidos">
  <section class="panel">
   <div class="cabecera-vista"><h2>🚛 Pedidos de carburante</h2></div>
@@ -304,7 +323,8 @@ Selecciona la fecha prevista para completar el mensaje.</div>
 
  <button class="pestana" data-vista="tienda"><span class="emoji">🛍️</span>Tienda mes</button>
  <button class="pestana" data-vista="ano"><span class="emoji">📊</span>Ventas año</button>
-  <button class="pestana" data-vista="pedidos"><span class="emoji">🚛</span>Pedidos</button></nav>
+ <button class="pestana" data-vista="margen"><span class="emoji">💶</span>Margen</button>
+ <button class="pestana" data-vista="pedidos"><span class="emoji">🚛</span>Pedidos</button></nav>
 
 <section class="panel">
  <h2>📄 Actualizar parte diario</h2>
@@ -342,6 +362,8 @@ const $=id=>document.getElementById(id);
 const archivo=$("archivo"), mensaje=$("mensaje");
 const CLAVE="k124_historial_sondas_v2";
 let historial=leerHistorial();
+const CLAVE_MARGEN="k124_margen_diario_v1";
+let margenesDiarios=leerMargenesDiarios();
 
 const CLAVE_ANUAL="k124_resumen_anual_v1";
 const MESES_LARGOS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -367,6 +389,8 @@ const NOMBRES_TANQUES=[
 let sondasActuales=leerSondasActuales();
 let cantidadesPedido=calcularPedidoInicial();
 
+function leerMargenesDiarios(){try{const d=JSON.parse(localStorage.getItem(CLAVE_MARGEN)||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
+function guardarMargenesDiarios(){localStorage.setItem(CLAVE_MARGEN,JSON.stringify(margenesDiarios))}
 function leerResumenesAnuales(){try{const d=JSON.parse(localStorage.getItem(CLAVE_ANUAL)||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
 function guardarResumenesAnuales(){localStorage.setItem(CLAVE_ANUAL,JSON.stringify(resumenesAnuales))}
 function leerCorreccionesMensuales(){try{const d=JSON.parse(localStorage.getItem(CLAVE_CORRECCIONES_MENSUALES)||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
@@ -474,6 +498,16 @@ function leerResumenAnual(texto,anio){
 
 function leerVentasTienda(){try{const d=JSON.parse(localStorage.getItem(CLAVE_TIENDA)||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
 function guardarVentasTienda(){localStorage.setItem(CLAVE_TIENDA,JSON.stringify(ventasTienda))}
+function leerMargenCarburante(texto){
+ const bloque=texto.match(/Margen\\s+Carburante([\\s\\S]*?)(?=\\n\\s*Salidas\\s+Entradas|$)/i);
+ if(!bloque)return null;
+ const lineas=bloque[1].split(/\\r?\\n/);
+ for(const linea of lineas){
+  const m=linea.trim().match(/^Suma\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)\\s+(-?[\\d.,]+)/i);
+  if(m)return parseIntES(m[5]);
+ }
+ return null;
+}
 function leerTablaTienda(texto,fechaParte){
  const lineas=texto.replace(/\r/g,"").split("\n");
  const inicio=lineas.findIndex(l=>/^\s*Dia\s+Tienda\b/i.test(l));
@@ -516,6 +550,27 @@ function pintarDetalleTienda(f,filaTabla){
  const total=document.createElement("div");total.className="tienda-dia-total";const a=document.createElement("span");a.textContent="TOTAL DEL DÍA";const b=document.createElement("strong");b.textContent=euros(f.total);total.append(a,b);grid.appendChild(total);
  caja.appendChild(grid);td.appendChild(caja);tr.appendChild(td);
  filaTabla.after(tr);
+}
+
+function pintarMargen(){
+ const claves=Object.keys(margenesDiarios).filter(k=>Number.isFinite(Number(margenesDiarios[k]))).sort().reverse();
+ const fechaSel=$("selectorFechaMargen"),fechaPrev=fechaSel.value;fechaSel.innerHTML="";
+ claves.forEach(k=>{const o=document.createElement("option");o.value=k;o.textContent=formatoClave(k);fechaSel.appendChild(o)});
+ if(claves.includes(fechaPrev))fechaSel.value=fechaPrev;else if(claves.length)fechaSel.value=claves[0];
+ const valorDia=claves.length?margenesDiarios[fechaSel.value]:null;
+ $("margenDia").textContent=valorDia===null?"—":euros(valorDia);
+ $("infoMargenDia").textContent=claves.length?claves.length+" día(s) con margen guardado.":"Importa un TXT que contenga el apartado «Margen Carburante».";
+ const meses=[...new Set(claves.map(k=>k.slice(0,7)))].sort().reverse();
+ const mesSel=$("selectorMesMargen"),mesPrev=mesSel.value;mesSel.innerHTML="";
+ meses.forEach(k=>{const [a,m]=k.split("-");const o=document.createElement("option");o.value=k;o.textContent=new Date(+a,+m-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"});mesSel.appendChild(o)});
+ if(meses.includes(mesPrev))mesSel.value=mesPrev;else if(meses.length)mesSel.value=meses[0];
+ const mes=mesSel.value,delMes=claves.filter(k=>k.startsWith(mes));const totalMes=delMes.reduce((s,k)=>s+Number(margenesDiarios[k]||0),0);
+ $("margenMes").textContent=mes?euros(totalMes):"—";$("margenDiasMes").textContent=mes?String(delMes.length):"—";$("margenMediaMes").textContent=delMes.length?euros(totalMes/delMes.length):"—";
+ const filasMes=$("filasMargenMes");filasMes.innerHTML="";delMes.sort().reverse().forEach(k=>{const tr=document.createElement("tr");const f=document.createElement("td");f.textContent=formatoClave(k);const v=document.createElement("td");v.textContent=euros(margenesDiarios[k]);tr.append(f,v);filasMes.appendChild(tr)});
+ const anos=[...new Set(claves.map(k=>k.slice(0,4)))].sort().reverse();const anoSel=$("selectorAnoMargen"),anoPrev=anoSel.value;anoSel.innerHTML="";anos.forEach(a=>{const o=document.createElement("option");o.value=a;o.textContent=a;anoSel.appendChild(o)});if(anos.includes(anoPrev))anoSel.value=anoPrev;else if(anos.length)anoSel.value=anos[0];
+ const ano=anoSel.value,filasAno=$("filasMargenAno");filasAno.innerHTML="";let totalAno=0;
+ for(let m=1;m<=12;m++){const pref=ano+"-"+String(m).padStart(2,"0"),ks=claves.filter(k=>k.startsWith(pref));if(!ks.length)continue;const suma=ks.reduce((v,k)=>v+Number(margenesDiarios[k]||0),0);totalAno+=suma;const tr=document.createElement("tr"),n=document.createElement("td"),v=document.createElement("td");n.textContent=new Date(+ano,m-1,1).toLocaleDateString("es-ES",{month:"long"});v.textContent=euros(suma);tr.append(n,v);filasAno.appendChild(tr)}
+ $("margenAno").textContent=ano?euros(totalAno):"—";
 }
 
 function pintarTienda(){
@@ -948,6 +1003,8 @@ $("procesar").addEventListener("click",async()=>{
    else v=leerVentaDia(texto);
    historial[keyDia]={fecha:fechaParte.texto,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};anadidos=1;
   }
+  const margen=leerMargenCarburante(texto);
+  if(margen!==null){margenesDiarios[keyDia]=margen;guardarMargenesDiarios();}
   const tienda=leerTablaTienda(texto,fechaParte);
   if(tienda){ventasTienda[tienda.key]=tienda;guardarVentasTienda();}
   const anual=leerResumenAnual(texto,fechaParte.anio);
@@ -962,25 +1019,25 @@ $("procesar").addEventListener("click",async()=>{
  }catch(e){mostrarMensaje(e.message||"No se ha podido leer el archivo.")}
 });
 $("exportar").addEventListener("click",()=>{
- const blob=new Blob([JSON.stringify({app:"K124",version:5,exportado:new Date().toISOString(),historial,resumenesAnuales,correccionesMensuales,correccionesDiarias,entregasDiarias,ventasTienda,sondasActuales},null,2)],{type:"application/json"});
+ const blob=new Blob([JSON.stringify({app:"K124",version:6,exportado:new Date().toISOString(),historial,resumenesAnuales,correccionesMensuales,correccionesDiarias,entregasDiarias,ventasTienda,margenesDiarios,sondasActuales},null,2)],{type:"application/json"});
  const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="K124_copia_historial.json";a.click();URL.revokeObjectURL(url);
 });
 $("importarCopia").addEventListener("click",()=>$("copia").click());
 $("copia").addEventListener("change",async()=>{
  const f=$("copia").files[0];if(!f)return;
- try{const d=JSON.parse(await f.text());const h=d.historial||d;if(!h||typeof h!=="object")throw new Error();if(!confirm("¿Quieres combinar esta copia con el historial actual? Las fechas de la copia sustituirán las mismas fechas."))return;historial={...historial,...h};if(d.ventasTienda&&typeof d.ventasTienda==="object")ventasTienda={...ventasTienda,...d.ventasTienda};if(d.resumenesAnuales&&typeof d.resumenesAnuales==="object")resumenesAnuales={...resumenesAnuales,...d.resumenesAnuales};if(d.correccionesMensuales&&typeof d.correccionesMensuales==="object")correccionesMensuales={...correccionesMensuales,...d.correccionesMensuales};if(d.correccionesDiarias&&typeof d.correccionesDiarias==="object")correccionesDiarias={...correccionesDiarias,...d.correccionesDiarias};if(d.entregasDiarias&&typeof d.entregasDiarias==="object")entregasDiarias={...entregasDiarias,...d.entregasDiarias};if(Array.isArray(d.sondasActuales)&&d.sondasActuales.length===6){sondasActuales=d.sondasActuales;guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();}guardar();guardarVentasTienda();guardarResumenesAnuales();guardarCorreccionesMensuales();guardarCorreccionesDiarias();pintarVistas();pintarTienda();mostrarMensaje("Copia restaurada correctamente.",true)}
+ try{const d=JSON.parse(await f.text());const h=d.historial||d;if(!h||typeof h!=="object")throw new Error();if(!confirm("¿Quieres combinar esta copia con el historial actual? Las fechas de la copia sustituirán las mismas fechas."))return;historial={...historial,...h};if(d.ventasTienda&&typeof d.ventasTienda==="object")ventasTienda={...ventasTienda,...d.ventasTienda};if(d.margenesDiarios&&typeof d.margenesDiarios==="object")margenesDiarios={...margenesDiarios,...d.margenesDiarios};guardarMargenesDiarios();if(d.resumenesAnuales&&typeof d.resumenesAnuales==="object")resumenesAnuales={...resumenesAnuales,...d.resumenesAnuales};if(d.correccionesMensuales&&typeof d.correccionesMensuales==="object")correccionesMensuales={...correccionesMensuales,...d.correccionesMensuales};if(d.correccionesDiarias&&typeof d.correccionesDiarias==="object")correccionesDiarias={...correccionesDiarias,...d.correccionesDiarias};if(d.entregasDiarias&&typeof d.entregasDiarias==="object")entregasDiarias={...entregasDiarias,...d.entregasDiarias};if(Array.isArray(d.sondasActuales)&&d.sondasActuales.length===6){sondasActuales=d.sondasActuales;guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();}guardar();guardarVentasTienda();guardarResumenesAnuales();guardarCorreccionesMensuales();guardarCorreccionesDiarias();pintarVistas();pintarTienda();mostrarMensaje("Copia restaurada correctamente.",true)}
  catch(e){mostrarMensaje("No he podido leer esa copia de seguridad.")}
  $("copia").value="";
 });
 $("borrar").addEventListener("click",()=>{
  if(!confirm("¿Seguro que quieres borrar todo el historial guardado en este navegador? Exporta una copia antes si quieres conservarlo."))return;
- historial={};resumenesAnuales={};correccionesMensuales={};correccionesDiarias={};entregasDiarias={};guardarEntregasDiarias();guardar();guardarResumenesAnuales();guardarCorreccionesMensuales();guardarCorreccionesDiarias();guardarCorreccionesDiarias();pintarVistas();mostrarMensaje("Historial borrado.");
+ historial={};margenesDiarios={};guardarMargenesDiarios();resumenesAnuales={};correccionesMensuales={};correccionesDiarias={};entregasDiarias={};guardarEntregasDiarias();guardar();guardarResumenesAnuales();guardarCorreccionesMensuales();guardarCorreccionesDiarias();guardarCorreccionesDiarias();pintarVistas();mostrarMensaje("Historial borrado.");
 });
 
 document.querySelectorAll(".pestana").forEach(btn=>btn.addEventListener("click",()=>{
  document.querySelectorAll(".pestana").forEach(b=>b.classList.toggle("activa",b===btn));
  document.querySelectorAll(".vista").forEach(v=>v.classList.toggle("activa",v.id==="vista-"+btn.dataset.vista));
- if(btn.dataset.vista!=="dia")pintarVistas();if(btn.dataset.vista==="tienda")pintarTienda();
+ if(btn.dataset.vista!=="dia")pintarVistas();if(btn.dataset.vista==="tienda")pintarTienda();if(btn.dataset.vista==="margen")pintarMargen();
 }));
 
 $("fechaPedido").addEventListener("change",actualizarResumenPedido);
@@ -999,7 +1056,10 @@ $("copiarPedido").addEventListener("click",async()=>{
 $("selectorMes").addEventListener("change",pintarVistas);
 $("selectorAno").addEventListener("change",pintarVistas);
 $("selectorMesTienda").addEventListener("change",()=>{diaTiendaSeleccionado=null;pintarTienda()});
-pintarVistas();pintarTienda();pintarPedido();if(pedidoPendiente){$("fechaPedido").value=pedidoPendiente.fecha;cantidadesPedido=pedidoPendiente.litros.slice();pintarPedido();actualizarEstadoPedidoGuardado()}
+$("selectorFechaMargen").addEventListener("change",pintarMargen);
+$("selectorMesMargen").addEventListener("change",pintarMargen);
+$("selectorAnoMargen").addEventListener("change",pintarMargen);
+pintarVistas();pintarTienda();pintarMargen();pintarPedido();if(pedidoPendiente){$("fechaPedido").value=pedidoPendiente.fecha;cantidadesPedido=pedidoPendiente.litros.slice();pintarPedido();actualizarEstadoPedidoGuardado()}
 pintarUltimaGuardada();
 </script>
 </body>
