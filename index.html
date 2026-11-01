@@ -641,7 +641,7 @@ function pintarPedido(){
   $("totalPedido").textContent="0 L";
   return;
  }
- $("estadoSondasPedido").textContent="Lecturas del último parte: "+(sondasActuales[0].fecha||"fecha no disponible")+". Capacidad de cada tanque: 30.000 L.";
+ $("estadoSondasPedido").textContent="Lecturas del último parte: "+(sondasActuales[0].fecha||"fecha no disponible")+".";
  sondasActuales.forEach((t,i)=>{
   const pct=Math.max(0,Math.min(100,Number(t.actual||0)/30000*100));
   const card=document.createElement("div");card.className="sonda-pedido";
