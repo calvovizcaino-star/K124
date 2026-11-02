@@ -1355,9 +1355,17 @@ function pintarEstadisticas(){
   const litros=productos.reduce((a,x)=>a+x.v,0);
   const mk=Object.keys(margenesDiarios).filter(x=>x.startsWith(prefijo)),margen=mk.reduce((a,k)=>a+Number(margenesDiarios[k]||0),0);
   const tiendaKeys=Object.keys(ventasTienda).filter(k=>k.startsWith(prefijo));
-  const tienda=tiendaKeys.reduce((a,k)=>{const t=ventasTienda[k];return a+(t?(t.resumen?.tienda??(t.filas||[]).reduce((z,x)=>z+Number(x.tienda||0),0)):0)},0);
+  const tiendaDatos=tiendaKeys.reduce((a,k)=>{
+   const t=ventasTienda[k];if(!t)return a;
+   const filas=t.filas||[],r=t.resumen||{};
+   a.facturacion+=Number(r.tienda??filas.reduce((z,x)=>z+Number(x.tienda||0),0));
+   a.efectivo+=Number(r.efectivo??filas.reduce((z,x)=>z+Number(x.efectivo||0),0));
+   a.tarjeta+=Number(r.tarjeta??filas.reduce((z,x)=>z+Number(x.tarjeta||0),0));
+   a.suma+=Number(r.suma??filas.reduce((z,x)=>z+Number(x.total||0),0));
+   return a;
+  },{facturacion:0,efectivo:0,tarjeta:0,suma:0});
   const tieneTienda=tiendaKeys.some(k=>!!ventasTienda[k]);
-  return {productos,litros,margen,tienda,tieneTienda};
+  return {productos,litros,margen,...tiendaDatos,tieneTienda};
  };
  const formatoCambio=(a,b,unidad)=>{
   const d=b-a,por=a?((d/a)*100).toLocaleString("es-ES",{maximumFractionDigits:1})+"%":(b>0?"Nuevo":a>0?"−100%":"0%");
@@ -1369,15 +1377,15 @@ function pintarEstadisticas(){
   const barras=filas.map(x=>'<div class="comparativa-fila"><strong>'+x.n+'</strong><div class="comparativa-barras"><span style="width:'+(x.a/max*100)+'%"></span><span style="width:'+(x.b/max*100)+'%"></span></div><small>'+numeroES(x.a)+' / '+numeroES(x.b)+' L</small></div>').join("");
   const ganador=(x,y)=>x>y?"Periodo A":y>x?"Periodo B":"Empate";
   return '<div class="comparativa-titulo">'+titulo+'</div><div class="comparativa-leyenda"><span><i class="comparativa-color a"></i>Periodo A</span><span><i class="comparativa-color b"></i>Periodo B</span></div>'+barras+
-   '<div class="comparativa-metricas"><div><small>Litros combustible</small><strong>'+numeroES(a.litros)+' → '+numeroES(b.litros)+' L</strong><span>'+formatoCambio(a.litros,b.litros,"L")+'</span></div><div><small>Margen</small><strong>'+euros(a.margen)+' → '+euros(b.margen)+'</strong><span>'+formatoCambio(a.margen,b.margen,"€")+'</span></div><div><small>Tienda</small><strong>'+(a.tieneTienda?euros(a.tienda):"Sin datos")+' → '+(b.tieneTienda?euros(b.tienda):"Sin datos")+'</strong><span>'+(a.tieneTienda&&b.tieneTienda?formatoCambio(a.tienda,b.tienda,"€"):"Comparación no disponible")+'</span></div></div><p class="comparativa-conclusion">Mejor resultado: combustible — '+ganador(a.litros,b.litros)+' · margen — '+ganador(a.margen,b.margen)+' · tienda — '+(a.tieneTienda&&b.tieneTienda?ganador(a.tienda,b.tienda):"sin datos suficientes")+'</p>';
+   '<div class="comparativa-metricas"><div><small>Litros combustible</small><strong>'+numeroES(a.litros)+' → '+numeroES(b.litros)+' L</strong><span>'+formatoCambio(a.litros,b.litros,"L")+'</span></div><div><small>Margen</small><strong>'+euros(a.margen)+' → '+euros(b.margen)+'</strong><span>'+formatoCambio(a.margen,b.margen,"€")+'</span></div><div><small>Facturación tienda</small><strong>'+(a.tieneTienda?euros(a.facturacion):"Sin datos")+' → '+(b.tieneTienda?euros(b.facturacion):"Sin datos")+'</strong><span>'+(a.tieneTienda&&b.tieneTienda?formatoCambio(a.facturacion,b.facturacion,"€"):"Comparación no disponible")+'</span></div><div><small>Efectivo</small><strong>'+(a.tieneTienda?euros(a.efectivo):"Sin datos")+' → '+(b.tieneTienda?euros(b.efectivo):"Sin datos")+'</strong><span>'+(a.tieneTienda&&b.tieneTienda?formatoCambio(a.efectivo,b.efectivo,"€"):"Comparación no disponible")+'</span></div><div><small>Tarjeta</small><strong>'+(a.tieneTienda?euros(a.tarjeta):"Sin datos")+' → '+(b.tieneTienda?euros(b.tarjeta):"Sin datos")+'</strong><span>'+(a.tieneTienda&&b.tieneTienda?formatoCambio(a.tarjeta,b.tarjeta,"€"):"Comparación no disponible")+'</span></div><div><small>Suma (según parte)</small><strong>'+(a.tieneTienda?euros(a.suma):"Sin datos")+' → '+(b.tieneTienda?euros(b.suma):"Sin datos")+'</strong><span>'+(a.tieneTienda&&b.tieneTienda?formatoCambio(a.suma,b.suma,"€"):"Comparación no disponible")+'</span></div></div><p class="comparativa-conclusion">Mejor resultado: combustible — '+ganador(a.litros,b.litros)+' · margen — '+ganador(a.margen,b.margen)+' · facturación tienda — '+(a.tieneTienda&&b.tieneTienda?ganador(a.facturacion,b.facturacion):"sin datos suficientes")+'</p>';
  };
  const mesA=$("estCompAnoA").value+"-"+$("estCompMesA").value,mesB=$("estCompAnoB").value+"-"+$("estCompMesB").value;
  $("estCompResultado").innerHTML=bloqueComparacion(mesA+" frente a "+mesB,resumenPeriodo(mesA),resumenPeriodo(mesB));
  const anA=$("estCompAnualA").value,anB=$("estCompAnualB").value;
  const anual=k=>{
   const meses=[...new Set([...Object.keys(historial),...Object.keys(margenesDiarios),...Object.keys(ventasTienda)].filter(x=>x.startsWith(k+"-")).map(x=>x.slice(0,7)))];
-  const total={productos:[{n:"E+",v:0},{n:"E+10",v:0},{n:"G95",v:0},{n:"G98",v:0}],litros:0,margen:0,tienda:0,tieneTienda:false};
-  meses.forEach(m=>{const x=resumenPeriodo(m);x.productos.forEach((p,i)=>total.productos[i].v+=p.v);total.litros+=x.litros;total.margen+=x.margen;total.tienda+=x.tienda;total.tieneTienda=total.tieneTienda||x.tieneTienda});
+  const total={productos:[{n:"E+",v:0},{n:"E+10",v:0},{n:"G95",v:0},{n:"G98",v:0}],litros:0,margen:0,facturacion:0,efectivo:0,tarjeta:0,suma:0,tieneTienda:false};
+  meses.forEach(m=>{const x=resumenPeriodo(m);x.productos.forEach((p,i)=>total.productos[i].v+=p.v);total.litros+=x.litros;total.margen+=x.margen;total.facturacion+=x.facturacion;total.efectivo+=x.efectivo;total.tarjeta+=x.tarjeta;total.suma+=x.suma;total.tieneTienda=total.tieneTienda||x.tieneTienda});
   return total;
  };
  $("estCompAnualResultado").innerHTML=bloqueComparacion("Año "+anA+" frente a "+anB,anual(anA),anual(anB));
