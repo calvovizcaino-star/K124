@@ -842,7 +842,7 @@ function pintarSondasInicio(){
   card.append(cabecera,nivel,barra,porcentaje);caja.appendChild(card);
  });
 }
-function editarSondaInicio(i){
+async function editarSondaInicio(i){
  if(!sondasActuales||!sondasActuales[i])return;
  const tanque=sondasActuales[i];
  const entrada=prompt(`Corregir lectura del T${i+1} · ${tanque.producto}\nIntroduce los litros actuales:`,String(tanque.actual??""));
@@ -853,6 +853,8 @@ function editarSondaInicio(i){
   alert("Introduce una lectura válida entre 0 y 30.000 litros.");
   return;
  }
+ const lecturaAnterior=tanque.actual;
+ const diferenciaAnterior=tanque.diferencia;
  tanque.actual=Math.round(valor);
  if(Number.isFinite(Number(tanque.anterior)))tanque.diferencia=Number(tanque.anterior)-tanque.actual;
  sondasFijadas[i]=true;
@@ -860,6 +862,29 @@ function editarSondaInicio(i){
  guardarSondasActuales();
  cantidadesPedido=calcularPedidoInicial();
  pintarPedido();
+ try{
+  const fechaTexto=sondasActuales[0]?.fecha||tanque.fecha;
+  const partes=(fechaTexto||"").split("/");
+  if(partes.length!==3)throw new Error("No encuentro la fecha del parte para actualizar las ventas.");
+  const keyDia=`${partes[2]}-${partes[1].padStart(2,"0")}-${partes[0].padStart(2,"0")}`;
+  const ventas=await calcularVentasDesdeSondas(sondasActuales,keyDia);
+  historial[keyDia]={...(historial[keyDia]||{}),fecha:fechaTexto,e:ventas.e,e10:ventas.e10,g95:ventas.g95,g98:ventas.g98,total:ventas.total};
+  if(correccionesDiarias[keyDia]&&typeof correccionesDiarias[keyDia]==="object"){
+   correccionesDiarias[keyDia]={e:ventas.e,e10:ventas.e10,g95:ventas.g95,g98:ventas.g98};
+   guardarCorreccionesDiarias();
+  }
+  guardar();
+  pintarVistas();
+  pintarUltimo(filaConCorreccionDiaria({...historial[keyDia],key:keyDia}),fechaTexto,keyDia);
+  alert("Sonda corregida. El total vendido y las ventas por producto se han actualizado.");
+ }catch(error){
+  tanque.actual=lecturaAnterior;
+  tanque.diferencia=diferenciaAnterior;
+  guardarSondasActuales();
+  cantidadesPedido=calcularPedidoInicial();
+  pintarPedido();
+  alert(error.message||"No se pudieron recalcular las ventas con esta lectura.");
+ }
 }
 function fechaISOaUTC(v){if(!v)return null;const p=v.split("-").map(Number);return Date.UTC(p[0],p[1]-1,p[2])}
 function pedidoAplicableAFecha(fechaParte,fechaPrevista){
