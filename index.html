@@ -534,6 +534,8 @@ let ventasTienda=leerVentasTienda();
 
 let diaTiendaSeleccionado=null;
 const CLAVE_SONDAS_ACTUALES="k124_sondas_actuales_v1";
+const CLAVE_SONDAS_FIJADAS="k124_sondas_fijadas_v1";
+let sondasFijadas=leerSondasFijadas();
 const CLAVE_ENTREGAS_DIARIAS="k124_entregas_diarias_v1";
 let entregasDiarias=leerEntregasDiarias();
 const CLAVE_PEDIDO_PENDIENTE="k124_pedido_pendiente_v1";
@@ -782,6 +784,20 @@ function leerSondasActuales(){
 function guardarSondasActuales(){
  if(sondasActuales)localStorage.setItem(CLAVE_SONDAS_ACTUALES,JSON.stringify(sondasActuales));
 }
+function leerSondasFijadas(){
+ try{const d=JSON.parse(localStorage.getItem(CLAVE_SONDAS_FIJADAS)||"[]");return Array.isArray(d)&&d.length===6?d.map(Boolean):Array(6).fill(false)}catch(e){return Array(6).fill(false)}
+}
+function guardarSondasFijadas(){
+ localStorage.setItem(CLAVE_SONDAS_FIJADAS,JSON.stringify(sondasFijadas));
+}
+function aplicarSondasFijadas(lecturas){
+ if(!lecturas)return lecturas;
+ return lecturas.map((t,i)=>{
+  if(!sondasFijadas[i]||!sondasActuales||!sondasActuales[i])return t;
+  const actual=Number(sondasActuales[i].actual);
+  return Number.isFinite(actual)?{...t,actual,diferencia:Number(t.anterior)-actual,editada:true}:t;
+ });
+}
 function calcularPedidoInicial(){
  if(!sondasActuales)return Array(6).fill(0);
  return sondasActuales.map((t,i)=>{
@@ -839,6 +855,8 @@ function editarSondaInicio(i){
  }
  tanque.actual=Math.round(valor);
  if(Number.isFinite(Number(tanque.anterior)))tanque.diferencia=Number(tanque.anterior)-tanque.actual;
+ sondasFijadas[i]=true;
+ guardarSondasFijadas();
  guardarSondasActuales();
  cantidadesPedido=calcularPedidoInicial();
  pintarPedido();
@@ -1167,7 +1185,7 @@ $("procesar").addEventListener("click",async()=>{
   const mensual=leerTablaMensual(texto,fechaParte);
   const lecturas=leerLecturasTanques(texto,fechaParte.texto);
   const keyDia=claveFecha(fechaParte);
-  if(lecturas){sondasActuales=lecturas;guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();}
+  if(lecturas){sondasActuales=aplicarSondasFijadas(lecturas);guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();}
   let anadidos=0;
   if(mensual.length){
    for(const f of mensual){historial[f.key]={fecha:f.fecha,e:f.e,e10:f.e10,g95:f.g95,g98:f.g98,total:f.total};anadidos++}
