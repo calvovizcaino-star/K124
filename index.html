@@ -815,13 +815,33 @@ function pintarSondasInicio(){
  sondasActuales.forEach((t,i)=>{
   const pct=Math.max(0,Math.min(100,Number(t.actual||0)/30000*100));
   const card=document.createElement("div");card.className="sonda-pedido";
+  const cabecera=document.createElement("div");cabecera.style.display="flex";cabecera.style.alignItems="center";cabecera.style.justifyContent="space-between";cabecera.style.gap="8px";
   const nombre=document.createElement("strong");nombre.textContent=`T${i+1} · ${t.producto}`;
+  const editar=document.createElement("button");editar.type="button";editar.textContent="✏️";editar.title=`Editar lectura del tanque T${i+1}`;editar.setAttribute("aria-label",`Editar lectura del tanque T${i+1}`);editar.style.border="0";editar.style.background="transparent";editar.style.padding="4px 7px";editar.style.borderRadius="8px";editar.style.cursor="pointer";editar.style.fontSize="17px";editar.addEventListener("click",()=>editarSondaInicio(i));
+  cabecera.append(nombre,editar);
   const nivel=document.createElement("div");nivel.className="nivel";nivel.textContent=litrosFmt(t.actual)+" L";
   const barra=document.createElement("div");barra.className="sonda-barra";
   const relleno=document.createElement("span");relleno.style.width=pct+"%";if(pct<20)relleno.style.background="#dc2626";barra.appendChild(relleno);
   const porcentaje=document.createElement("div");porcentaje.className="porcentaje";porcentaje.textContent=pct.toLocaleString("es-ES",{maximumFractionDigits:1})+"% ocupado";
-  card.append(nombre,nivel,barra,porcentaje);caja.appendChild(card);
+  card.append(cabecera,nivel,barra,porcentaje);caja.appendChild(card);
  });
+}
+function editarSondaInicio(i){
+ if(!sondasActuales||!sondasActuales[i])return;
+ const tanque=sondasActuales[i];
+ const entrada=prompt(`Corregir lectura del T${i+1} · ${tanque.producto}\nIntroduce los litros actuales:`,String(tanque.actual??""));
+ if(entrada===null)return;
+ const limpio=entrada.trim().replace(/\s/g,"").replace(",",".");
+ const valor=Number(limpio);
+ if(limpio===""||!Number.isFinite(valor)||valor<0||valor>30000){
+  alert("Introduce una lectura válida entre 0 y 30.000 litros.");
+  return;
+ }
+ tanque.actual=Math.round(valor);
+ if(Number.isFinite(Number(tanque.anterior)))tanque.diferencia=Number(tanque.anterior)-tanque.actual;
+ guardarSondasActuales();
+ cantidadesPedido=calcularPedidoInicial();
+ pintarPedido();
 }
 function fechaISOaUTC(v){if(!v)return null;const p=v.split("-").map(Number);return Date.UTC(p[0],p[1]-1,p[2])}
 function pedidoAplicableAFecha(fechaParte,fechaPrevista){
@@ -997,8 +1017,7 @@ function crearFila(f,contenedor){
   const campos=[["e","Diésel E+"],["e10","Diésel E+10"],["g95","Gasolina 95"],["g98","Gasolina 98"]];
   const inputs={};
   campos.forEach(([k,label])=>{
-   const wrap=document.createElement("label");wrap.style.display="flex";wrap.style.flexDirection="column";wrap.style.gap="3px";wrap.style.fontSize="12px";wrap.style.fontWeight="600";wrap.textContent=label;
-   const input=document.createElement("input");input.type="number";input.min="0";input.step="1";input.inputMode="numeric";input.value=String(Number(f[k]||0));input.setAttribute("aria-label",label+" litros");wrap.appendChild(input);inputs[k]=input;editor.appendChild(wrap);
+   const wrap=document.createElement("label");wrap.style.display="flex";wrap.style.flexDirection="column";wrap.style.gap="3px";wrap.style.fontSize="12px";wrap.style.fontWeight="600";wrap.textContent=label;   const input=document.createElement("input");input.type="number";input.min="0";input.step="1";input.inputMode="numeric";input.value=String(Number(f[k]||0));input.setAttribute("aria-label",label+" litros");wrap.appendChild(input);inputs[k]=input;editor.appendChild(wrap);
   });
   const totalInfo=document.createElement("span");totalInfo.style.fontWeight="700";
   const actualizarTotal=()=>{totalInfo.textContent="Total: "+numeroES(campos.reduce((a,[k])=>a+Number(inputs[k].value||0),0))+" L"};
