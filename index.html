@@ -203,6 +203,28 @@ small{color:#68746d}
 .estadistica-barra-fondo{height:10px;background:#edf2f7;border-radius:99px;overflow:hidden}
 .estadistica-barra-fondo span{display:block;height:100%;background:linear-gradient(90deg,#0879df,#ff7900);border-radius:99px}
 .estadisticas-comparacion{padding:13px;background:#f1f6fc;border-radius:11px;line-height:1.6;color:#173b70}
+ 
+.comparativa-periodos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.comparativa-selector{display:grid;gap:8px;padding:11px;background:#f4f8fd;border:1px solid #d8e5f5;border-radius:12px}
+.comparativa-selector>strong{color:#173b70}
+.comparativa-selector label{display:grid;gap:4px;font-size:12px;color:#52647d}
+.comparativa-titulo{font-weight:800;font-size:15px;margin-bottom:10px}
+.comparativa-leyenda{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin:8px 0 14px}
+.comparativa-leyenda span{display:flex;align-items:center;gap:6px}
+.comparativa-color{display:inline-block;width:11px;height:11px;border-radius:3px}
+.comparativa-color.a{background:#0879df}.comparativa-color.b{background:#ff7900}
+.comparativa-fila{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:center;margin:10px 0}
+.comparativa-fila>strong{font-size:13px}
+.comparativa-barras{display:grid;gap:4px}
+.comparativa-barras span{display:block;height:9px;border-radius:10px;background:#0879df}
+.comparativa-barras span+span{background:#ff7900}
+.comparativa-fila small{grid-column:2;color:#52647d;font-size:11px}
+.comparativa-metricas{display:grid;gap:9px;margin-top:16px}
+.comparativa-metricas>div{padding:10px;background:#fff;border:1px solid #dce7f4;border-radius:10px;display:grid;gap:3px}
+.comparativa-metricas small{color:#64748b}.comparativa-metricas strong{font-size:15px}.comparativa-metricas span{font-size:12px;color:#173b70;font-weight:700}
+.comparativa-conclusion{margin:13px 0 0;font-weight:700;font-size:13px}
+@media(max-width:380px){.comparativa-periodos{grid-template-columns:1fr}}
+
 @media(min-width:600px){.estadisticas-indice{grid-template-columns:repeat(5,minmax(0,1fr))}}
 /* Pedidos de carburante */
 .pedido-alerta{display:none;padding:10px 12px;border-radius:11px;background:#fff0d8;color:#874900;font-weight:800;margin:10px 0}
@@ -407,8 +429,18 @@ small{color:#68746d}
  </section>
  <section class="panel" id="estadistica-comparativas">
   <h2>📊 Comparativas</h2><p class="ayuda">Compara dos meses con datos guardados.</p>
-  <div class="estadisticas-filtros"><label>Periodo A <select id="estCompA" class="selector-periodo"></select></label><label>Periodo B <select id="estCompB" class="selector-periodo"></select></label></div>
+  <h3>Comparativa mensual</h3>
+  <div class="estadisticas-filtros comparativa-periodos">
+   <div class="comparativa-selector"><strong>Periodo A</strong><label>Año <select id="estCompAnoA" class="selector-periodo"></select></label><label>Mes <select id="estCompMesA" class="selector-periodo"></select></label></div>
+   <div class="comparativa-selector"><strong>Periodo B</strong><label>Año <select id="estCompAnoB" class="selector-periodo"></select></label><label>Mes <select id="estCompMesB" class="selector-periodo"></select></label></div>
+  </div>
   <div id="estCompResultado" class="estadisticas-comparacion">Selecciona dos periodos para compararlos.</div>
+  <h3 style="margin-top:24px">Comparativa anual</h3>
+  <div class="estadisticas-filtros comparativa-periodos">
+   <div class="comparativa-selector"><strong>Año A</strong><label>Año <select id="estCompAnualA" class="selector-periodo"></select></label></div>
+   <div class="comparativa-selector"><strong>Año B</strong><label>Año <select id="estCompAnualB" class="selector-periodo"></select></label></div>
+  </div>
+  <div id="estCompAnualResultado" class="estadisticas-comparacion">Selecciona dos años para compararlos.</div>
  </section>
 </div>
 <div class="vista" id="vista-pedidos">
@@ -1254,8 +1286,15 @@ function inicializarEstadisticas(){
   if(meses.some(x=>x.v===prevM))m.value=prevM;else m.value=claves.length?claves[0].slice(5):String(new Date().getMonth()+1).padStart(2,"0");
  };
  [["estCombAno","estCombMes"],["estMargAno","estMargMes"],["estTiendaAno","estTiendaMes"],["estCistAno","estCistMes"]].forEach(x=>preparar(...x));
- const periodos=claves.map(k=>{const [a,m]=k.split("-");return {v:k,t:new Date(+a,+m-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"})}});
- ["estCompA","estCompB"].forEach((id,i)=>{const el=$(id),old=el.value;el.innerHTML="";periodos.forEach(p=>{const o=document.createElement("option");o.value=p.v;o.textContent=p.t;el.appendChild(o)});if(periodos.some(p=>p.v===old))el.value=old;else if(periodos.length)el.value=periodos[Math.min(i,periodos.length-1)].v});
+ const prepararComparativa=(idAno,idMes,indice)=>{
+  const an=$(idAno),me=$(idMes),oldA=an.value,oldM=me.value;
+  an.innerHTML="";anos.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;an.appendChild(o)});
+  if(anos.includes(oldA))an.value=oldA;else if(anos.length)an.value=anos[Math.min(indice,anos.length-1)];
+  me.innerHTML="";meses.forEach(x=>{const o=document.createElement("option");o.value=x.v;o.textContent=x.t;me.appendChild(o)});
+  if(meses.some(x=>x.v===oldM))me.value=oldM;else me.value=claves.length?claves[0].slice(5):"01";
+ };
+ prepararComparativa("estCompAnoA","estCompMesA",0);prepararComparativa("estCompAnoB","estCompMesB",Math.min(1,Math.max(0,anos.length-1)));
+ ["estCompAnualA","estCompAnualB"].forEach((id,i)=>{const el=$(id),old=el.value;el.innerHTML="";anos.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;el.appendChild(o)});if(anos.includes(old))el.value=old;else if(anos.length)el.value=anos[Math.min(i,anos.length-1)]});
 }
 function pintarBarrasEstadisticas(id,items,formato){
  const el=$(id);el.innerHTML="";const max=Math.max(1,...items.map(x=>Math.abs(x.v)));
@@ -1310,9 +1349,38 @@ function pintarEstadisticas(){
  const kt=clave($("estTiendaAno"),$("estTiendaMes")),td=ventasTienda[kt],tr=td?(td.resumen||td.filas.reduce((r,f)=>({tienda:r.tienda+Number(f.tienda||0),efectivo:r.efectivo+Number(f.efectivo||0),tarjeta:r.tarjeta+Number(f.tarjeta||0)}),{tienda:0,efectivo:0,tarjeta:0})):null;
  $("estTiendaTotal").textContent=tr?euros(tr.tienda):"—";$("estTiendaEfectivo").textContent=tr?euros(tr.efectivo):"—";$("estTiendaTarjeta").textContent=tr?euros(tr.tarjeta):"—";pintarGraficoCircularDistribucion("estTiendaCircular",tr?[{n:"Efectivo",v:Number(tr.efectivo)||0},{n:"Tarjeta",v:Number(tr.tarjeta)||0}]:[],tr?Number(tr.efectivo||0)+Number(tr.tarjeta||0):0,euros,euros,"Ventas por forma de pago");pintarBarrasEstadisticas("estTiendaBarras",td?td.filas.map(f=>({n:String(f.dia).padStart(2,"0"),v:Number(f.tienda||0)})):[],euros);
  const kz=clave($("estCistAno"),$("estCistMes")),recep=Object.entries(entregasDiarias).filter(([k])=>k.startsWith(kz)),porTanque=Array(6).fill(0);recep.forEach(([,obj])=>Object.entries(obj||{}).forEach(([t,v])=>{const i=Number(t)-1;if(i>=0&&i<6)porTanque[i]+=Math.max(0,Number(v)||0)}));const ctotal=porTanque.reduce((a,b)=>a+b,0);$("estCistTotal").textContent=numeroES(ctotal)+" L";$("estCistDias").textContent=String(recep.filter(([,o])=>Object.values(o||{}).some(v=>Number(v)>0)).length);pintarGraficoCircularDistribucion("estCistCircular",porTanque.map((v,i)=>({n:"T"+(i+1),v})),ctotal,x=>numeroES(x)+" L",x=>numeroES(x)+" L","Litros recibidos");pintarBarrasEstadisticas("estCistBarras",porTanque.map((v,i)=>({n:"T"+(i+1),v})),x=>numeroES(x)+" L");
- const ca=$("estCompA").value,cb=$("estCompB").value,calc=k=>{const f=Object.keys(historial).filter(x=>x.startsWith(k)).map(x=>historial[x]);const litros=f.reduce((s,x)=>s+Number(x.total||0),0);const mk=Object.keys(margenesDiarios).filter(x=>x.startsWith(k));const margen=mk.reduce((s,x)=>s+Number(margenesDiarios[x]||0),0);const ti=ventasTienda[k];const tienda=ti?(ti.resumen?.tienda??ti.filas.reduce((s,x)=>s+Number(x.tienda||0),0)):null;return {litros,margen,tienda}};
- const A=calc(ca),B=calc(cb),diff=(x,y)=>y-x,pct=(x,y)=>x?((y-x)/x*100).toLocaleString("es-ES",{maximumFractionDigits:1})+"%":(y?"Nuevo":"—");
- $("estCompResultado").innerHTML="<strong>"+(ca||"—")+"</strong> frente a <strong>"+(cb||"—")+"</strong><br>Combustible: "+numeroES(A.litros)+" L → "+numeroES(B.litros)+" L ("+numeroES(diff(A.litros,B.litros))+" L; "+pct(A.litros,B.litros)+")<br>Margen: "+euros(A.margen)+" → "+euros(B.margen)+" ("+euros(diff(A.margen,B.margen))+"; "+pct(A.margen,B.margen)+")<br>Tienda: "+(A.tienda===null?"—":euros(A.tienda))+" → "+(B.tienda===null?"—":euros(B.tienda))+(A.tienda===null||B.tienda===null?"":" ("+euros(diff(A.tienda,B.tienda))+"; "+pct(A.tienda,B.tienda)+")");
+ const resumenPeriodo=(prefijo)=>{
+  const f=Object.keys(historial).filter(x=>x.startsWith(prefijo)).map(x=>historial[x]);
+  const productos=[{n:"E+",v:f.reduce((a,x)=>a+Number(x.e||0),0)},{n:"E+10",v:f.reduce((a,x)=>a+Number(x.e10||0),0)},{n:"G95",v:f.reduce((a,x)=>a+Number(x.g95||0),0)},{n:"G98",v:f.reduce((a,x)=>a+Number(x.g98||0),0)}];
+  const litros=productos.reduce((a,x)=>a+x.v,0);
+  const mk=Object.keys(margenesDiarios).filter(x=>x.startsWith(prefijo)),margen=mk.reduce((a,k)=>a+Number(margenesDiarios[k]||0),0);
+  const tiendaKeys=Object.keys(ventasTienda).filter(k=>k.startsWith(prefijo));
+  const tienda=tiendaKeys.reduce((a,k)=>{const t=ventasTienda[k];return a+(t?(t.resumen?.tienda??(t.filas||[]).reduce((z,x)=>z+Number(x.tienda||0),0)):0)},0);
+  const tieneTienda=tiendaKeys.some(k=>!!ventasTienda[k]);
+  return {productos,litros,margen,tienda,tieneTienda};
+ };
+ const formatoCambio=(a,b,unidad)=>{
+  const d=b-a,por=a?((d/a)*100).toLocaleString("es-ES",{maximumFractionDigits:1})+"%":(b>0?"Nuevo":a>0?"−100%":"0%");
+  return (d>0?"+":"")+ (unidad==="L"?numeroES(d)+" L":euros(d))+" ("+por+")";
+ };
+ const bloqueComparacion=(titulo,a,b)=>{
+  const max=Math.max(1,a.litros,b.litros);
+  const filas=[{n:"E+",a:a.productos[0].v,b:b.productos[0].v,u:"L"},{n:"E+10",a:a.productos[1].v,b:b.productos[1].v,u:"L"},{n:"G95",a:a.productos[2].v,b:b.productos[2].v,u:"L"},{n:"G98",a:a.productos[3].v,b:b.productos[3].v,u:"L"}];
+  const barras=filas.map(x=>'<div class="comparativa-fila"><strong>'+x.n+'</strong><div class="comparativa-barras"><span style="width:'+(x.a/max*100)+'%"></span><span style="width:'+(x.b/max*100)+'%"></span></div><small>'+numeroES(x.a)+' / '+numeroES(x.b)+' L</small></div>').join("");
+  const ganador=(x,y)=>x>y?"Periodo A":y>x?"Periodo B":"Empate";
+  return '<div class="comparativa-titulo">'+titulo+'</div><div class="comparativa-leyenda"><span><i class="comparativa-color a"></i>Periodo A</span><span><i class="comparativa-color b"></i>Periodo B</span></div>'+barras+
+   '<div class="comparativa-metricas"><div><small>Litros combustible</small><strong>'+numeroES(a.litros)+' → '+numeroES(b.litros)+' L</strong><span>'+formatoCambio(a.litros,b.litros,"L")+'</span></div><div><small>Margen</small><strong>'+euros(a.margen)+' → '+euros(b.margen)+'</strong><span>'+formatoCambio(a.margen,b.margen,"€")+'</span></div><div><small>Tienda</small><strong>'+(a.tieneTienda?euros(a.tienda):"Sin datos")+' → '+(b.tieneTienda?euros(b.tienda):"Sin datos")+'</strong><span>'+(a.tieneTienda&&b.tieneTienda?formatoCambio(a.tienda,b.tienda,"€"):"Comparación no disponible")+'</span></div></div><p class="comparativa-conclusion">Mejor resultado: combustible — '+ganador(a.litros,b.litros)+' · margen — '+ganador(a.margen,b.margen)+' · tienda — '+(a.tieneTienda&&b.tieneTienda?ganador(a.tienda,b.tienda):"sin datos suficientes")+'</p>';
+ };
+ const mesA=$("estCompAnoA").value+"-"+$("estCompMesA").value,mesB=$("estCompAnoB").value+"-"+$("estCompMesB").value;
+ $("estCompResultado").innerHTML=bloqueComparacion(mesA+" frente a "+mesB,resumenPeriodo(mesA),resumenPeriodo(mesB));
+ const anA=$("estCompAnualA").value,anB=$("estCompAnualB").value;
+ const anual=k=>{
+  const meses=[...new Set([...Object.keys(historial),...Object.keys(margenesDiarios),...Object.keys(ventasTienda)].filter(x=>x.startsWith(k+"-")).map(x=>x.slice(0,7)))];
+  const total={productos:[{n:"E+",v:0},{n:"E+10",v:0},{n:"G95",v:0},{n:"G98",v:0}],litros:0,margen:0,tienda:0,tieneTienda:false};
+  meses.forEach(m=>{const x=resumenPeriodo(m);x.productos.forEach((p,i)=>total.productos[i].v+=p.v);total.litros+=x.litros;total.margen+=x.margen;total.tienda+=x.tienda;total.tieneTienda=total.tieneTienda||x.tieneTienda});
+  return total;
+ };
+ $("estCompAnualResultado").innerHTML=bloqueComparacion("Año "+anA+" frente a "+anB,anual(anA),anual(anB));
 }
 $("fechaPedido").addEventListener("change",actualizarResumenPedido);
 $("guardarPedidoPrevisto").addEventListener("click",guardarPedidoPrevisto);
@@ -1333,7 +1401,7 @@ $("selectorMesTienda").addEventListener("change",()=>{diaTiendaSeleccionado=null
 $("selectorFechaMargen").addEventListener("change",pintarMargen);
 $("selectorMesMargen").addEventListener("change",pintarMargen);
 $("selectorAnoMargen").addEventListener("change",pintarMargen);
-["estCombAno","estCombMes","estMargAno","estMargMes","estTiendaAno","estTiendaMes","estCistAno","estCistMes","estCompA","estCompB"].forEach(id=>$(id).addEventListener("change",pintarEstadisticas));
+["estCombAno","estCombMes","estMargAno","estMargMes","estTiendaAno","estTiendaMes","estCistAno","estCistMes","estCompAnoA","estCompMesA","estCompAnoB","estCompMesB","estCompAnualA","estCompAnualB"].forEach(id=>$(id).addEventListener("change",pintarEstadisticas));
 document.querySelectorAll("[data-ir-estadistica]").forEach(b=>b.addEventListener("click",()=>{const destino=$("estadistica-"+b.dataset.irEstadistica);if(destino)destino.scrollIntoView({behavior:"smooth",block:"start"})}));
 pintarVistas();pintarTienda();pintarMargen();pintarPedido();if(pedidoPendiente){$("fechaPedido").value=pedidoPendiente.fecha;cantidadesPedido=pedidoPendiente.litros.slice();pintarPedido();actualizarEstadoPedidoGuardado()}
 pintarUltimaGuardada();
