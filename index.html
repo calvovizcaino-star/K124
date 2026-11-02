@@ -536,6 +536,13 @@ let diaTiendaSeleccionado=null;
 const CLAVE_SONDAS_ACTUALES="k124_sondas_actuales_v1";
 const CLAVE_SONDAS_FIJADAS="k124_sondas_fijadas_v1";
 let sondasFijadas=leerSondasFijadas();
+const CLAVE_SONDAS_PENDIENTES="k124_sondas_pendientes_recalculo_v1";
+let sondasPendientesRecalculo=localStorage.getItem(CLAVE_SONDAS_PENDIENTES)==="1";
+function marcarSondasPendientesRecalculo(valor){
+ sondasPendientesRecalculo=Boolean(valor);
+ if(sondasPendientesRecalculo)localStorage.setItem(CLAVE_SONDAS_PENDIENTES,"1");
+ else localStorage.removeItem(CLAVE_SONDAS_PENDIENTES);
+}
 const CLAVE_ENTREGAS_DIARIAS="k124_entregas_diarias_v1";
 let entregasDiarias=leerEntregasDiarias();
 const CLAVE_PEDIDO_PENDIENTE="k124_pedido_pendiente_v1";
@@ -841,8 +848,15 @@ function pintarSondasInicio(){
   const porcentaje=document.createElement("div");porcentaje.className="porcentaje";porcentaje.textContent=pct.toLocaleString("es-ES",{maximumFractionDigits:1})+"% ocupado";
   card.append(cabecera,nivel,barra,porcentaje);caja.appendChild(card);
  });
+ if(sondasPendientesRecalculo){
+  const accion=document.createElement("button");
+  accion.type="button";accion.textContent="RECALCULAR VENTAS";accion.className="btn-principal";
+  accion.style.width="100%";accion.style.marginTop="12px";
+  accion.addEventListener("click",recalcularVentasSondas);
+  caja.appendChild(accion);
+ }
 }
-async function editarSondaInicio(i){
+function editarSondaInicio(i){
  if(!sondasActuales||!sondasActuales[i])return;
  const tanque=sondasActuales[i];
  const entrada=prompt(`Corregir lectura del T${i+1} · ${tanque.producto}\nIntroduce los litros actuales:`,String(tanque.actual??""));
@@ -853,20 +867,24 @@ async function editarSondaInicio(i){
   alert("Introduce una lectura válida entre 0 y 30.000 litros.");
   return;
  }
- const lecturaAnterior=tanque.actual;
- const diferenciaAnterior=tanque.diferencia;
  tanque.actual=Math.round(valor);
  if(Number.isFinite(Number(tanque.anterior)))tanque.diferencia=Number(tanque.anterior)-tanque.actual;
  sondasFijadas[i]=true;
  guardarSondasFijadas();
  guardarSondasActuales();
+ marcarSondasPendientesRecalculo(true);
  cantidadesPedido=calcularPedidoInicial();
  pintarPedido();
+}
+async function recalcularVentasSondas(){
+ if(!sondasActuales||!sondasPendientesRecalculo)return;
+ const fechaTexto=sondasActuales[0]?.fecha;
+ const partes=(fechaTexto||"").split("/");
+ if(partes.length!==3){alert("No encuentro la fecha del parte para actualizar las ventas.");return;}
+ const keyDia=`${partes[2]}-${partes[1].padStart(2,"0")}-${partes[0].padStart(2,"0")}`;
+ const boton=$("sondasInicio")?.querySelector("button");
+ if(boton){boton.disabled=true;boton.textContent="RECALCULANDO…";}
  try{
-  const fechaTexto=sondasActuales[0]?.fecha||tanque.fecha;
-  const partes=(fechaTexto||"").split("/");
-  if(partes.length!==3)throw new Error("No encuentro la fecha del parte para actualizar las ventas.");
-  const keyDia=`${partes[2]}-${partes[1].padStart(2,"0")}-${partes[0].padStart(2,"0")}`;
   const ventas=await calcularVentasDesdeSondas(sondasActuales,keyDia);
   historial[keyDia]={...(historial[keyDia]||{}),fecha:fechaTexto,e:ventas.e,e10:ventas.e10,g95:ventas.g95,g98:ventas.g98,total:ventas.total};
   if(correccionesDiarias[keyDia]&&typeof correccionesDiarias[keyDia]==="object"){
@@ -874,16 +892,14 @@ async function editarSondaInicio(i){
    guardarCorreccionesDiarias();
   }
   guardar();
+  marcarSondasPendientesRecalculo(false);
   pintarVistas();
   pintarUltimo(filaConCorreccionDiaria({...historial[keyDia],key:keyDia}),fechaTexto,keyDia);
-  alert("Sonda corregida. El total vendido y las ventas por producto se han actualizado.");
- }catch(error){
-  tanque.actual=lecturaAnterior;
-  tanque.diferencia=diferenciaAnterior;
-  guardarSondasActuales();
-  cantidadesPedido=calcularPedidoInicial();
   pintarPedido();
-  alert(error.message||"No se pudieron recalcular las ventas con esta lectura.");
+  alert("Ventas recalculadas correctamente.");
+ }catch(error){
+  pintarPedido();
+  alert(error.message||"No se pudieron recalcular las ventas. La corrección de las sondas sigue guardada.");
  }
 }
 function fechaISOaUTC(v){if(!v)return null;const p=v.split("-").map(Number);return Date.UTC(p[0],p[1]-1,p[2])}
@@ -1233,6 +1249,7 @@ $("procesar").addEventListener("click",async()=>{
    resumenesAnuales[String(fechaParte.anio)]=anual;
    guardarResumenesAnuales();
   }
+  marcarSondasPendientesRecalculo(false);
   guardar();pintarVistas();pintarTienda();pintarUltimaGuardada();
   const ventaUltima=historial[keyDia]||leerVentaDia(texto);pintarUltimo(filaConCorreccionDiaria({...ventaUltima,key:keyDia}),fechaParte.texto,keyDia);
   mostrarMensaje((mensual.length?`Correcto: ${mensual.length} días de ventas de combustible importados. `:"Correcto: parte de "+fechaParte.texto+". ")+(tienda?`${tienda.filas.length} días de ventas de tienda importados.`:"Este TXT no contiene la tabla de ventas de tienda."),true);
