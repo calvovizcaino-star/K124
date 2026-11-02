@@ -1235,6 +1235,7 @@ $("botonMenuResumen").addEventListener("click",()=>{const menu=$("menuResumenDes
 $("abrirResumen").addEventListener("click",()=>{$("menuResumenDesplegable").classList.remove("abierto");$("botonMenuResumen").setAttribute("aria-expanded","false");pintarResumenGeneral();document.body.classList.add("resumen-abierto");window.scrollTo(0,0)});
 $("volverVentasDia").addEventListener("click",()=>{document.body.classList.remove("resumen-abierto");window.scrollTo(0,0)});
 function cerrarMenuHerramientas(){ $("menuResumenDesplegable").classList.remove("abierto"); $("botonMenuResumen").setAttribute("aria-expanded","false"); }
+document.addEventListener("click",e=>{if(!e.target.closest(".acceso-resumen"))cerrarMenuHerramientas();});
 function abrirHistorialCisternas(){
  const tbody=$("filasHistorialCisternas");tbody.innerHTML="";
  const fechas=Object.keys(entregasDiarias||{}).sort().reverse();let dias=0,registros=0;
