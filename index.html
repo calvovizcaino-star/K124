@@ -187,6 +187,18 @@ small{color:#68746d}
 .estadisticas-filtros label{display:flex;align-items:center;gap:6px;font-size:13px;color:#52647d}
 .estadisticas-kpis{margin:10px 0}
 .estadisticas-barras{display:grid;gap:10px;margin-top:14px}
+
+.estadisticas-circular{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;margin:18px 0 6px}
+.estadisticas-donut{width:210px;height:210px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;position:relative}
+.estadisticas-donut::before{content:"";position:absolute;inset:27px;border-radius:50%;background:#fff}
+.estadisticas-donut-centro{position:relative;z-index:1;text-align:center;color:#173b70;font-size:12px}
+.estadisticas-donut-centro strong{display:block;font-size:21px;margin-bottom:3px}
+.estadisticas-leyenda{display:grid;gap:11px;min-width:170px}
+.estadisticas-leyenda-item{display:grid;grid-template-columns:12px 1fr auto;gap:8px;align-items:center;font-size:14px}
+.estadisticas-leyenda-color{width:11px;height:11px;border-radius:3px}
+.estadisticas-leyenda-item strong{font-variant-numeric:tabular-nums}
+@media(max-width:420px){.estadisticas-circular{gap:16px}.estadisticas-donut{width:185px;height:185px}}
+
 .estadistica-barra{display:grid;grid-template-columns:minmax(75px,1fr) 2fr auto;gap:8px;align-items:center;font-size:13px}
 .estadistica-barra-fondo{height:10px;background:#edf2f7;border-radius:99px;overflow:hidden}
 .estadistica-barra-fondo span{display:block;height:100%;background:linear-gradient(90deg,#0879df,#ff7900);border-radius:99px}
@@ -374,7 +386,7 @@ small{color:#68746d}
  <section class="panel" id="estadistica-combustibles">
   <h2>⛽ Combustibles</h2><div class="estadisticas-filtros"><label>Año <select id="estCombAno" class="selector-periodo"></select></label><label>Mes <select id="estCombMes" class="selector-periodo"></select></label></div>
   <div class="resumen estadisticas-kpis"><div class="tarjeta"><span>Total vendido</span><strong id="estCombTotal">—</strong></div><div class="tarjeta"><span>Producto líder</span><strong id="estCombLider">—</strong></div></div>
-  <div id="estCombBarras" class="estadisticas-barras"></div>
+  <div id="estCombCircular" class="estadisticas-circular"></div>
  </section>
  <section class="panel" id="estadistica-margenes">
   <h2>💶 Márgenes</h2><div class="estadisticas-filtros"><label>Año <select id="estMargAno" class="selector-periodo"></select></label><label>Mes <select id="estMargMes" class="selector-periodo"></select></label></div>
@@ -1248,11 +1260,30 @@ function pintarBarrasEstadisticas(id,items,formato){
  if(!items.length){el.textContent="Sin datos registrados para este periodo.";return}
  items.forEach(x=>{const fila=document.createElement("div");fila.className="estadistica-barra";const nombre=document.createElement("span");nombre.textContent=x.n;const fondo=document.createElement("div");fondo.className="estadistica-barra-fondo";const barra=document.createElement("span");barra.style.width=Math.max(0,x.v)/max*100+"%";fondo.appendChild(barra);const valor=document.createElement("strong");valor.textContent=formato(x.v);fila.append(nombre,fondo,valor);el.appendChild(fila)});
 }
+function pintarGraficoCircularCombustibles(id,items,total){
+ const el=$(id);el.innerHTML="";
+ const colores=["#0879df","#ff7900","#19a974","#8b5cf6"];
+ if(!total){el.textContent="Sin ventas registradas para este periodo.";return}
+ let acumulado=0;
+ const tramos=items.map((x,i)=>{const inicio=acumulado;acumulado+=Math.max(0,x.v)/total*100;return colores[i]+" "+inicio.toFixed(2)+"% "+acumulado.toFixed(2)+"%"}).join(", ");
+ const graf=document.createElement("div");graf.className="estadisticas-donut";graf.style.background="conic-gradient("+tramos+")";
+ const centro=document.createElement("div");centro.className="estadisticas-donut-centro";
+ const cifra=document.createElement("strong");cifra.textContent=numeroES(total)+" L";
+ const etiqueta=document.createElement("span");etiqueta.textContent="Total vendido";
+ centro.append(cifra,etiqueta);graf.appendChild(centro);
+ const leyenda=document.createElement("div");leyenda.className="estadisticas-leyenda";
+ items.forEach((x,i)=>{const fila=document.createElement("div");fila.className="estadisticas-leyenda-item";
+ const punto=document.createElement("span");punto.className="estadisticas-leyenda-color";punto.style.background=colores[i];
+ const nombre=document.createElement("span");nombre.textContent=x.n;
+ const valor=document.createElement("strong");valor.textContent=numeroES(x.v)+" L · "+(x.v/total*100).toFixed(1).replace(".",",")+"%";
+ fila.append(punto,nombre,valor);leyenda.appendChild(fila)});
+ el.append(graf,leyenda);
+}
 function pintarEstadisticas(){
  const clave=(a,m)=>a.value+"-"+m.value;
  const kc=clave($("estCombAno"),$("estCombMes")),fc=Object.keys(historial).filter(k=>k.startsWith(kc)).map(k=>historial[k]);
  const prod=[{n:"E+",v:fc.reduce((s,x)=>s+Number(x.e||0),0)},{n:"E+10",v:fc.reduce((s,x)=>s+Number(x.e10||0),0)},{n:"G95",v:fc.reduce((s,x)=>s+Number(x.g95||0),0)},{n:"G98",v:fc.reduce((s,x)=>s+Number(x.g98||0),0)}];
- const total=prod.reduce((s,x)=>s+x.v,0);$("estCombTotal").textContent=numeroES(total)+" L";$("estCombLider").textContent=total?prod.slice().sort((a,b)=>b.v-a.v)[0].n:"—";pintarBarrasEstadisticas("estCombBarras",prod,x=>numeroES(x)+" L");
+ const total=prod.reduce((s,x)=>s+x.v,0);$("estCombTotal").textContent=numeroES(total)+" L";$("estCombLider").textContent=total?prod.slice().sort((a,b)=>b.v-a.v)[0].n:"—";pintarGraficoCircularCombustibles("estCombCircular",prod,total);
  const km=clave($("estMargAno"),$("estMargMes")),mks=Object.keys(margenesDiarios).filter(k=>k.startsWith(km)),mt=mks.reduce((s,k)=>s+Number(margenesDiarios[k]||0),0);$("estMargTotal").textContent=euros(mt);$("estMargMedia").textContent=mks.length?euros(mt/mks.length):"—";$("estMargDias").textContent=String(mks.length);pintarBarrasEstadisticas("estMargBarras",mks.sort().map(k=>({n:k.slice(8),v:Number(margenesDiarios[k]||0)})),euros);
  const kt=clave($("estTiendaAno"),$("estTiendaMes")),td=ventasTienda[kt],tr=td?(td.resumen||td.filas.reduce((r,f)=>({tienda:r.tienda+Number(f.tienda||0),efectivo:r.efectivo+Number(f.efectivo||0),tarjeta:r.tarjeta+Number(f.tarjeta||0)}),{tienda:0,efectivo:0,tarjeta:0})):null;
  $("estTiendaTotal").textContent=tr?euros(tr.tienda):"—";$("estTiendaEfectivo").textContent=tr?euros(tr.efectivo):"—";$("estTiendaTarjeta").textContent=tr?euros(tr.tarjeta):"—";pintarBarrasEstadisticas("estTiendaBarras",td?td.filas.map(f=>({n:String(f.dia).padStart(2,"0"),v:Number(f.tienda||0)})):[],euros);
