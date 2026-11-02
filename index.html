@@ -204,6 +204,7 @@ small{color:#68746d}
 .estadistica-barra-fondo span{display:block;height:100%;background:linear-gradient(90deg,#0879df,#ff7900);border-radius:99px}
 .estadisticas-comparacion{padding:13px;background:#f1f6fc;border-radius:11px;line-height:1.6;color:#173b70}
  
+.comparativa-subtitulo{display:block;text-align:center;font-size:20px;font-weight:800;color:#173b70;background:#eaf2fb;border:1px solid #cbdcf0;border-radius:12px;padding:12px 10px;margin:18px 0 14px;letter-spacing:.2px}
 .comparativa-periodos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .comparativa-selector{display:grid;gap:8px;padding:11px;background:#f4f8fd;border:1px solid #d8e5f5;border-radius:12px}
 .comparativa-selector>strong{color:#173b70}
@@ -429,13 +430,13 @@ small{color:#68746d}
  </section>
  <section class="panel" id="estadistica-comparativas">
   <h2>📊 Comparativas</h2><p class="ayuda">Compara dos meses con datos guardados.</p>
-  <h3>Comparativa mensual</h3>
+  <h3 class="comparativa-subtitulo">📅 Comparativa mensual</h3>
   <div class="estadisticas-filtros comparativa-periodos">
    <div class="comparativa-selector"><strong>Periodo A</strong><label>Año <select id="estCompAnoA" class="selector-periodo"></select></label><label>Mes <select id="estCompMesA" class="selector-periodo"></select></label></div>
    <div class="comparativa-selector"><strong>Periodo B</strong><label>Año <select id="estCompAnoB" class="selector-periodo"></select></label><label>Mes <select id="estCompMesB" class="selector-periodo"></select></label></div>
   </div>
   <div id="estCompResultado" class="estadisticas-comparacion">Selecciona dos periodos para compararlos.</div>
-  <h3 style="margin-top:24px">Comparativa anual</h3>
+  <h3 class="comparativa-subtitulo">📊 Comparativa anual</h3>
   <div class="estadisticas-filtros comparativa-periodos">
    <div class="comparativa-selector"><strong>Año A</strong><label>Año <select id="estCompAnualA" class="selector-periodo"></select></label></div>
    <div class="comparativa-selector"><strong>Año B</strong><label>Año <select id="estCompAnualB" class="selector-periodo"></select></label></div>
