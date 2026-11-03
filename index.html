@@ -583,7 +583,7 @@ async function k124StartCloud(){
   status.textContent="Modo consulta · datos compartidos";
  }catch(e){console.error("K124 carga:",e);status.textContent="Sin conexión · datos locales"}
  const {data:{session}}=await k124Supabase.auth.getSession();
- if(session&&session.user&&session.user.id==="f4e31388-8f1c-4169-b1b5-c0e5f6fb4a91"){k124Admin=true;status.textContent="Administrador · sincronizado";k124SetReadOnly(false)}
+ if(session&&session.user&&session.user.id==="9eb23d4b-3514-4685-9e32-5ecfe9de9b41"){k124Admin=true;status.textContent="Administrador · sincronizado";k124SetReadOnly(false)}
  else{k124Admin=false;k124SetReadOnly(true)}
  document.getElementById("k124CloudAccess").addEventListener("click",()=>{if(k124Admin){if(confirm("¿Quieres cerrar la sesión de administrador?"))k124Supabase.auth.signOut().then(()=>location.reload())}else k124ShowModal(true)});
  document.getElementById("k124CloudCancel").addEventListener("click",()=>k124ShowModal(false));
@@ -592,7 +592,7 @@ async function k124StartCloud(){
   const email=document.getElementById("k124CloudEmail").value.trim(),password=document.getElementById("k124CloudPassword").value;
   const {data,error}=await k124Supabase.auth.signInWithPassword({email,password});
   if(error){errorBox.textContent="No se pudo iniciar sesión. Comprueba el correo y la contraseña.";errorBox.style.display="block";return}
-  if(data.user.id!=="f4e31388-8f1c-4169-b1b5-c0e5f6fb4a91"){await k124Supabase.auth.signOut();errorBox.textContent="Esta cuenta no tiene permisos de administrador.";errorBox.style.display="block";return}
+  if(data.user.id!=="9eb23d4b-3514-4685-9e32-5ecfe9de9b41"){await k124Supabase.auth.signOut();errorBox.textContent="Esta cuenta no tiene permisos de administrador.";errorBox.style.display="block";return}
   k124Admin=true;k124SetReadOnly(false);k124ShowModal(false);
   const row=await k124FetchCloud();
   if(!row||!row.datos||!Object.keys(row.datos).length){await k124PushCloud();alert("K124 ya ha guardado en la nube los datos que tenías en este teléfono.");}
