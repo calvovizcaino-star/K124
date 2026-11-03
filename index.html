@@ -604,6 +604,62 @@ async function k124StartCloud(){
 }
 
 await k124StartCloud();
+ 
+// Notificaciones push K124: activación manual desde el dispositivo del administrador.
+const K124_PUSH_PUBLIC_KEY = "BB6MSLkrl-xjTdIN6rEKhVvcEw0mlY_SaD3beIcmrF9xRgRlQ6_BGrBF7NoHa8ualMRBqcvJzrK_Sd-9zTnSevU";
+function k124Base64UrlToBytes(value) {
+  const padding = "=".repeat((4 - value.length % 4) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  return Uint8Array.from(raw, char => char.charCodeAt(0));
+}
+function k124InstallPushButton() {
+  if (!k124Admin || document.getElementById("k124PushActivationButton")) return;
+  const button = document.createElement("button");
+  button.id = "k124PushActivationButton";
+  button.type = "button";
+  button.textContent = "🔔 Activar avisos K124";
+  button.style.cssText = "position:fixed;right:14px;bottom:82px;z-index:9999;background:#073b83;color:#fff;border:2px solid #fff;border-radius:13px;padding:12px 16px;font-weight:700;box-shadow:0 4px 16px #001b4460;";
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    const original = button.textContent;
+    button.textContent = "Preparando avisos…";
+    try {
+      const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      if (!standalone) throw new Error("Primero instala K124 en la pantalla de inicio del iPhone y ábrelo desde su icono.");
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) throw new Error("Este navegador no admite notificaciones push. Abre K124 desde su icono de la pantalla de inicio.");
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") throw new Error("No has permitido las notificaciones. Actívalas en los ajustes del iPhone.");
+      const registration = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+      await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: k124Base64UrlToBytes(K124_PUSH_PUBLIC_KEY)
+        });
+      }
+      const { data: sessionData } = await k124Supabase.auth.getSession();
+      if (!sessionData.session) throw new Error("La sesión de administrador ha caducado. Vuelve a entrar en K124.");
+      const { data, error } = await k124Supabase.functions.invoke("k124-notificaciones", {
+        body: { action: "subscribe", subscription: subscription.toJSON() }
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "No se pudo registrar este iPhone.");
+      button.textContent = "✓ Avisos K124 activados";
+      alert("¡Este iPhone ya está registrado para recibir avisos de K124!");
+    } catch (error) {
+      console.error("K124 push:", error);
+      alert(error?.message || "No se pudieron activar las notificaciones.");
+      button.textContent = original;
+    } finally {
+      button.disabled = false;
+    }
+  });
+  document.body.appendChild(button);
+}
+k124InstallPushButton();
+
 
 // Fuente oficial de litros: K124 Ventas (fila historico_ventas).
 const K124_VENTAS_URL=K124_SUPABASE_URL+"/rest/v1/k124_datos?id=eq.historico_ventas&select=datos,updated_at";
