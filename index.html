@@ -1458,17 +1458,23 @@ $("procesar").addEventListener("click",async()=>{
    guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();
   }
   let anadidos=0;
+  const fechaVentas=new Date(fechaParte.anio,fechaParte.mes-1,fechaParte.dia-1);
+  const fechaVentasObj={dia:fechaVentas.getDate(),mes:fechaVentas.getMonth()+1,anio:fechaVentas.getFullYear()};
+  const keyVentas=claveFecha(fechaVentasObj);
+  const textoFechaVentas=formatoClave(keyVentas);
   if(mensual.length){
    for(const f of mensual){historial[f.key]={fecha:f.fecha,e:f.e,e10:f.e10,g95:f.g95,g98:f.g98,total:f.total};anadidos++}
    if(lecturas){
-    const v=await calcularVentasDesdeSondas(sondasActuales,keyDia);
-    historial[keyDia]={fecha:fechaParte.texto,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};
+    const v=await calcularVentasDesdeSondas(lecturasCalculo||lecturas,keyVentas,tanquesCorregidosAyer);
+    historial[keyVentas]={...(historial[keyVentas]||{}),fecha:textoFechaVentas,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};
    }
   }else{
    let v;
-   if(lecturas)v=await calcularVentasDesdeSondas(sondasActuales,keyDia);
+   if(lecturas)v=await calcularVentasDesdeSondas(lecturasCalculo||lecturas,keyVentas,tanquesCorregidosAyer);
    else v=leerVentaDia(texto);
-   historial[keyDia]={fecha:fechaParte.texto,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};anadidos=1;
+   const fechaRegistro=lecturas?textoFechaVentas:fechaParte.texto;
+   const claveRegistro=lecturas?keyVentas:keyDia;
+   historial[claveRegistro]={...(historial[claveRegistro]||{}),fecha:fechaRegistro,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};anadidos=1;
   }
   const margen=leerMargenCarburante(texto);
   if(margen!==null&&!Object.prototype.hasOwnProperty.call(correccionesMargen,keyDia)){margenesDiarios[keyDia]=margen;guardarMargenesDiarios();}
@@ -1482,7 +1488,7 @@ $("procesar").addEventListener("click",async()=>{
   }
   marcarSondasPendientesRecalculo(false);
   guardar();pintarVistas();pintarTienda();pintarUltimaGuardada();
-  const ventaUltima=historial[keyDia]||leerVentaDia(texto);pintarUltimo(filaConCorreccionDiaria({...ventaUltima,key:keyDia}),fechaParte.texto,keyDia);
+  const claveUltima=lecturas?keyVentas:keyDia;const ventaUltima=historial[claveUltima]||leerVentaDia(texto);pintarUltimo(filaConCorreccionDiaria({...ventaUltima,key:claveUltima}),lecturas?textoFechaVentas:fechaParte.texto,claveUltima);
   mostrarMensaje((mensual.length?`Correcto: ${mensual.length} días de ventas de combustible importados. `:"Correcto: parte de "+fechaParte.texto+". ")+(tienda?`${tienda.filas.length} días de ventas de tienda importados.`:"Este TXT no contiene la tabla de ventas de tienda."),true);
   $("ultimoPanel").scrollIntoView({behavior:"smooth",block:"start"});
  }catch(e){mostrarMensaje(e.message||"No se ha podido leer el archivo.")}
