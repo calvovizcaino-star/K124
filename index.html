@@ -252,7 +252,7 @@ small{color:#68746d}
 @media(min-width:600px){.sondas-pedido{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 
-#k124CloudAccess{position:relative;z-index:60;margin-top:12px;padding:9px 15px;border:1px solid #ffffff70;border-radius:10px;background:#ffffff16;color:#fff;font-size:13px;font-weight:700;box-shadow:0 3px 10px #001b4433}
+
 #k124CloudStatus{font-size:11px;display:block;opacity:.9;margin-top:2px}
 #k124CloudModal{position:fixed;inset:0;z-index:2000;background:#061a38b8;display:none;align-items:center;justify-content:center;padding:18px}
 #k124CloudModal.visible{display:flex}
@@ -263,7 +263,7 @@ small{color:#68746d}
 #k124CloudModal .acciones{display:flex;gap:9px}
 #k124CloudModal .acciones button{flex:1}
 body.k124-lector .solo-admin{display:none!important}
-@media(max-width:520px){#k124CloudAccess{padding:9px 13px;font-size:13px}header{padding-left:18px;padding-right:18px}}
+@media(max-width:520px){header{padding-left:18px;padding-right:18px}}
 
 </style>
 </head>
@@ -286,10 +286,12 @@ body.k124-lector .solo-admin{display:none!important}
 </div>
 
  <h1>K124<span class="sl"> SL</span></h1><p>Control del parte diario</p>
- <button type="button" id="k124CloudAccess">Entrar como administrador</button><span id="k124CloudStatus" aria-live="polite" style="display:none"></span>
+ <span id="k124CloudStatus" aria-live="polite" style="display:none"></span>
  <div class="acceso-resumen">
   <button type="button" class="boton-menu-resumen" id="botonMenuResumen" aria-label="Abrir menú" aria-expanded="false">☰</button>
   <div class="menu-resumen-desplegable" id="menuResumenDesplegable">
+   <button type="button" class="opcion-menu-resumen" id="k124CloudAccess"><span>🔐</span> Entrar como administrador</button>
+   <div class="menu-separador"></div>
    <button type="button" class="opcion-menu-resumen" id="abrirResumen"><span>📊</span> Resumen general</button>
    <button type="button" class="opcion-menu-resumen" data-menu-action="estadisticas"><span>📈</span> Estadísticas</button>
    <button type="button" class="opcion-menu-resumen" data-menu-action="cisternas"><span>🚛</span> Historial de cisternas</button>
