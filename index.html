@@ -251,10 +251,41 @@ small{color:#68746d}
 .pedido-aviso-max.visible{display:block}
 @media(min-width:600px){.sondas-pedido{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
+
+#k124CloudAccess{position:absolute;left:14px;top:13px;z-index:60;padding:9px 11px;border:1px solid #ffffff70;border-radius:10px;background:#ffffff16;color:#fff;font-size:12px}
+#k124CloudStatus{font-size:11px;display:block;opacity:.9;margin-top:2px}
+#k124CloudModal{position:fixed;inset:0;z-index:2000;background:#061a38b8;display:none;align-items:center;justify-content:center;padding:18px}
+#k124CloudModal.visible{display:flex}
+#k124CloudModal .caja{width:min(100%,420px);background:#fff;border-radius:17px;padding:20px;box-shadow:0 16px 50px #0005}
+#k124CloudModal h2{color:#073b83;margin:0 0 8px}
+#k124CloudModal p{font-size:13px;color:#64748b;line-height:1.45}
+#k124CloudModal input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;margin:6px 0 10px;font-size:16px}
+#k124CloudModal .acciones{display:flex;gap:9px}
+#k124CloudModal .acciones button{flex:1}
+body.k124-lector .solo-admin{display:none!important}
+@media(max-width:520px){#k124CloudAccess{top:12px;left:10px;padding:7px 8px;font-size:11px}header{padding-left:75px;padding-right:75px}}
+
 </style>
 </head>
 <body>
 <header>
+
+<button type="button" id="k124CloudAccess">🔒 Acceso administrador<span id="k124CloudStatus">Modo consulta</span></button>
+<div id="k124CloudModal" role="dialog" aria-modal="true">
+ <div class="caja">
+  <h2>Acceso administrador K124</h2>
+  <p>Inicia sesión con tu cuenta de Supabase para gestionar los partes y modificar los datos.</p>
+  <form id="k124CloudForm">
+   <label for="k124CloudEmail">Correo electrónico</label>
+   <input id="k124CloudEmail" type="email" autocomplete="username" required value="calvovizcaino@gmail.com">
+   <label for="k124CloudPassword">Contraseña</label>
+   <input id="k124CloudPassword" type="password" autocomplete="current-password" required>
+   <div id="k124CloudError" class="mensaje" role="alert"></div>
+   <div class="acciones"><button type="button" class="secundario" id="k124CloudCancel">Cancelar</button><button type="submit" class="principal">Entrar</button></div>
+  </form>
+ </div>
+</div>
+
  <h1>K124<span class="sl"> SL</span></h1><p>Control del parte diario</p>
  <div class="acceso-resumen">
   <button type="button" class="boton-menu-resumen" id="botonMenuResumen" aria-label="Abrir menú" aria-expanded="false">☰</button>
@@ -514,7 +545,63 @@ Selecciona la fecha prevista para completar el mensaje.</div>
   </div>
  </div>
 </div>
-<script>
+<script type="module">
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const K124_SUPABASE_URL="https://nkbmgtffoxwyfbeznver.supabase.co";
+const K124_SUPABASE_KEY="sb_publishable_8uTKDFTAGjEDxghIYDG5ng_OT8L26R_";
+const k124Supabase=createClient(K124_SUPABASE_URL,K124_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const K124_KEYS=["k124_historial_sondas_v2","k124_margen_diario_v1","k124_resumen_anual_v1","k124_correcciones_mensuales_v1","k124_correcciones_diarias_v1","k124_ventas_tienda_v1","k124_sondas_actuales_v1","k124_sondas_fijadas_v1","k124_valores_sondas_fijadas_v1","k124_sondas_pendientes_recalculo_v1","k124_entregas_diarias_v1","k124_pedido_pendiente_v1"];
+let k124Admin=false,k124Hydrating=false,k124LastCloudUpdate=null,k124SaveTimer=null;
+const k124ReadLocal=()=>Object.fromEntries(K124_KEYS.map(k=>[k,localStorage.getItem(k)]).filter(x=>x[1]!==null));
+const k124ApplyLocal=data=>{k124Hydrating=true;try{for(const k of K124_KEYS){if(data&&Object.prototype.hasOwnProperty.call(data,k)&&data[k]!==null)localStorage.setItem(k,data[k]);else localStorage.removeItem(k)}}finally{k124Hydrating=false}};
+async function k124FetchCloud(){const {data,error}=await k124Supabase.from("k124_datos").select("datos,updated_at").eq("id","principal").maybeSingle();if(error)throw error;return data}
+async function k124PushCloud(){if(!k124Admin||k124Hydrating)return;const payload={id:"principal",datos:k124ReadLocal(),updated_at:new Date().toISOString()};const {error}=await k124Supabase.from("k124_datos").upsert(payload,{onConflict:"id"});if(error){console.error("K124 sync:",error);const st=document.getElementById("k124CloudStatus");if(st)st.textContent="Error al sincronizar";return}k124LastCloudUpdate=payload.updated_at;const st=document.getElementById("k124CloudStatus");if(st)st.textContent="Administrador · sincronizado"}
+function k124ScheduleSave(){if(!k124Admin||k124Hydrating)return;clearTimeout(k124SaveTimer);k124SaveTimer=setTimeout(()=>k124PushCloud(),700)}
+const k124OriginalSet=Storage.prototype.setItem;
+Storage.prototype.setItem=function(key,value){const result=k124OriginalSet.call(this,key,value);if(this===localStorage&&K124_KEYS.includes(String(key)))k124ScheduleSave();return result};
+const k124OriginalRemove=Storage.prototype.removeItem;
+Storage.prototype.removeItem=function(key){const result=k124OriginalRemove.call(this,key);if(this===localStorage&&K124_KEYS.includes(String(key)))k124ScheduleSave();return result};
+function k124SetReadOnly(readOnly){
+ document.body.classList.toggle("k124-lector",readOnly);
+ const allowedButtons=new Set(["k124CloudAccess","botonMenuResumen","abrirResumen","volverResumen","volverDesdeResumen","cerrarHistorialCisternas"]);
+ document.querySelectorAll("button").forEach(b=>{if(!allowedButtons.has(b.id)&&!b.classList.contains("pestana")&&!b.hasAttribute("data-menu-action"))b.disabled=readOnly});
+ document.querySelectorAll('input,textarea').forEach(el=>{el.disabled=readOnly});
+ document.querySelectorAll("select").forEach(el=>{el.disabled=readOnly});
+ document.querySelectorAll('[data-menu-action="copias"],[data-menu-action="configuracion"],[data-menu-action="pedidos"]').forEach(el=>{el.disabled=readOnly});
+}
+function k124ShowModal(show){document.getElementById("k124CloudModal").classList.toggle("visible",show)}
+async function k124RefreshUI(){if(typeof pintarVistas==="function"){pintarVistas();pintarTienda();pintarMargen();pintarPedido();pintarUltimaGuardada()}}
+async function k124StartCloud(){
+ const status=document.getElementById("k124CloudStatus");
+ try{
+  const row=await k124FetchCloud();
+  if(row&&row.datos&&Object.keys(row.datos).length){k124ApplyLocal(row.datos);k124LastCloudUpdate=row.updated_at||null}
+  status.textContent="Modo consulta · datos compartidos";
+ }catch(e){console.error("K124 carga:",e);status.textContent="Sin conexión · datos locales"}
+ const {data:{session}}=await k124Supabase.auth.getSession();
+ if(session&&session.user&&session.user.id==="f4e31388-8f1c-4169-b1b5-c0e5f6fb4a91"){k124Admin=true;status.textContent="Administrador · sincronizado";k124SetReadOnly(false)}
+ else{k124Admin=false;k124SetReadOnly(true)}
+ document.getElementById("k124CloudAccess").addEventListener("click",()=>{if(k124Admin){if(confirm("¿Quieres cerrar la sesión de administrador?"))k124Supabase.auth.signOut().then(()=>location.reload())}else k124ShowModal(true)});
+ document.getElementById("k124CloudCancel").addEventListener("click",()=>k124ShowModal(false));
+ document.getElementById("k124CloudForm").addEventListener("submit",async e=>{
+  e.preventDefault();const errorBox=document.getElementById("k124CloudError");errorBox.style.display="none";
+  const email=document.getElementById("k124CloudEmail").value.trim(),password=document.getElementById("k124CloudPassword").value;
+  const {data,error}=await k124Supabase.auth.signInWithPassword({email,password});
+  if(error){errorBox.textContent="No se pudo iniciar sesión. Comprueba el correo y la contraseña.";errorBox.style.display="block";return}
+  if(data.user.id!=="f4e31388-8f1c-4169-b1b5-c0e5f6fb4a91"){await k124Supabase.auth.signOut();errorBox.textContent="Esta cuenta no tiene permisos de administrador.";errorBox.style.display="block";return}
+  k124Admin=true;k124SetReadOnly(false);k124ShowModal(false);
+  const row=await k124FetchCloud();
+  if(!row||!row.datos||!Object.keys(row.datos).length){await k124PushCloud();alert("K124 ya ha guardado en la nube los datos que tenías en este teléfono.");}
+  else{k124ApplyLocal(row.datos);await k124RefreshUI();alert("Datos compartidos cargados correctamente.");}
+  document.getElementById("k124CloudPassword").value="";
+ });
+ // Actualización periódica para que las pantallas de consulta reciban los cambios.
+ setInterval(async()=>{if(k124Admin)return;try{const row=await k124FetchCloud();if(row&&row.updated_at&&row.updated_at!==k124LastCloudUpdate){k124LastCloudUpdate=row.updated_at;k124ApplyLocal(row.datos||{});await k124RefreshUI()}}catch(e){console.warn("K124 actualización:",e)}},12000);
+}
+
+await k124StartCloud();
+
 const $=id=>document.getElementById(id);
 const archivo=$("archivo"), mensaje=$("mensaje");
 const CLAVE="k124_historial_sondas_v2";
