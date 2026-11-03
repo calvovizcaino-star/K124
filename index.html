@@ -570,6 +570,8 @@ function k124SetReadOnly(readOnly){
  document.querySelectorAll("select").forEach(el=>{el.disabled=readOnly});
  document.querySelectorAll('[data-menu-action="copias"],[data-menu-action="configuracion"],[data-menu-action="pedidos"]').forEach(el=>{el.disabled=readOnly});
 }
+document.addEventListener("click",e=>{if(k124Admin)return;const el=e.target.closest("button,input,textarea");if(!el)return;const allowed=el.id==="k124CloudAccess"||el.classList.contains("pestana")||["botonMenuResumen","abrirResumen","volverResumen","volverDesdeResumen","cerrarHistorialCisternas"].includes(el.id)||(el.hasAttribute("data-menu-action")&&["estadisticas","cisternas"].includes(el.dataset.menuAction));if(!allowed){e.preventDefault();e.stopImmediatePropagation()}},true);
+document.addEventListener("change",e=>{if(k124Admin)return;if(e.target.matches("select"))return;e.stopImmediatePropagation();e.preventDefault()},true);
 function k124ShowModal(show){document.getElementById("k124CloudModal").classList.toggle("visible",show)}
 async function k124RefreshUI(){if(typeof pintarVistas==="function"){pintarVistas();pintarTienda();pintarMargen();pintarPedido();pintarUltimaGuardada()}}
 async function k124StartCloud(){
