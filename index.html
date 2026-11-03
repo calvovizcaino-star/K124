@@ -609,6 +609,7 @@ await k124StartCloud();
 const K124_VENTAS_URL=K124_SUPABASE_URL+"/rest/v1/k124_datos?id=eq.historico_ventas&select=datos,updated_at";
 let k124VentasHistorico={};
 let k124VentasActualizado=null;
+let k124VistasListas=false;
 let k124VentasError=null;
 async function cargarVentasOficiales(){
  try{
@@ -620,7 +621,7 @@ async function cargarVentasOficiales(){
   k124VentasActualizado=rows[0].updated_at||null;
   k124VentasError=null;
  }catch(e){k124VentasError=e;console.warn("K124 Ventas:",e)}
- if(typeof pintarVistas==="function"&&document.getElementById("selectorAno")?.value)pintarVistas();
+ if(k124VistasListas&&document.getElementById("selectorAno")?.value)pintarVistas();
 }
 await cargarVentasOficiales();
 setInterval(cargarVentasOficiales,60000);
@@ -1616,7 +1617,7 @@ $("selectorMesMargen").addEventListener("change",pintarMargen);
 $("selectorAnoMargen").addEventListener("change",pintarMargen);
 ["estCombAno","estCombMes","estMargAno","estMargMes","estTiendaAno","estTiendaMes","estCistAno","estCistMes","estCompAnoA","estCompMesA","estCompAnoB","estCompMesB","estCompAnualA","estCompAnualB"].forEach(id=>$(id).addEventListener("change",pintarEstadisticas));
 document.querySelectorAll("[data-ir-estadistica]").forEach(b=>b.addEventListener("click",()=>{const destino=$("estadistica-"+b.dataset.irEstadistica);if(destino)destino.scrollIntoView({behavior:"smooth",block:"start"})}));
-pintarVistas();pintarTienda();pintarMargen();pintarPedido();if(pedidoPendiente){$("fechaPedido").value=pedidoPendiente.fecha;cantidadesPedido=pedidoPendiente.litros.slice();pintarPedido();actualizarEstadoPedidoGuardado()}
+pintarVistas();k124VistasListas=true;pintarTienda();pintarMargen();pintarPedido();if(pedidoPendiente){$("fechaPedido").value=pedidoPendiente.fecha;cantidadesPedido=pedidoPendiente.litros.slice();pintarPedido();actualizarEstadoPedidoGuardado()}
 pintarUltimaGuardada();
 </script>
 </body>
