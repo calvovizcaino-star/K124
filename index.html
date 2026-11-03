@@ -568,7 +568,7 @@ function k124SetReadOnly(readOnly){
  const allowedButtons=new Set(["k124CloudAccess","botonMenuResumen","abrirResumen","volverResumen","volverDesdeResumen","cerrarHistorialCisternas"]);
  document.querySelectorAll("button").forEach(b=>{if(!b.closest("#k124CloudModal")&&!allowedButtons.has(b.id)&&!b.classList.contains("pestana")&&!b.hasAttribute("data-menu-action"))b.disabled=readOnly});
  document.querySelectorAll('input,textarea').forEach(el=>{if(!el.closest("#k124CloudModal"))el.disabled=readOnly});
- document.querySelectorAll("select").forEach(el=>{el.disabled=readOnly});
+ // Los desplegables son filtros de consulta; deben seguir activos en modo solo lectura.
  document.querySelectorAll('[data-menu-action="copias"],[data-menu-action="configuracion"],[data-menu-action="pedidos"]').forEach(el=>{el.disabled=readOnly});
 }
 document.addEventListener("click",e=>{if(k124Admin)return;const el=e.target.closest("button,input,textarea");if(!el)return;if(el.closest("#k124CloudModal"))return;const allowed=el.id==="k124CloudAccess"||el.classList.contains("pestana")||["botonMenuResumen","abrirResumen","volverResumen","volverDesdeResumen","cerrarHistorialCisternas"].includes(el.id)||(el.hasAttribute("data-menu-action")&&["estadisticas","cisternas"].includes(el.dataset.menuAction));if(!allowed){e.preventDefault();e.stopImmediatePropagation()}},true);
