@@ -560,9 +560,9 @@ async function k124FetchCloud(){const {data,error}=await k124Supabase.from("k124
 async function k124PushCloud(){if(!k124Admin||k124Hydrating)return;const payload={id:"principal",datos:k124ReadLocal(),updated_at:new Date().toISOString()};const {error}=await k124Supabase.from("k124_datos").upsert(payload,{onConflict:"id"});if(error){console.error("K124 sync:",error);const st=document.getElementById("k124CloudStatus");if(st)st.textContent="Error al sincronizar";return}k124LastCloudUpdate=payload.updated_at;const st=document.getElementById("k124CloudStatus");if(st)st.textContent="Administrador · sincronizado"}
 function k124ScheduleSave(){if(!k124Admin||k124Hydrating)return;clearTimeout(k124SaveTimer);k124SaveTimer=setTimeout(()=>k124PushCloud(),700)}
 const k124OriginalSet=Storage.prototype.setItem;
-Storage.prototype.setItem=function(key,value){if(this===localStorage&&K124_KEYS.includes(String(key))&&!k124Admin)return;const result=k124OriginalSet.call(this,key,value);if(this===localStorage&&K124_KEYS.includes(String(key)))k124ScheduleSave();return result};
+Storage.prototype.setItem=function(key,value){if(this===localStorage&&K124_KEYS.includes(String(key))&&!k124Admin&&!k124Hydrating)return;const result=k124OriginalSet.call(this,key,value);if(this===localStorage&&K124_KEYS.includes(String(key)))k124ScheduleSave();return result};
 const k124OriginalRemove=Storage.prototype.removeItem;
-Storage.prototype.removeItem=function(key){if(this===localStorage&&K124_KEYS.includes(String(key))&&!k124Admin)return;const result=k124OriginalRemove.call(this,key);if(this===localStorage&&K124_KEYS.includes(String(key)))k124ScheduleSave();return result};
+Storage.prototype.removeItem=function(key){if(this===localStorage&&K124_KEYS.includes(String(key))&&!k124Admin&&!k124Hydrating)return;const result=k124OriginalRemove.call(this,key);if(this===localStorage&&K124_KEYS.includes(String(key)))k124ScheduleSave();return result};
 function k124SetReadOnly(readOnly){
  document.body.classList.toggle("k124-lector",readOnly);
  const allowedButtons=new Set(["k124CloudAccess","botonMenuResumen","abrirResumen","volverResumen","volverDesdeResumen","cerrarHistorialCisternas"]);
