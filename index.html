@@ -536,6 +536,14 @@ let diaTiendaSeleccionado=null;
 const CLAVE_SONDAS_ACTUALES="k124_sondas_actuales_v1";
 const CLAVE_SONDAS_FIJADAS="k124_sondas_fijadas_v1";
 let sondasFijadas=leerSondasFijadas();
+const CLAVE_VALORES_SONDAS_FIJADAS="k124_valores_sondas_fijadas_v1";
+let valoresSondasFijadas=leerValoresSondasFijadas();
+function leerValoresSondasFijadas(){
+ try{const d=JSON.parse(localStorage.getItem(CLAVE_VALORES_SONDAS_FIJADAS)||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}
+}
+function guardarValoresSondasFijadas(){
+ localStorage.setItem(CLAVE_VALORES_SONDAS_FIJADAS,JSON.stringify(valoresSondasFijadas));
+}
 const CLAVE_SONDAS_PENDIENTES="k124_sondas_pendientes_recalculo_v1";
 let sondasPendientesRecalculo=localStorage.getItem(CLAVE_SONDAS_PENDIENTES)==="1";
 function marcarSondasPendientesRecalculo(valor){
@@ -800,8 +808,9 @@ function guardarSondasFijadas(){
 function aplicarSondasFijadas(lecturas){
  if(!lecturas)return lecturas;
  return lecturas.map((t,i)=>{
-  if(!sondasFijadas[i]||!sondasActuales||!sondasActuales[i])return t;
-  const actual=Number(sondasActuales[i].actual);
+  if(!sondasFijadas[i])return t;
+  const guardada=Number(valoresSondasFijadas[i]);
+  const actual=Number.isFinite(guardada)?guardada:Number(sondasActuales?.[i]?.actual);
   return Number.isFinite(actual)?{...t,actual,diferencia:Number(t.anterior)-actual,editada:true}:t;
  });
 }
@@ -870,7 +879,9 @@ function editarSondaInicio(i){
  tanque.actual=Math.round(valor);
  if(Number.isFinite(Number(tanque.anterior)))tanque.diferencia=Number(tanque.anterior)-tanque.actual;
  sondasFijadas[i]=true;
+ valoresSondasFijadas[i]=tanque.actual;
  guardarSondasFijadas();
+ guardarValoresSondasFijadas();
  guardarSondasActuales();
  marcarSondasPendientesRecalculo(true);
  cantidadesPedido=calcularPedidoInicial();
@@ -1231,12 +1242,12 @@ $("procesar").addEventListener("click",async()=>{
   if(mensual.length){
    for(const f of mensual){historial[f.key]={fecha:f.fecha,e:f.e,e10:f.e10,g95:f.g95,g98:f.g98,total:f.total};anadidos++}
    if(lecturas){
-    const v=await calcularVentasDesdeSondas(lecturas,keyDia);
+    const v=await calcularVentasDesdeSondas(sondasActuales,keyDia);
     historial[keyDia]={fecha:fechaParte.texto,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};
    }
   }else{
    let v;
-   if(lecturas)v=await calcularVentasDesdeSondas(lecturas,keyDia);
+   if(lecturas)v=await calcularVentasDesdeSondas(sondasActuales,keyDia);
    else v=leerVentaDia(texto);
    historial[keyDia]={fecha:fechaParte.texto,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};anadidos=1;
   }
