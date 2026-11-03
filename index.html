@@ -1294,9 +1294,6 @@ function pintarResumenAnual(a){
   const valor=document.createElement("span");valor.className="mes-anual-valor";
   if(m.vendidos!==null&&m.vendidos!==undefined){
    valor.append(document.createTextNode(fmt(m.vendidos)+" L "));
-   const estado=document.createElement("span");estado.className="estado";
-   estado.textContent=m.previstos!==null&&m.vendidos>=m.previstos?"✅":"⭕️";
-   valor.appendChild(estado);
    if(m.corregido){const marca=document.createElement("span");marca.className="etiqueta-corregido";marca.textContent="CORREGIDO";valor.appendChild(marca)}
   }else valor.textContent="Pendiente";
   cab.append(nombre,valor);item.appendChild(cab);
