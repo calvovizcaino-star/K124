@@ -252,7 +252,7 @@ small{color:#68746d}
 @media(min-width:600px){.sondas-pedido{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
 
-#k124CloudAccess{position:absolute;left:14px;top:13px;z-index:60;padding:9px 11px;border:1px solid #ffffff70;border-radius:10px;background:#ffffff16;color:#fff;font-size:12px}
+#k124CloudAccess{position:relative;z-index:60;margin-top:12px;padding:9px 15px;border:1px solid #ffffff70;border-radius:10px;background:#ffffff16;color:#fff;font-size:13px;font-weight:700;box-shadow:0 3px 10px #001b4433}
 #k124CloudStatus{font-size:11px;display:block;opacity:.9;margin-top:2px}
 #k124CloudModal{position:fixed;inset:0;z-index:2000;background:#061a38b8;display:none;align-items:center;justify-content:center;padding:18px}
 #k124CloudModal.visible{display:flex}
@@ -263,14 +263,13 @@ small{color:#68746d}
 #k124CloudModal .acciones{display:flex;gap:9px}
 #k124CloudModal .acciones button{flex:1}
 body.k124-lector .solo-admin{display:none!important}
-@media(max-width:520px){#k124CloudAccess{top:12px;left:10px;padding:7px 8px;font-size:11px}header{padding-left:75px;padding-right:75px}}
+@media(max-width:520px){#k124CloudAccess{padding:9px 13px;font-size:13px}header{padding-left:18px;padding-right:18px}}
 
 </style>
 </head>
 <body>
 <header>
 
-<button type="button" id="k124CloudAccess">🔒 Acceso administrador<span id="k124CloudStatus">Modo consulta</span></button>
 <div id="k124CloudModal" role="dialog" aria-modal="true">
  <div class="caja">
   <h2>Acceso administrador K124</h2>
@@ -287,6 +286,7 @@ body.k124-lector .solo-admin{display:none!important}
 </div>
 
  <h1>K124<span class="sl"> SL</span></h1><p>Control del parte diario</p>
+ <button type="button" id="k124CloudAccess">Entrar como administrador</button><span id="k124CloudStatus" aria-live="polite" style="display:none"></span>
  <div class="acceso-resumen">
   <button type="button" class="boton-menu-resumen" id="botonMenuResumen" aria-label="Abrir menú" aria-expanded="false">☰</button>
   <div class="menu-resumen-desplegable" id="menuResumenDesplegable">
