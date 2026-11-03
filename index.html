@@ -805,11 +805,12 @@ function pedirLitrosDescarga(pendientes,prellenado={}){
   const primero=contenedor.querySelector("input");if(primero)primero.focus();
  });
 }
-async function calcularVentasDesdeSondas(lecturas,keyDia){
+async function calcularVentasDesdeSondas(lecturas,keyDia,tanquesSinPregunta=[]){
  const entrega={...(entregasDiarias[keyDia]||{})};
  const productos={e:0,e10:0,g95:0,g98:0};
  const mapa={1:"e",2:"g95",3:"e10",4:"e",5:"g98",6:"g95"};
- const pendientes=lecturas.filter(t=>Number(t.anterior)-Number(t.actual)<=0&&!Object.prototype.hasOwnProperty.call(entrega,t.tanque));
+ tanquesSinPregunta.forEach(n=>{if(!Object.prototype.hasOwnProperty.call(entrega,n))entrega[n]=0;});
+ const pendientes=lecturas.filter(t=>Number(t.anterior)-Number(t.actual)<=0&&!tanquesSinPregunta.includes(t.tanque)&&!Object.prototype.hasOwnProperty.call(entrega,t.tanque));
  if(pendientes.length){
   const prellenado={};
   if(pedidoPendiente&&pedidoAplicableAFecha(keyDia,pedidoPendiente.fecha)){
@@ -1097,7 +1098,7 @@ async function recalcularVentasSondas(){
  const boton=$("sondasInicio")?.querySelector("button");
  if(boton){boton.disabled=true;boton.textContent="RECALCULANDO…";}
  try{
-  const ventas=await calcularVentasDesdeSondas(sondasActuales,keyDia);
+  const ventas=await calcularVentasDesdeSondas(lecturasCalculo||sondasActuales,keyDia,tanquesCorregidosAyer);
   historial[keyDia]={...(historial[keyDia]||{}),fecha:fechaTexto,e:ventas.e,e10:ventas.e10,g95:ventas.g95,g98:ventas.g98,total:ventas.total};
   if(correccionesDiarias[keyDia]&&typeof correccionesDiarias[keyDia]==="object"){
    correccionesDiarias[keyDia]={e:ventas.e,e10:ventas.e10,g95:ventas.g95,g98:ventas.g98};
@@ -1430,7 +1431,32 @@ $("procesar").addEventListener("click",async()=>{
   const mensual=leerTablaMensual(texto,fechaParte);
   const lecturas=leerLecturasTanques(texto,fechaParte.texto);
   const keyDia=claveFecha(fechaParte);
-  if(lecturas){sondasActuales=aplicarSondasFijadas(lecturas);guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();}
+  const sondasDiaAnterior=sondasActuales?JSON.parse(JSON.stringify(sondasActuales)):null;
+  const tanquesCorregidosAyer=[];
+  let lecturasCalculo=lecturas;
+  if(lecturas&&sondasDiaAnterior&&sondasDiaAnterior[0]?.fecha){
+   const p=sondasDiaAnterior[0].fecha.split("/");
+   if(p.length===3){
+    const fechaAnterior=new Date(Number(p[2]),Number(p[1])-1,Number(p[0]));
+    const fechaActual=new Date(fechaParte.anio,fechaParte.mes-1,fechaParte.dia);
+    const diferenciaDias=Math.round((fechaActual-fechaAnterior)/86400000);
+    if(diferenciaDias===1){
+     lecturasCalculo=lecturas.map((t,i)=>{
+      if(!sondasFijadas[i])return t;
+      const lecturaAyer=Number(sondasDiaAnterior[i]?.actual);
+      if(!Number.isFinite(lecturaAyer))return t;
+      tanquesCorregidosAyer.push(t.tanque);
+      return {...t,anterior:lecturaAyer};
+     });
+    }
+   }
+  }
+  if(lecturas){
+   sondasActuales=lecturas;
+   tanquesCorregidosAyer.forEach(n=>{sondasFijadas[n-1]=false;delete valoresSondasFijadas[n];});
+   if(tanquesCorregidosAyer.length){guardarSondasFijadas();guardarValoresSondasFijadas();}
+   guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();
+  }
   let anadidos=0;
   if(mensual.length){
    for(const f of mensual){historial[f.key]={fecha:f.fecha,e:f.e,e10:f.e10,g95:f.g95,g98:f.g98,total:f.total};anadidos++}
