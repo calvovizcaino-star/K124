@@ -658,7 +658,33 @@ function k124InstallPushButton() {
   });
   document.body.appendChild(button);
 
-
+  const testButton = document.createElement("button");
+  testButton.id = "k124PushTestButton";
+  testButton.type = "button";
+  testButton.textContent = "📲 Enviar prueba";
+  testButton.style.cssText = "position:fixed;right:14px;bottom:142px;z-index:9999;background:#fff;color:#073b83;border:2px solid #073b83;border-radius:13px;padding:10px 15px;font-weight:700;box-shadow:0 4px 16px #001b4460;";
+  testButton.addEventListener("click", async () => {
+    testButton.disabled = true;
+    testButton.textContent = "Enviando…";
+    try {
+      const { data, error } = await k124Supabase.functions.invoke("k124-notificaciones", {
+        body: { action: "test" }
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "No se pudo enviar la prueba.");
+      const failures = (data.resultados || []).filter(item => item.error || item.kind === "gone");
+      if (failures.length) throw new Error("El servidor respondió, pero el envío no se completó: " + JSON.stringify(failures));
+      alert("Solicitud de notificación enviada. Comprueba si ha llegado al iPhone.");
+      testButton.textContent = "✓ Prueba enviada";
+    } catch (error) {
+      console.error("K124 push test:", error);
+      alert(error?.message || "Error al enviar la prueba.");
+      testButton.textContent = "📲 Enviar prueba";
+    } finally {
+      testButton.disabled = false;
+    }
+  });
+  document.body.appendChild(testButton);
 }
 k124InstallPushButton();
 
