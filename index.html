@@ -1418,26 +1418,20 @@ $("procesar").addEventListener("click",async()=>{
     const fechaAnterior=new Date(Number(p[2]),Number(p[1])-1,Number(p[0]));
     const fechaActual=new Date(fechaParte.anio,fechaParte.mes-1,fechaParte.dia);
     const diferenciaDias=Math.round((fechaActual-fechaAnterior)/86400000);
-    if(diferenciaDias===1){
+    if(diferenciaDias===0||diferenciaDias===1){
      lecturasCalculo=lecturas.map((t,i)=>{
-      const valorGuardado=valoresSondasFijadas[i];
+      const valorGuardado=valoresSondasFijadas[i]??valoresSondasFijadas[i+1];
       const tieneValorFijado=valorGuardado!==undefined&&valorGuardado!==null&&valorGuardado!=="";
       if(!sondasFijadas[i]&&!tieneValorFijado)return t;
       const valorFijado=Number(valorGuardado);
       const lecturaGuardada=Number(sondasDiaAnterior[i]?.actual);
-      const lecturaAyer=Number.isFinite(valorFijado)?valorFijado:lecturaGuardada;
+      const lecturaAyer=tieneValorFijado&&Number.isFinite(valorFijado)?valorFijado:lecturaGuardada;
       if(!Number.isFinite(lecturaAyer))return t;
       tanquesCorregidosAyer.push(t.tanque);
       return {...t,anterior:lecturaAyer};
      });
     }
    }
-  }
-  if(lecturas){
-   sondasActuales=lecturas;
-   tanquesCorregidosAyer.forEach(n=>{sondasFijadas[n-1]=false;delete valoresSondasFijadas[n-1];});
-   if(tanquesCorregidosAyer.length){guardarSondasFijadas();guardarValoresSondasFijadas();}
-   guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();
   }
   let anadidos=0;
   const fechaVentas=new Date(fechaParte.anio,fechaParte.mes-1,fechaParte.dia-1);
@@ -1457,6 +1451,16 @@ $("procesar").addEventListener("click",async()=>{
    const fechaRegistro=lecturas?textoFechaVentas:fechaParte.texto;
    const claveRegistro=lecturas?keyVentas:keyDia;
    historial[claveRegistro]={...(historial[claveRegistro]||{}),fecha:fechaRegistro,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};anadidos=1;
+  }
+  if(lecturas){
+   sondasActuales=lecturas;
+   tanquesCorregidosAyer.forEach(n=>{
+    sondasFijadas[n-1]=false;
+    delete valoresSondasFijadas[n-1];
+    delete valoresSondasFijadas[n];
+   });
+   if(tanquesCorregidosAyer.length){guardarSondasFijadas();guardarValoresSondasFijadas();}
+   guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();
   }
   const margen=leerMargenCarburante(texto);
   if(margen!==null&&!Object.prototype.hasOwnProperty.call(correccionesMargen,keyDia)){margenesDiarios[keyDia]=margen;guardarMargenesDiarios();}
