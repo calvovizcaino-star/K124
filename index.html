@@ -1440,8 +1440,7 @@ $("procesar").addEventListener("click",async()=>{
    }
   }
   let anadidos=0;
-  const fechaVentas=new Date(fechaParte.anio,fechaParte.mes-1,fechaParte.dia-1);
-  const fechaVentasObj={dia:fechaVentas.getDate(),mes:fechaVentas.getMonth()+1,anio:fechaVentas.getFullYear()};
+  const fechaVentasObj={dia:fechaParte.dia,mes:fechaParte.mes,anio:fechaParte.anio};
   const keyVentas=claveFecha(fechaVentasObj);
   const textoFechaVentas=formatoClave(keyVentas);
   if(mensual.length){
