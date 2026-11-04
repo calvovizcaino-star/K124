@@ -892,13 +892,17 @@ function leerTablaTienda(texto,fechaParte){
  let resumen=null;
  for(let i=inicio+1;i<lineas.length;i++){
   const l=lineas[i].trim();
-  if(/^Tienda\s+Efectivo\s+Tarjeta\s+Suma/i.test(l))continue;
+  if(!l)continue;
   const total=l.match(/^Mes\.?\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)/i);
   if(total){resumen={tienda:parseIntES(total[1]),efectivo:parseIntES(total[2]),tarjeta:parseIntES(total[3]),suma:parseIntES(total[4])};break}
-  const m=l.match(/^(\d{1,2})\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)/);
-  if(!m)continue;
-  const dia=+m[1];if(dia<1||dia>31)continue;
-  filas.push({dia,tienda:parseIntES(m[2]),efectivoManana:parseIntES(m[3]),efectivoTarde:parseIntES(m[4]),efectivo:parseIntES(m[5]),tarjetaManana:parseIntES(m[6]),tarjetaTarde:parseIntES(m[7]),tarjeta:parseIntES(m[8]),total:parseIntES(m[9])});
+  // Columnas: día, día semana, tienda, efectivo mañana/tarde/suma,
+  // tarjeta mañana/tarde/suma y total del día.
+  const partes=l.split(/\s+/);
+  if(partes.length<10||!/^\d{1,2}$/.test(partes[0])||! /^[A-Za-zÁÉÍÓÚáéíóúñÑ]$/.test(partes[1]))continue;
+  const dia=Number(partes[0]);
+  const nums=partes.slice(2,10).map(parseIntES);
+  if(dia<1||dia>31||nums.length!==8||nums.some(n=>!Number.isFinite(n)))continue;
+  filas.push({dia,tienda:nums[0],efectivoManana:nums[1],efectivoTarde:nums[2],efectivo:nums[3],tarjetaManana:nums[4],tarjetaTarde:nums[5],tarjeta:nums[6],total:nums[7]});
  }
  if(!filas.length)return null;
  const fecha={anio:fechaParte.anio,mes:fechaParte.mes};
