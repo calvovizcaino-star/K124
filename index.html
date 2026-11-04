@@ -1480,7 +1480,7 @@ $("procesar").addEventListener("click",async()=>{
   marcarSondasPendientesRecalculo(false);
   guardar();pintarVistas();pintarTienda();pintarUltimaGuardada();
   const claveUltima=lecturas?keyVentas:keyDia;const ventaUltima=historial[claveUltima]||leerVentaDia(texto);pintarUltimo(filaConCorreccionDiaria({...ventaUltima,key:claveUltima}),lecturas?textoFechaVentas:fechaParte.texto,claveUltima);
-  mostrarMensaje((mensual.length?`Correcto: ${mensual.length} días de ventas de combustible importados. `:"Correcto: parte de "+fechaParte.texto+". ")+(tienda?`${tienda.filas.length} días de ventas de tienda importados.`:"Este TXT no contiene la tabla de ventas de tienda."),true);
+  mostrarMensaje((lecturas?`Correcto: ventas de carburante calculadas para ${fechaParte.texto}. `:mensual.length?`Parte de ${fechaParte.texto} leído. La tabla de lecturas de sondas no se ha importado como ventas. `:`Correcto: parte de ${fechaParte.texto}. `)+(tienda?`${tienda.filas.length} días de ventas de tienda importados.`:"Este TXT no contiene la tabla de ventas de tienda."),true);
   $("ultimoPanel").scrollIntoView({behavior:"smooth",block:"start"});
  }catch(e){mostrarMensaje(e.message||"No se ha podido leer el archivo.")}
 });
