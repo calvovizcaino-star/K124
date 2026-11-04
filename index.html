@@ -1447,7 +1447,9 @@ $("procesar").addEventListener("click",async()=>{
     if(diferenciaDias===1){
      lecturasCalculo=lecturas.map((t,i)=>{
       if(!sondasFijadas[i])return t;
-      const lecturaAyer=Number(sondasDiaAnterior[i]?.actual);
+      const valorFijado=Number(valoresSondasFijadas[i]);
+      const lecturaGuardada=Number(sondasDiaAnterior[i]?.actual);
+      const lecturaAyer=Number.isFinite(valorFijado)?valorFijado:lecturaGuardada;
       if(!Number.isFinite(lecturaAyer))return t;
       tanquesCorregidosAyer.push(t.tanque);
       return {...t,anterior:lecturaAyer};
