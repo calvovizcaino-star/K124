@@ -613,8 +613,19 @@ function k124Base64UrlToBytes(value) {
   const raw = atob(base64);
   return Uint8Array.from(raw, char => char.charCodeAt(0));
 }
-function k124InstallPushButton() {
+async function k124InstallPushButton() {
   if (!k124Admin || document.getElementById("k124PushActivationButton")) return;
+  // Si este iPhone ya tiene una suscripción push activa, no mostramos el botón.
+  try {
+    if ("serviceWorker" in navigator && "PushManager" in window && "Notification" in window && Notification.permission === "granted") {
+      const registration = await navigator.serviceWorker.getRegistration("./") || await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+      await navigator.serviceWorker.ready;
+      const existingSubscription = await registration.pushManager.getSubscription();
+      if (existingSubscription) return;
+    }
+  } catch (error) {
+    console.warn("K124: no se pudo comprobar el estado de los avisos:", error);
+  }
   const button = document.createElement("button");
   button.id = "k124PushActivationButton";
   button.type = "button";
@@ -646,18 +657,16 @@ function k124InstallPushButton() {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || "No se pudo registrar este iPhone.");
-      button.textContent = "✓ Avisos K124 activados";
       alert("¡Este iPhone ya está registrado para recibir avisos de K124!");
+      button.remove();
     } catch (error) {
       console.error("K124 push:", error);
       alert(error?.message || "No se pudieron activar las notificaciones.");
       button.textContent = original;
-    } finally {
       button.disabled = false;
     }
   });
   document.body.appendChild(button);
-
 }
 k124InstallPushButton();
 
