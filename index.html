@@ -1459,6 +1459,13 @@ $("procesar").addEventListener("click",async()=>{
     }
    }
   }
+  if(lecturas&&keyDia==="2026-11-03"){
+   const t1=lecturas.find(t=>t.tanque===1);
+   if(t1&&Number(t1.anterior)===1637&&Number(t1.actual)===14666){
+    lecturasCalculo=lecturasCalculo.map(t=>t.tanque===1?{...t,anterior:16373}:t);
+    if(!tanquesCorregidosAyer.includes(1))tanquesCorregidosAyer.push(1);
+   }
+  }
   let anadidos=0;
   const fechaVentas=new Date(fechaParte.anio,fechaParte.mes-1,fechaParte.dia-1);
   const fechaVentasObj={dia:fechaVentas.getDate(),mes:fechaVentas.getMonth()+1,anio:fechaVentas.getFullYear()};
