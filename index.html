@@ -1446,8 +1446,10 @@ $("procesar").addEventListener("click",async()=>{
     const diferenciaDias=Math.round((fechaActual-fechaAnterior)/86400000);
     if(diferenciaDias===1){
      lecturasCalculo=lecturas.map((t,i)=>{
-      if(!sondasFijadas[i])return t;
-      const valorFijado=Number(valoresSondasFijadas[i]);
+      const valorGuardado=valoresSondasFijadas[i];
+      const tieneValorFijado=valorGuardado!==undefined&&valorGuardado!==null&&valorGuardado!=="";
+      if(!sondasFijadas[i]&&!tieneValorFijado)return t;
+      const valorFijado=Number(valorGuardado);
       const lecturaGuardada=Number(sondasDiaAnterior[i]?.actual);
       const lecturaAyer=Number.isFinite(valorFijado)?valorFijado:lecturaGuardada;
       if(!Number.isFinite(lecturaAyer))return t;
@@ -1459,7 +1461,7 @@ $("procesar").addEventListener("click",async()=>{
   }
   if(lecturas){
    sondasActuales=lecturas;
-   tanquesCorregidosAyer.forEach(n=>{sondasFijadas[n-1]=false;delete valoresSondasFijadas[n];});
+   tanquesCorregidosAyer.forEach(n=>{sondasFijadas[n-1]=false;delete valoresSondasFijadas[n-1];});
    if(tanquesCorregidosAyer.length){guardarSondasFijadas();guardarValoresSondasFijadas();}
    guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();
   }
