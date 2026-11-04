@@ -1447,8 +1447,24 @@ $("procesar").addEventListener("click",async()=>{
    const v=await calcularVentasDesdeSondas(lecturasCalculo||lecturas,keyDia,tanquesCorregidosAyer);
    historial[keyDia]={...(historial[keyDia]||{}),fecha:fechaParte.texto,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};
    anadidos=1;
-   // La tabla mensual marcada como lecturas de sondas no contiene ventas; no se importa como histórico.
-   if(keyDia==="2026-11-03")delete historial["2026-11-02"];
+   // Para el parte del 03/11/2026, reconstruir también las ventas del día 02
+   // usando las sondas reales del día 01 y las lecturas "Anterior" del día 03 (día 02).
+   if(keyDia==="2026-11-03"){
+    const lecturasDia2=lecturasCalculo||lecturas;
+    const sondasDia1={1:17077,2:17536,3:3311,4:18699,5:3526,6:9540};
+    const mapaProductos={1:"e",2:"g95",3:"e10",4:"e",5:"g98",6:"g95"};
+    const ventasDia2={e:0,e10:0,g95:0,g98:0};
+    for(const t of lecturasDia2){
+     const anteriorDia1=sondasDia1[t.tanque];
+     const lecturaDia2=Number(t.anterior);
+     if(!Number.isFinite(anteriorDia1)||!Number.isFinite(lecturaDia2)||anteriorDia1<lecturaDia2){
+      throw new Error("No se pueden reconstruir las ventas del día 02/11: revisa las sondas del día 1 y la lectura anterior del día 3.");
+     }
+     ventasDia2[mapaProductos[t.tanque]]+=anteriorDia1-lecturaDia2;
+    }
+    ventasDia2.total=ventasDia2.e+ventasDia2.e10+ventasDia2.g95+ventasDia2.g98;
+    historial["2026-11-02"]={...(historial["2026-11-02"]||{}),fecha:"02/11/2026",...ventasDia2};
+   }
   }else if(mensual.length){
    // No importar como ventas los valores de la tabla "Datos realizados por lecturas Sondas".
    anadidos=0;
