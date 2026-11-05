@@ -806,12 +806,23 @@ async function calcularVentasDesdeSondas(lecturas,keyDia,tanquesSinPregunta=[]){
  tanquesSinPregunta.forEach(n=>{if(!Object.prototype.hasOwnProperty.call(entrega,n))entrega[n]=0;});
  const pendientes=lecturas.filter(t=>Number(t.anterior)-Number(t.actual)<=0&&!tanquesSinPregunta.includes(t.tanque)&&!Object.prototype.hasOwnProperty.call(entrega,t.tanque));
  if(pendientes.length){
-  const prellenado={};
-  if(pedidoPendiente&&pedidoAplicableAFecha(keyDia,pedidoPendiente.fecha)){
-   pendientes.forEach(t=>{const v=Number(pedidoPendiente.litros?.[t.tanque-1]||0);if(v>0)prellenado[t.tanque]=v});
+  const pedidoLlegado=pedidoPendiente&&pedidoAplicableAFecha(keyDia,pedidoPendiente.fecha)?pedidoPendiente:null;
+  if(pedidoLlegado){
+   const totalPedido=(pedidoLlegado.litros||[]).reduce((a,b)=>a+Number(b||0),0);
+   const detallePedido=(pedidoLlegado.litros||[]).map((v,i)=>`Tanque ${i+1}: ${litrosFmt(v)} L`).join("\\n");
+   const variacion=confirm("🚛 HA LLEGADO EL PEDIDO GUARDADO\\n\\nPedido previsto para el "+fechaPedidoTextoDesde(pedidoLlegado.fecha)+"\\nTotal: "+litrosFmt(totalPedido)+" L\\n\\n"+detallePedido+"\\n\\n¿Ha habido alguna variación en las cantidades recibidas?\\n\\nAceptar: revisar y modificar litros.\\nCancelar: utilizar directamente las cantidades guardadas.");
+   if(variacion){
+    const prellenado={};
+    pendientes.forEach(t=>{prellenado[t.tanque]=Number(pedidoLlegado.litros?.[t.tanque-1]||0)});
+    const introducidos=await pedirLitrosDescarga(pendientes,prellenado);
+    for(const t of pendientes)entrega[t.tanque]=introducidos[t.tanque];
+   }else{
+    for(const t of pendientes)entrega[t.tanque]=Number(pedidoLlegado.litros?.[t.tanque-1]||0);
+   }
+  }else{
+   const introducidos=await pedirLitrosDescarga(pendientes,{});
+   for(const t of pendientes)entrega[t.tanque]=introducidos[t.tanque];
   }
-  const introducidos=await pedirLitrosDescarga(pendientes,prellenado);
-  for(const t of pendientes)entrega[t.tanque]=introducidos[t.tanque];
  }
  for(const t of lecturas){
   const recibidos=Number(entrega[t.tanque]||0);
