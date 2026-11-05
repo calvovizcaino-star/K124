@@ -344,6 +344,21 @@ header::after{height:20px}
 }
 
 
+
+/* Ajuste final: marca centrada y de mayor tamaño */
+header{align-items:center!important;text-align:center!important;padding-left:70px!important;padding-right:70px!important}
+header h1{font-size:clamp(68px,17vw,96px)!important;letter-spacing:-3px!important;line-height:.98!important}
+header p{font-size:clamp(12px,3.2vw,15px)!important;letter-spacing:2px!important;margin-top:12px!important;padding:7px 15px!important}
+@media(max-width:520px){
+ header{min-height:174px!important;padding:20px 58px 39px!important}
+ header h1{font-size:clamp(66px,18vw,82px)!important;letter-spacing:-2.5px!important}
+ header p{font-size:11px!important;letter-spacing:1.8px!important;margin-top:10px!important}
+}
+@media(min-width:700px){
+ header{min-height:205px!important}
+ header h1{font-size:96px!important}
+}
+
 </style>
 </head>
 <body>
