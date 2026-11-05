@@ -747,6 +747,7 @@ const CLAVE_PEDIDOS_HISTORICO="k124_pedidos_historico_v1";
 let pedidosHistorico=leerPedidosHistorico();
 function leerPedidosHistorico(){try{const d=JSON.parse(localStorage.getItem(CLAVE_PEDIDOS_HISTORICO)||"[]");return Array.isArray(d)?d:[]}catch(e){return []}}
 function guardarPedidosHistorico(){localStorage.setItem(CLAVE_PEDIDOS_HISTORICO,JSON.stringify(pedidosHistorico))}
+if(pedidoPendiente&&!pedidosHistorico.some(p=>p.guardado===pedidoPendiente.guardado)){pedidosHistorico.unshift({...pedidoPendiente,id:pedidoPendiente.guardado||"pendiente-anterior"});guardarPedidosHistorico()}
 const OBJETIVOS_TANQUES=[21000,25000,5000,26000,4000,13000];
 const NOMBRES_TANQUES=[
  "Diésel e+ TANQUE 1","Efitec 95 TANQUE 2","Diésel E+10 TANQUE 3",
