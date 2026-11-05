@@ -359,6 +359,42 @@ header p{font-size:clamp(12px,3.2vw,15px)!important;letter-spacing:2px!important
  header h1{font-size:96px!important}
 }
 
+
+/* Cabecera final: logotipo dominante y descriptor en la base */
+header{
+ min-height:214px!important;
+ padding:12px 52px 43px!important;
+ align-items:center!important;
+ justify-content:space-between!important;
+ text-align:center!important;
+}
+header h1{
+ width:100%!important;
+ max-width:calc(100vw - 28px)!important;
+ white-space:nowrap!important;
+ font-size:clamp(72px,22vw,100px)!important;
+ line-height:.92!important;
+ letter-spacing:-3.5px!important;
+ margin:0 auto!important;
+}
+header h1 .sl{font-size:.4em!important;margin-left:2px!important}
+header p{
+ margin:0 auto!important;
+ position:relative!important;
+ font-size:clamp(11px,3.2vw,15px)!important;
+ letter-spacing:2px!important;
+ padding:6px 14px!important;
+}
+@media(max-width:520px){
+ header{min-height:202px!important;padding:12px 48px 42px!important}
+ header h1{font-size:clamp(72px,22vw,88px)!important;letter-spacing:-3px!important}
+ header p{font-size:11px!important;letter-spacing:1.8px!important;padding:6px 12px!important}
+}
+@media(min-width:700px){
+ header{min-height:230px!important}
+ header h1{font-size:100px!important}
+}
+
 </style>
 </head>
 <body>
