@@ -266,6 +266,10 @@ small{color:#68746d}
 body.k124-lector .solo-admin{display:none!important}
 @media(max-width:520px){header{padding-left:18px;padding-right:18px}}
 
+/* Ajuste de cabecera sin emblema lateral */
+header{padding-left:78px}
+@media(max-width:520px){header{padding-left:62px}}
+@media(min-width:700px){header{padding-left:max(78px,calc((100% - 760px)/2))}}
 /* Nueva identidad visual K124 SL inspirada en el banner aprobado */
 header{
  min-height:176px;padding:25px 78px 42px 104px;
@@ -359,18 +363,6 @@ header::after{height:20px}
  </div>
 </div>
 
- <div class="marca-repsol" aria-label="Identidad Repsol">
-  <svg viewBox="0 0 100 100" role="img" aria-hidden="true">
-   <defs>
-    <linearGradient id="rNaranja" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffd02f"/><stop offset="1" stop-color="#ff7900"/></linearGradient>
-    <linearGradient id="rRojo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff3a28"/><stop offset="1" stop-color="#c8102e"/></linearGradient>
-   </defs>
-   <circle cx="50" cy="50" r="43" fill="url(#rNaranja)"/>
-   <path d="M8 42 Q50 29 92 42 L92 58 Q50 72 8 58Z" fill="#fff"/>
-   <path d="M8 58 Q50 72 92 58 Q83 91 50 93 Q17 91 8 58Z" fill="url(#rRojo)"/>
-   <path d="M8 42 Q50 29 92 42 L92 58 Q50 72 8 58Z" fill="#fff"/>
-  </svg>
- </div>
  <h1>K124<span class="sl"> SL</span></h1><p>GESTIÓN INTEGRAL</p>
  <span id="k124CloudStatus" aria-live="polite" style="display:none"></span>
  <div class="acceso-resumen">
