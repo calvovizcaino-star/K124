@@ -1165,10 +1165,10 @@ function guardarPedidoPrevisto(){
 function pintarHistoricoPedidos(){
  const caja=$("historicoPedidos");if(!caja)return;
  const fechasDescarga=Object.keys(entregasDiarias).filter(fecha=>{const v=entregasDiarias[fecha];return v&&typeof v==="object"&&Object.values(v).some(litros=>Number(litros)>0)});
- const meses=[...new Set([...pedidosHistorico.map(p=>String(p.fecha||"").slice(0,7)),...fechasDescarga.map(f=>f.slice(0,7))].filter(m=>/^\\d{4}-\\d{2}$/.test(m)))].sort().reverse();
+ const meses=[...new Set([...pedidosHistorico.map(p=>String(p.fecha||"").slice(0,7)),...fechasDescarga.map(f=>f.slice(0,7))].filter(m=>/^\d{4}-\d{2}$/.test(m)))].sort().reverse();
  const mesActual=$("filtroHistoricoPedidos")?.value;
  const mesSeleccionado=meses.includes(mesActual)?mesActual:(meses[0]||"");
- const etiquetaMes=m=>{const [a,mm]=m.split("-").map(Number);return new Date(a,mm-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}).replace(/^\\w/,c=>c.toUpperCase())};
+ const etiquetaMes=m=>{const [a,mm]=m.split("-").map(Number);return new Date(a,mm-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}).replace(/^\w/,c=>c.toUpperCase())};
  let html='<label style="display:block;font-size:13px;font-weight:700;margin:8px 0">Mes y año <select id="filtroHistoricoPedidos" class="selector-periodo" style="display:block;width:100%;margin-top:6px"><option value="">Selecciona un mes</option>'+meses.map(m=>'<option value="'+m+'"'+(m===mesSeleccionado?' selected':'')+'>'+etiquetaMes(m)+'</option>').join("")+'</select></label>';
  const pedidosMes=pedidosHistorico.map((p,i)=>({...p,_indice:i})).filter(p=>String(p.fecha||"").slice(0,7)===mesSeleccionado).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
  const descargasMes=fechasDescarga.filter(f=>f.slice(0,7)===mesSeleccionado).sort().reverse();
