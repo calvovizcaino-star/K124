@@ -866,13 +866,13 @@ function leerResumenAnual(texto,anio){
 
 function leerVentasTienda(){try{const d=JSON.parse(localStorage.getItem(CLAVE_TIENDA)||"{}");return d&&typeof d==="object"?d:{}}catch(e){return {}}}
 function guardarVentasTienda(){localStorage.setItem(CLAVE_TIENDA,JSON.stringify(ventasTienda))}
-function leerMargenCarburante(texto){
+function leerMargenCarburante(texto,fechaParte){
  const bloque=texto.match(/Margen\s+Carburante([\s\S]*?)(?=\n\s*Salidas\s+Entradas|$)/i);
- if(!bloque)return null;
+ if(!bloque||!fechaParte||!Number.isFinite(Number(fechaParte.dia)))return null;
  const lineas=bloque[1].split(/\r?\n/);
  for(const linea of lineas){
-  const m=linea.trim().match(/^Suma\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)/i);
-  if(m)return parseIntES(m[5]);
+  const m=linea.trim().match(/^(\d{1,2})\s+[A-Za-zÁÉÍÓÚáéíóúñÑ]\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s+(-?[\d.,]+)\s*$/i);
+  if(m&&Number(m[1])===Number(fechaParte.dia))return parseIntES(m[6]);
  }
  return null;
 }
@@ -1544,7 +1544,7 @@ $("procesar").addEventListener("click",async()=>{
    if(tanquesCorregidosAyer.length){guardarSondasFijadas();guardarValoresSondasFijadas();}
    guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();
   }
-  const margen=leerMargenCarburante(texto);
+  const margen=leerMargenCarburante(texto,fechaParte);
   if(margen!==null&&!Object.prototype.hasOwnProperty.call(correccionesMargen,keyDia)){margenesDiarios[keyDia]=margen;guardarMargenesDiarios();}
   else if(Object.prototype.hasOwnProperty.call(correccionesMargen,keyDia)){margenesDiarios[keyDia]=Number(correccionesMargen[keyDia]);guardarMargenesDiarios();}
   const tienda=leerTablaTienda(texto,fechaParte);
