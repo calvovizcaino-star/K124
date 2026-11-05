@@ -499,6 +499,11 @@ Selecciona la fecha prevista para completar el mensaje.</div>
   <div class="mensaje" id="estadoCopiarPedido" role="status"></div>
  </section>
  <section class="panel">
+  <h2>🗂️ Histórico de pedidos y descargas</h2>
+  <p class="ayuda">Consulta pedidos guardados y descargas por fecha. Las correcciones se aplican al cálculo de ventas.</p>
+  <div id="historicoPedidos"></div>
+ </section>
+ <section class="panel">
   <h2>💾 Guardar pedido previsto</h2>
   <p class="ayuda">Guarda las cantidades y la fecha para recuperarlas automáticamente cuando importes el parte del día de la entrega, incluso si el camión se adelanta un día.</p>
   <button class="principal" id="guardarPedidoPrevisto" type="button">💾 Guardar pedido</button>
@@ -552,7 +557,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const K124_SUPABASE_URL="https://nkbmgtffoxwyfbeznver.supabase.co";
 const K124_SUPABASE_KEY="sb_publishable_8uTKDFTAGjEDxghIYDG5ng_OT8L26R_";
 const k124Supabase=createClient(K124_SUPABASE_URL,K124_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const K124_KEYS=["k124_historial_sondas_v2","k124_margen_diario_v1","k124_resumen_anual_v1","k124_correcciones_mensuales_v1","k124_correcciones_diarias_v1","k124_ventas_tienda_v1","k124_sondas_actuales_v1","k124_sondas_fijadas_v1","k124_valores_sondas_fijadas_v1","k124_sondas_pendientes_recalculo_v1","k124_entregas_diarias_v1","k124_pedido_pendiente_v1","k124_margen_correcciones_v1"];
+const K124_KEYS=["k124_historial_sondas_v2","k124_margen_diario_v1","k124_resumen_anual_v1","k124_correcciones_mensuales_v1","k124_correcciones_diarias_v1","k124_ventas_tienda_v1","k124_sondas_actuales_v1","k124_sondas_fijadas_v1","k124_valores_sondas_fijadas_v1","k124_sondas_pendientes_recalculo_v1","k124_entregas_diarias_v1","k124_pedido_pendiente_v1","k124_margen_correcciones_v1","k124_pedidos_historico_v1"];
 let k124Admin=false,k124Hydrating=false,k124LastCloudUpdate=null,k124SaveTimer=null;
 const k124ReadLocal=()=>Object.fromEntries(K124_KEYS.map(k=>[k,localStorage.getItem(k)]).filter(x=>x[1]!==null));
 const k124ApplyLocal=data=>{k124Hydrating=true;try{for(const k of K124_KEYS){if(data&&Object.prototype.hasOwnProperty.call(data,k)&&data[k]!==null)localStorage.setItem(k,data[k]);else localStorage.removeItem(k)}}finally{k124Hydrating=false}};
@@ -738,6 +743,10 @@ const CLAVE_ENTREGAS_DIARIAS="k124_entregas_diarias_v1";
 let entregasDiarias=leerEntregasDiarias();
 const CLAVE_PEDIDO_PENDIENTE="k124_pedido_pendiente_v1";
 let pedidoPendiente=leerPedidoPendiente();
+const CLAVE_PEDIDOS_HISTORICO="k124_pedidos_historico_v1";
+let pedidosHistorico=leerPedidosHistorico();
+function leerPedidosHistorico(){try{const d=JSON.parse(localStorage.getItem(CLAVE_PEDIDOS_HISTORICO)||"[]");return Array.isArray(d)?d:[]}catch(e){return []}}
+function guardarPedidosHistorico(){localStorage.setItem(CLAVE_PEDIDOS_HISTORICO,JSON.stringify(pedidosHistorico))}
 const OBJETIVOS_TANQUES=[21000,25000,5000,26000,4000,13000];
 const NOMBRES_TANQUES=[
  "Diésel e+ TANQUE 1","Efitec 95 TANQUE 2","Diésel E+10 TANQUE 3",
@@ -1122,9 +1131,39 @@ function guardarPedidoPrevisto(){
  if(total<=0){$("estadoPedidoGuardado").textContent="El pedido está vacío. Introduce los litros antes de guardarlo.";$("estadoPedidoGuardado").className="mensaje";$("estadoPedidoGuardado").style.display="block";return}
  if(total>34000){$("estadoPedidoGuardado").textContent="El pedido supera los 34.000 litros máximos. Ajusta las cantidades antes de guardarlo.";$("estadoPedidoGuardado").className="mensaje";$("estadoPedidoGuardado").style.display="block";return}
  pedidoPendiente={fecha,litros:cantidadesPedido.map(v=>Math.max(0,Math.round(Number(v)||0))),guardado:new Date().toISOString()};
- guardarPedidoPendiente();actualizarEstadoPedidoGuardado();
+ pedidosHistorico.unshift({...pedidoPendiente,id:pedidoPendiente.guardado});guardarPedidosHistorico();guardarPedidoPendiente();actualizarEstadoPedidoGuardado();pintarHistoricoPedidos();
 }
+
+function pintarHistoricoPedidos(){
+ const caja=$("historicoPedidos");if(!caja)return;
+ const fechas=Object.keys(entregasDiarias).sort().reverse();let html="";
+ html+='<h3 style="font-size:14px">Pedidos guardados</h3>';
+ if(!pedidosHistorico.length)html+='<p class="ayuda">Los pedidos guardados a partir de ahora aparecerán aquí.</p>';
+ pedidosHistorico.forEach((p,i)=>{const total=(p.litros||[]).reduce((a,b)=>a+Number(b||0),0);html+='<div style="padding:10px 0;border-bottom:1px solid #ddd"><strong>'+fechaPedidoTextoDesde(p.fecha)+' · '+litrosFmt(total)+' L</strong><div class="ayuda">'+(p.litros||[]).map((v,n)=>'T'+(n+1)+': '+litrosFmt(v)+' L').join(' · ')+'</div>'+(k124Admin?'<button class="secundario" data-editar-pedido="'+i+'" type="button">✏️ Editar pedido</button>':'')+'</div>'});
+ html+='<h3 style="font-size:14px;margin-top:18px">Descargas registradas</h3>';
+ if(!fechas.length)html+='<p class="ayuda">No hay descargas registradas.</p>';
+ fechas.forEach(fecha=>{const vals=entregasDiarias[fecha]||{};const resumen=Object.keys(vals).sort((a,b)=>Number(a)-Number(b)).map(t=>'T'+t+': '+litrosFmt(vals[t])+' L').join(' · ');html+='<div style="padding:10px 0;border-bottom:1px solid #ddd"><strong>'+fechaPedidoTextoDesde(fecha)+'</strong><div class="ayuda">'+(resumen||'Sin litros indicados')+'</div>'+(k124Admin?'<button class="secundario" data-editar-descarga="'+fecha+'" type="button">✏️ Corregir descarga</button>':'')+'</div>'});
+ caja.innerHTML=html;
+}
+function editarPedidoHistorico(i){
+ if(!k124Admin)return;const p=pedidosHistorico[i];if(!p)return;
+ const fecha=prompt("Fecha prevista (AAAA-MM-DD):",p.fecha||"");if(fecha===null)return;
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(fecha)){alert("Fecha no válida.");return}
+ const litros=[...(p.litros||[])];for(let n=0;n<6;n++){const v=prompt("Litros del tanque "+(n+1)+":",String(litros[n]||0));if(v===null)return;const x=Number(v);if(!Number.isInteger(x)||x<0){alert("Introduce litros enteros iguales o superiores a cero.");return}litros[n]=x}
+ pedidosHistorico[i]={...p,fecha,litros,modificado:new Date().toISOString()};guardarPedidosHistorico();
+ if(pedidoPendiente&&pedidoPendiente.guardado===p.guardado){pedidoPendiente={...pedidoPendiente,fecha,litros};guardarPedidoPendiente();actualizarEstadoPedidoGuardado()}
+ pintarHistoricoPedidos();pintarPedido();
+}
+function editarDescargaHistorica(fecha){
+ if(!k124Admin)return;const actual={...(entregasDiarias[fecha]||{})};
+ for(let n=1;n<=6;n++){const v=prompt("Litros descargados en tanque "+n+" el "+fechaPedidoTextoDesde(fecha)+":",String(actual[n]??0));if(v===null)return;const x=Number(v);if(!Number.isInteger(x)||x<0){alert("Introduce litros enteros iguales o superiores a cero.");return}actual[n]=x}
+ entregasDiarias[fecha]=actual;guardarEntregasDiarias();marcarSondasPendientesRecalculo(true);pintarHistoricoPedidos();
+ alert("Descarga corregida. Recalcula las ventas de ese día para aplicar el cambio.");
+}
+document.addEventListener("click",e=>{const p=e.target.closest("[data-editar-pedido]");if(p){editarPedidoHistorico(Number(p.dataset.editarPedido));return}const d=e.target.closest("[data-editar-descarga]");if(d)editarDescargaHistorica(d.dataset.editarDescarga)});
+
 function pintarPedido(){
+ pintarHistoricoPedidos();
  pintarSondasInicio();
  const caja=$("sondasPedido");
  if(!caja)return;
