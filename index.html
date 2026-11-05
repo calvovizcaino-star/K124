@@ -501,15 +501,15 @@ Selecciona la fecha prevista para completar el mensaje.</div>
   <div class="mensaje" id="estadoCopiarPedido" role="status"></div>
  </section>
  <section class="panel">
-  <h2>🗂️ Histórico de pedidos y descargas</h2>
-  <p class="ayuda">Consulta pedidos guardados y descargas por fecha. Las correcciones se aplican al cálculo de ventas.</p>
-  <div id="historicoPedidos"></div>
- </section>
- <section class="panel">
   <h2>💾 Guardar pedido previsto</h2>
   <p class="ayuda">Guarda las cantidades y la fecha para recuperarlas automáticamente cuando importes el parte del día de la entrega, incluso si el camión se adelanta un día.</p>
   <button class="principal" id="guardarPedidoPrevisto" type="button">💾 Guardar pedido</button>
   <div class="mensaje" id="estadoPedidoGuardado" role="status"></div>
+ </section>
+ <section class="panel">
+  <h2>🗂️ Histórico de pedidos y descargas</h2>
+  <p class="ayuda">Selecciona un mes y año para consultar los pedidos guardados y las descargas registradas.</p>
+  <div id="historicoPedidos"></div>
  </section>
 </div>
 
@@ -1164,14 +1164,22 @@ function guardarPedidoPrevisto(){
 
 function pintarHistoricoPedidos(){
  const caja=$("historicoPedidos");if(!caja)return;
- const fechas=Object.keys(entregasDiarias).filter(fecha=>{const v=entregasDiarias[fecha];return v&&typeof v==="object"&&Object.values(v).some(litros=>Number(litros)>0)}).sort().reverse();let html="";
- html+='<h3 style="font-size:14px">Pedidos guardados</h3>';
- if(!pedidosHistorico.length)html+='<p class="ayuda">Los pedidos guardados a partir de ahora aparecerán aquí.</p>';
- pedidosHistorico.forEach((p,i)=>{const total=(p.litros||[]).reduce((a,b)=>a+Number(b||0),0);html+='<div style="padding:10px 0;border-bottom:1px solid #ddd"><strong>'+fechaPedidoTextoDesde(p.fecha)+' · '+litrosFmt(total)+' L</strong><div class="ayuda">'+(p.litros||[]).map((v,n)=>'T'+(n+1)+': '+litrosFmt(v)+' L').join(' · ')+'</div>'+(k124Admin?'<button class="secundario" data-editar-pedido="'+i+'" type="button">✏️ Editar pedido</button>':'')+'</div>'});
+ const fechasDescarga=Object.keys(entregasDiarias).filter(fecha=>{const v=entregasDiarias[fecha];return v&&typeof v==="object"&&Object.values(v).some(litros=>Number(litros)>0)});
+ const meses=[...new Set([...pedidosHistorico.map(p=>String(p.fecha||"").slice(0,7)),...fechasDescarga.map(f=>f.slice(0,7))].filter(m=>/^\\d{4}-\\d{2}$/.test(m)))].sort().reverse();
+ const mesActual=$("filtroHistoricoPedidos")?.value;
+ const mesSeleccionado=meses.includes(mesActual)?mesActual:(meses[0]||"");
+ const etiquetaMes=m=>{const [a,mm]=m.split("-").map(Number);return new Date(a,mm-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"}).replace(/^\\w/,c=>c.toUpperCase())};
+ let html='<label style="display:block;font-size:13px;font-weight:700;margin:8px 0">Mes y año <select id="filtroHistoricoPedidos" class="selector-periodo" style="display:block;width:100%;margin-top:6px"><option value="">Selecciona un mes</option>'+meses.map(m=>'<option value="'+m+'"'+(m===mesSeleccionado?' selected':'')+'>'+etiquetaMes(m)+'</option>').join("")+'</select></label>';
+ const pedidosMes=pedidosHistorico.map((p,i)=>({...p,_indice:i})).filter(p=>String(p.fecha||"").slice(0,7)===mesSeleccionado).sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
+ const descargasMes=fechasDescarga.filter(f=>f.slice(0,7)===mesSeleccionado).sort().reverse();
+ html+='<h3 style="font-size:14px;margin-top:16px">Pedidos guardados</h3>';
+ if(!pedidosMes.length)html+='<p class="ayuda">No hay pedidos guardados en este mes.</p>';
+ pedidosMes.forEach(p=>{const total=(p.litros||[]).reduce((a,b)=>a+Number(b||0),0);html+='<div style="padding:10px 0;border-bottom:1px solid #ddd"><strong>'+fechaPedidoTextoDesde(p.fecha)+' · '+litrosFmt(total)+' L</strong><div class="ayuda">'+(p.litros||[]).map((v,n)=>'T'+(n+1)+': '+litrosFmt(v)+' L').join(' · ')+'</div>'+(k124Admin?'<button class="secundario" data-editar-pedido="'+p._indice+'" type="button">✏️ Editar pedido</button>':'')+'</div>'});
  html+='<h3 style="font-size:14px;margin-top:18px">Descargas registradas</h3>';
- if(!fechas.length)html+='<p class="ayuda">No hay descargas registradas.</p>';
- fechas.forEach(fecha=>{const vals=entregasDiarias[fecha]||{};const resumen=Object.keys(vals).sort((a,b)=>Number(a)-Number(b)).map(t=>'T'+t+': '+litrosFmt(vals[t])+' L').join(' · ');html+='<div style="padding:10px 0;border-bottom:1px solid #ddd"><strong>'+fechaPedidoTextoDesde(fecha)+'</strong><div class="ayuda">'+(resumen||'Sin litros indicados')+'</div>'+(k124Admin?'<button class="secundario" data-editar-descarga="'+fecha+'" type="button">✏️ Corregir descarga</button>':'')+'</div>'});
+ if(!descargasMes.length)html+='<p class="ayuda">No hay descargas registradas en este mes.</p>';
+ descargasMes.forEach(fecha=>{const vals=entregasDiarias[fecha]||{};const resumen=Object.keys(vals).sort((a,b)=>Number(a)-Number(b)).map(t=>'T'+t+': '+litrosFmt(vals[t])+' L').join(' · ');html+='<div style="padding:10px 0;border-bottom:1px solid #ddd"><strong>'+fechaPedidoTextoDesde(fecha)+'</strong><div class="ayuda">'+(resumen||'Sin litros indicados')+'</div>'+(k124Admin?'<button class="secundario" data-editar-descarga="'+fecha+'" type="button">✏️ Corregir descarga</button>':'')+'</div>'});
  caja.innerHTML=html;
+ const selector=$("filtroHistoricoPedidos");if(selector)selector.value=mesSeleccionado;
 }
 function editarPedidoHistorico(i){
  if(!k124Admin)return;const p=pedidosHistorico[i];if(!p)return;
@@ -1201,6 +1209,7 @@ function editarDescargaHistorica(fecha){
  alert(fila?"Descarga corregida y ventas del día actualizadas automáticamente.":"Descarga corregida. No hay ventas guardadas para ese día, así que no había ventas que actualizar.");
 }
 document.addEventListener("click",e=>{const p=e.target.closest("[data-editar-pedido]");if(p){editarPedidoHistorico(Number(p.dataset.editarPedido));return}const d=e.target.closest("[data-editar-descarga]");if(d)editarDescargaHistorica(d.dataset.editarDescarga)});
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="filtroHistoricoPedidos")pintarHistoricoPedidos()});
 
 function pintarPedido(){
  pintarPedidoPendienteVisible();
