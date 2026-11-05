@@ -266,6 +266,57 @@ small{color:#68746d}
 body.k124-lector .solo-admin{display:none!important}
 @media(max-width:520px){header{padding-left:18px;padding-right:18px}}
 
+/* Nueva identidad visual K124 SL inspirada en el banner aprobado */
+header{
+ min-height:176px;padding:25px 78px 42px 104px;
+ display:flex;flex-direction:column;align-items:flex-start;justify-content:center;
+ text-align:left;gap:0;
+ background:radial-gradient(ellipse at 65% 0%,#0a4b8e 0%,#073b83 45%,#031735 100%);
+}
+header::before{
+ height:48px;left:-2%;right:-2%;bottom:0;
+ background:linear-gradient(174deg,#ffb000 0%,#ff7900 48%,#f04418 82%,#d71920 100%);
+ clip-path:polygon(0 18%,18% 72%,38% 94%,60% 83%,80% 48%,100% 0,100% 100%,0 100%);
+}
+header::after{
+ height:19px;left:-2%;right:-2%;bottom:-1px;
+ background:linear-gradient(175deg,#fff 0%,#f3f7fc 100%);
+ clip-path:polygon(0 55%,100% 0,100% 100%,0 100%);
+}
+header h1{
+ margin:0;font-size:clamp(54px,13vw,82px);line-height:.9;letter-spacing:-3px;
+ font-family:Arial,Helvetica,sans-serif;font-weight:900;font-style:italic;
+ text-shadow:0 2px 0 #d7e0eb,0 5px 8px #0008;color:#fff;
+}
+header h1 .sl{font-size:.4em;color:#ff9200;letter-spacing:-1px;margin-left:5px;text-shadow:0 2px 4px #0008}
+header p{
+ margin:10px 0 0;padding:5px 12px;border:1px solid #ffffff80;border-radius:7px;
+ background:#ffffff14;box-shadow:none;font-size:12px;letter-spacing:2.4px;
+ font-weight:800;backdrop-filter:blur(4px);
+}
+header .marca-repsol{
+ position:absolute;left:20px;top:50%;transform:translateY(-58%);
+ width:64px;height:64px;display:flex;align-items:center;justify-content:center;
+}
+header .marca-repsol svg{width:100%;height:100%;filter:drop-shadow(0 3px 4px #0006)}
+.acceso-resumen{top:14px;right:14px}
+.boton-menu-resumen{width:44px;height:42px;border:1px solid #ff9a32;background:#ffffff0d;border-radius:10px;font-size:25px}
+@media(max-width:520px){
+ header{min-height:158px;padding:22px 62px 38px 88px}
+ header h1{font-size:clamp(48px,13vw,62px);letter-spacing:-2.5px}
+ header p{font-size:10px;letter-spacing:1.8px;margin-top:8px;padding:5px 9px}
+ header .marca-repsol{left:14px;width:58px;height:58px}
+ header::before{height:42px}
+ header::after{height:17px}
+ .acceso-resumen{top:10px;right:10px}
+ .boton-menu-resumen{width:40px;height:38px;font-size:22px}
+}
+@media(min-width:700px){
+ header{min-height:196px;padding-left:max(110px,calc((100% - 760px)/2));}
+ header .marca-repsol{left:max(24px,calc((100% - 900px)/2))}
+}
+
+
 /* Cabecera optimizada: más compacta y equilibrada en móvil y escritorio */
 header{min-height:174px;padding:17px 76px 40px;justify-content:center}
 header h1{font-size:clamp(62px,15vw,88px);line-height:.96;letter-spacing:-2.5px}
@@ -308,7 +359,19 @@ header::after{height:20px}
  </div>
 </div>
 
- <h1>K124<span class="sl"> SL</span></h1><p>Control del parte diario</p>
+ <div class="marca-repsol" aria-label="Identidad Repsol">
+  <svg viewBox="0 0 100 100" role="img" aria-hidden="true">
+   <defs>
+    <linearGradient id="rNaranja" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffd02f"/><stop offset="1" stop-color="#ff7900"/></linearGradient>
+    <linearGradient id="rRojo" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff3a28"/><stop offset="1" stop-color="#c8102e"/></linearGradient>
+   </defs>
+   <circle cx="50" cy="50" r="43" fill="url(#rNaranja)"/>
+   <path d="M8 42 Q50 29 92 42 L92 58 Q50 72 8 58Z" fill="#fff"/>
+   <path d="M8 58 Q50 72 92 58 Q83 91 50 93 Q17 91 8 58Z" fill="url(#rRojo)"/>
+   <path d="M8 42 Q50 29 92 42 L92 58 Q50 72 8 58Z" fill="#fff"/>
+  </svg>
+ </div>
+ <h1>K124<span class="sl"> SL</span></h1><p>GESTIÓN INTEGRAL</p>
  <span id="k124CloudStatus" aria-live="polite" style="display:none"></span>
  <div class="acceso-resumen">
   <button type="button" class="boton-menu-resumen" id="botonMenuResumen" aria-label="Abrir menú" aria-expanded="false">☰</button>
