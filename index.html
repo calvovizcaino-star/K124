@@ -266,6 +266,29 @@ small{color:#68746d}
 body.k124-lector .solo-admin{display:none!important}
 @media(max-width:520px){header{padding-left:18px;padding-right:18px}}
 
+/* Cabecera optimizada: más compacta y equilibrada en móvil y escritorio */
+header{min-height:174px;padding:17px 76px 40px;justify-content:center}
+header h1{font-size:clamp(62px,15vw,88px);line-height:.96;letter-spacing:-2.5px}
+header p{margin-top:9px;padding:7px 14px;font-size:clamp(12px,3vw,15px);letter-spacing:.25px}
+header::before{height:45px}
+header::after{height:20px}
+.acceso-resumen{top:12px;right:14px}
+.boton-menu-resumen{width:44px;height:42px;border-radius:10px;font-size:25px;background:#ffffff18;border-color:#ffffff80}
+@media(max-width:520px){
+ header{min-height:166px;padding:16px 64px 36px}
+ header h1{font-size:clamp(60px,16vw,78px);letter-spacing:-2px}
+ header p{margin-top:8px;padding:6px 12px;font-size:12px}
+ header::before{height:42px}
+ header::after{height:18px}
+ .acceso-resumen{top:11px;right:11px}
+ .boton-menu-resumen{width:42px;height:40px;font-size:23px}
+}
+@media(min-width:700px){
+ header{min-height:190px;padding-top:22px;padding-bottom:44px}
+ header h1{font-size:88px}
+}
+
+
 </style>
 </head>
 <body>
