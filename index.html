@@ -1156,10 +1156,22 @@ function editarPedidoHistorico(i){
  pintarHistoricoPedidos();pintarPedido();
 }
 function editarDescargaHistorica(fecha){
- if(!k124Admin)return;const actual={...(entregasDiarias[fecha]||{})};
+ if(!k124Admin)return;
+ const anterior={...(entregasDiarias[fecha]||{})},actual={...anterior};
  for(let n=1;n<=6;n++){const v=prompt("Litros descargados en tanque "+n+" el "+fechaPedidoTextoDesde(fecha)+":",String(actual[n]??0));if(v===null)return;const x=Number(v);if(!Number.isInteger(x)||x<0){alert("Introduce litros enteros iguales o superiores a cero.");return}actual[n]=x}
- entregasDiarias[fecha]=actual;guardarEntregasDiarias();marcarSondasPendientesRecalculo(true);pintarHistoricoPedidos();
- alert("Descarga corregida. Recalcula las ventas de ese día para aplicar el cambio.");
+ const fila=historial[fecha];
+ if(fila){
+  const mapa={1:"e",2:"g95",3:"e10",4:"e",5:"g98",6:"g95"};
+  const ventas={e:Number(fila.e)||0,e10:Number(fila.e10)||0,g95:Number(fila.g95)||0,g98:Number(fila.g98)||0};
+  for(let n=1;n<=6;n++)ventas[mapa[n]]+=Number(actual[n]||0)-Number(anterior[n]||0);
+  if(Object.values(ventas).some(v=>v<0)){alert("La corrección dejaría alguna venta negativa. No se ha guardado ningún cambio.");return}
+  fila.e=ventas.e;fila.e10=ventas.e10;fila.g95=ventas.g95;fila.g98=ventas.g98;fila.total=ventas.e+ventas.e10+ventas.g95+ventas.g98;
+  if(correccionesDiarias[fecha]&&typeof correccionesDiarias[fecha]==="object"){correccionesDiarias[fecha]={...ventas};guardarCorreccionesDiarias()}
+  guardar();
+ }
+ entregasDiarias[fecha]=actual;guardarEntregasDiarias();pintarHistoricoPedidos();pintarVistas();
+ if(fila)pintarUltimo(filaConCorreccionDiaria({...fila,key:fecha}),fila.fecha,fecha);
+ alert(fila?"Descarga corregida y ventas del día actualizadas automáticamente.":"Descarga corregida. No hay ventas guardadas para ese día, así que no había ventas que actualizar.");
 }
 document.addEventListener("click",e=>{const p=e.target.closest("[data-editar-pedido]");if(p){editarPedidoHistorico(Number(p.dataset.editarPedido));return}const d=e.target.closest("[data-editar-descarga]");if(d)editarDescargaHistorica(d.dataset.editarDescarga)});
 
