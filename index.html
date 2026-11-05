@@ -1137,7 +1137,7 @@ function guardarPedidoPrevisto(){
 
 function pintarHistoricoPedidos(){
  const caja=$("historicoPedidos");if(!caja)return;
- const fechas=Object.keys(entregasDiarias).sort().reverse();let html="";
+ const fechas=Object.keys(entregasDiarias).filter(fecha=>{const v=entregasDiarias[fecha];return v&&typeof v==="object"&&Object.values(v).some(litros=>Number(litros)>0)}).sort().reverse();let html="";
  html+='<h3 style="font-size:14px">Pedidos guardados</h3>';
  if(!pedidosHistorico.length)html+='<p class="ayuda">Los pedidos guardados a partir de ahora aparecerán aquí.</p>';
  pedidosHistorico.forEach((p,i)=>{const total=(p.litros||[]).reduce((a,b)=>a+Number(b||0),0);html+='<div style="padding:10px 0;border-bottom:1px solid #ddd"><strong>'+fechaPedidoTextoDesde(p.fecha)+' · '+litrosFmt(total)+' L</strong><div class="ayuda">'+(p.litros||[]).map((v,n)=>'T'+(n+1)+': '+litrosFmt(v)+' L').join(' · ')+'</div>'+(k124Admin?'<button class="secundario" data-editar-pedido="'+i+'" type="button">✏️ Editar pedido</button>':'')+'</div>'});
