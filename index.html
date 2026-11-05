@@ -395,6 +395,41 @@ header p{
  header h1{font-size:100px!important}
 }
 
+
+/* Cabecera aprobada: marca grande y descriptor justo debajo */
+header{
+ justify-content:center!important;
+ align-items:center!important;
+ gap:0!important;
+ padding-top:12px!important;
+ padding-bottom:42px!important;
+}
+header h1{
+ width:100%!important;
+ max-width:calc(100vw - 24px)!important;
+ font-size:clamp(86px,25vw,155px)!important;
+ line-height:.9!important;
+ letter-spacing:-4px!important;
+ margin:0 auto!important;
+}
+header h1 .sl{font-size:.4em!important;margin-left:2px!important}
+header p{
+ margin:7px auto 0!important;
+ position:relative!important;
+ font-size:clamp(11px,3.2vw,16px)!important;
+ letter-spacing:2px!important;
+ padding:6px 14px!important;
+}
+@media(max-width:520px){
+ header{min-height:202px!important;padding:12px 12px 42px!important}
+ header h1{font-size:clamp(86px,25vw,100px)!important;letter-spacing:-3.5px!important}
+ header p{margin-top:6px!important;font-size:11px!important;letter-spacing:1.8px!important;padding:6px 12px!important}
+}
+@media(min-width:700px){
+ header{min-height:230px!important}
+ header h1{font-size:clamp(120px,19vw,155px)!important}
+}
+
 </style>
 </head>
 <body>
