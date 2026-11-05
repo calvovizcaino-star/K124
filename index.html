@@ -88,6 +88,7 @@ small{color:#68746d}
 .pestana.activa{background:#e3f2ff;color:#073b83;box-shadow:inset 0 0 0 1px #c4e1ff}
 .cabecera-vista{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .cabecera-vista h2{margin:0}
+.mes-total-litros{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:1px;white-space:nowrap}.mes-total-litros span{font-size:11px;color:#64748b}.mes-total-litros strong{font-size:15px;color:#073b83;font-weight:800;font-variant-numeric:tabular-nums}
 .selector-periodo{border:1px solid var(--borde);border-radius:9px;padding:9px;background:#f5f9ff;color:#073b83;font-size:14px}
 .etiqueta-periodo{color:#64748b;font-size:13px;margin:8px 0 14px}
 
@@ -341,7 +342,7 @@ body.k124-lector .solo-admin{display:none!important}
 
 <div class="vista" id="vista-mes">
  <section class="panel">
-  <div class="cabecera-vista"><h2>📅 Ventas por día del mes</h2><select id="selectorMes" class="selector-periodo" aria-label="Seleccionar mes"></select></div>
+  <div class="cabecera-vista"><h2>📅 Ventas por día del mes</h2><select id="selectorMes" class="selector-periodo" aria-label="Seleccionar mes"></select><div class="mes-total-litros" id="mesTotalLitros" hidden><span>Total vendido</span><strong id="mesTotalLitrosValor">—</strong></div></div>
   <p class="etiqueta-periodo" id="infoMes"></p>
   <div class="tabla-contenedor"><table>
    <thead><tr><th>Fecha</th><th>E+ (L)</th><th>E+10 (L)</th><th>G95 (L)</th><th>G98 (L)</th><th>Total (L)</th><th></th></tr></thead>
@@ -1368,7 +1369,7 @@ function pintarVistas(){
  const fm=filas.filter(f=>f.key.startsWith(mes)),fa=filas.filter(f=>f.key.startsWith(ano));
  $("filasMes").innerHTML="";fm.forEach(f=>crearFila(f,$("filasMes")));
  $("infoMes").textContent=fm.length?`${fm.length} día(s) con datos registrados.`:"No hay ventas guardadas para este mes.";
- $("pieMes").hidden=!fm.length;if(fm.length)sumarFilas(fm,"m");
+ $("pieMes").hidden=!fm.length;if(fm.length){const sumaMes=sumarFilas(fm,"m");$("mesTotalLitros").hidden=false;$("mesTotalLitrosValor").textContent=numeroES(sumaMes.total)+" L";}else{$("mesTotalLitros").hidden=true;$("mesTotalLitrosValor").textContent="—";}
  const anual=resumenesAnuales[ano];
  $("infoAno").textContent=anual?`Comparativa de previsiones y ventas reales de ${ano}.`:"Importa una vez el TXT del parte que contiene el resumen anual para cargar las cifras reales.";
  if(anual)pintarResumenAnual(anual);
