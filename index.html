@@ -1143,7 +1143,7 @@ function editarLiquidacionMes(ano,mes){
  const nombre=new Date(Number(ano),Number(mes)-1,1).toLocaleDateString("es-ES",{month:"long"});
  const entrada=prompt("Liquidación de "+nombre+" de "+ano+" (euros). Puedes introducir 0 o una cantidad negativa:",actual===undefined?"":String(actual).replace(".",","));
  if(entrada===null)return;
- const limpio=entrada.trim().replace(/\\s/g,"").replace(/\\./g,"").replace(",",".");
+ const limpio=entrada.trim().replace(/\s/g,"").replace(/\./g,"").replace(",",".");
  const valor=Number(limpio);
  if(entrada.trim()===""||!Number.isFinite(valor)){alert("Introduce una cantidad válida en euros.");return}
  if(!liquidacionesMensuales[ano])liquidacionesMensuales[ano]={};
