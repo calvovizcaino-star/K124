@@ -430,11 +430,46 @@ header p{
  header h1{font-size:clamp(120px,19vw,155px)!important}
 }
 
+
+/* Cabecera compartida K124 SL: misma identidad que Ventas Carburante */
+header{position:relative;isolation:isolate;overflow:visible;z-index:30;background:radial-gradient(ellipse at 10% 0%,#244b78 0%,transparent 48%),radial-gradient(ellipse at 90% 15%,#7c263b 0%,transparent 34%),linear-gradient(115deg,#07172f 0%,#102c53 52%,#101b2b 100%);color:#fff;padding:calc(22px + env(safe-area-inset-top)) max(20px,calc((100vw - 1120px)/2)) 31px;border-bottom:0;box-shadow:0 9px 24px #101b2b20;min-height:0;display:block;text-align:left}
+header::before{content:"";position:absolute;z-index:-1;pointer-events:none;right:0;bottom:0;width:64%;height:132px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 180' preserveAspectRatio='none'%3E%3Cpath d='M0 180 C190 180 315 166 455 126 C625 77 760 35 900 -12 L900 180Z' fill='%23ffffff'/%3E%3Cpath d='M0 180 C205 180 330 172 480 139 C650 101 775 61 900 12 L900 180Z' fill='%23ffb21a'/%3E%3Cpath d='M0 180 C225 180 350 177 510 151 C675 124 790 91 900 48 L900 180Z' fill='%23f47721'/%3E%3Cpath d='M0 180 C245 180 370 180 535 163 C695 145 805 119 900 82 L900 180Z' fill='%23d7193f'/%3E%3C/svg%3E");background-size:100% 100%;background-repeat:no-repeat}
+header::after{content:"";position:absolute;z-index:-1;pointer-events:none;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,#ff8a19 0 58%,#fff 58% 78%,#d7193f 78% 100%)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:13px;min-width:0}
+.brand-mark{width:39px;height:36px;display:flex;align-items:flex-end;gap:4px;flex:none}
+.brand-mark i{display:block;width:7px;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,#ffb52e,#f47721);box-shadow:0 0 10px #ff811c55}
+.brand-mark i:nth-child(1){height:13px}.brand-mark i:nth-child(2){height:20px}.brand-mark i:nth-child(3){height:27px}.brand-mark i:nth-child(4){height:35px}
+.logo{font-weight:1000;font-size:clamp(39px,7vw,48px);line-height:1;letter-spacing:-3px;color:#fff;text-shadow:0 2px 0 #7d8795,0 5px 0 #0008,0 9px 18px #0008}
+.logo small{font-size:16px;letter-spacing:-.5px;margin-left:4px;font-style:italic;text-shadow:0 2px 5px #0009}
+.tag{font-size:10px;color:#d4deeb;letter-spacing:2.2px;text-transform:uppercase;border-left:1px solid #ffffff35;padding:7px 0 7px 13px;line-height:1.5;font-weight:800}
+.heading{margin-top:21px;padding-left:1px}
+.heading:before{content:"K124 SL  /  PANEL DE CONTROL";display:block;color:#ff9a4a;font-size:9px;font-weight:900;letter-spacing:2.3px;margin-bottom:7px}
+header .heading h1{margin:0;font-size:clamp(24px,4.4vw,35px);letter-spacing:-1px;font-weight:850;line-height:1.15;color:#fff;text-shadow:0 2px 12px #0004;font-style:normal}
+.heading p{display:block;margin:7px 0 0;padding:0;color:#c1ccda;background:none;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;font-size:14px;line-height:1.4;letter-spacing:.1px;font-weight:400;white-space:normal}
+.menu-wrap{position:relative;z-index:35}
+.acceso-resumen{position:relative;top:auto;right:auto;z-index:35}
+.boton-menu-resumen,.menu-btn{width:48px;height:46px;border:1px solid #ffad70;border-radius:13px;background:linear-gradient(145deg,#ff8a2a,#e95d08);color:#fff;font-size:24px;line-height:1;display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:0 5px 16px #f4772145,inset 0 1px 0 #ffffff55}
+.menu-resumen-desplegable,.menu-pop{position:absolute;right:0;top:50px;z-index:50;width:230px;min-width:230px;background:#fff;color:#172235;border:1px solid #e7ebf0;border-radius:14px;padding:7px;box-shadow:0 14px 35px #0003;display:none}
+.menu-resumen-desplegable.abierto{display:block}
+.opcion-menu-resumen,.menu-item{display:flex;width:100%;align-items:center;gap:10px;text-align:left;padding:13px 12px;border:0;border-radius:9px;background:#fff;color:#172235;font-weight:750;font-size:14px;white-space:normal}
+.opcion-menu-resumen:active,.opcion-menu-resumen:hover{background:#f2f5f8}
+.menu-separador{height:1px;background:#e7ebf0;margin:5px 7px}
+@media(max-width:720px){
+ header{padding:calc(19px + env(safe-area-inset-top)) 19px 27px}
+ header::before{width:70%;height:108px;opacity:1}
+ .brand{gap:9px}.brand-mark{width:29px;height:29px;gap:3px}.brand-mark i{width:6px}
+ .brand-mark i:nth-child(1){height:11px}.brand-mark i:nth-child(2){height:16px}.brand-mark i:nth-child(3){height:22px}.brand-mark i:nth-child(4){height:28px}
+ .logo{font-size:40px}.logo small{font-size:14px}
+ .tag{font-size:9px;letter-spacing:1.5px;padding-left:10px}
+ .heading{margin-top:18px}.heading:before{font-size:8px;letter-spacing:1.8px}
+ .boton-menu-resumen,.menu-btn{width:45px;height:43px}
+}
+
 </style>
 </head>
 <body>
 <header>
-
 <div id="k124CloudModal" role="dialog" aria-modal="true">
  <div class="caja">
   <h2>Inicio de sesión</h2>
@@ -447,24 +482,33 @@ header p{
    <div class="acciones"><button type="button" class="secundario" id="k124CloudCancel">Cancelar</button><button type="submit" class="principal">Entrar</button></div>
   </form>
  </div>
-</div>
 
- <h1>K124<span class="sl"> SL</span></h1><p>GESTIÓN INTEGRAL</p>
- <span id="k124CloudStatus" aria-live="polite" style="display:none"></span>
- <div class="acceso-resumen">
-  <button type="button" class="boton-menu-resumen" id="botonMenuResumen" aria-label="Abrir menú" aria-expanded="false">☰</button>
-  <div class="menu-resumen-desplegable" id="menuResumenDesplegable">
-   <button type="button" class="opcion-menu-resumen" id="k124CloudAccess"><span>🔐</span> Entrar como administrador</button>
-   <div class="menu-separador"></div>
-   <button type="button" class="opcion-menu-resumen" id="abrirResumen"><span>📊</span> Resumen general</button>
-   <button type="button" class="opcion-menu-resumen" data-menu-action="estadisticas"><span>📈</span> Estadísticas</button>
-   <button type="button" class="opcion-menu-resumen" data-menu-action="cisternas"><span>🚛</span> Historial de cisternas</button>
-   <button type="button" class="opcion-menu-resumen" data-menu-action="pedidos"><span>📦</span> Pedidos</button>
-   <div class="menu-separador"></div>
-   <button type="button" class="opcion-menu-resumen" data-menu-action="copias"><span>💾</span> Copias de seguridad</button>
-   <button type="button" class="opcion-menu-resumen" data-menu-action="configuracion"><span>⚙️</span> Configuración</button>
-  </div>
+<div id="k124CloudStatus" aria-live="polite" style="display:none"></div>
+<div class="top">
+ <div class="brand">
+  <div class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="logo">K124<small>SL</small></div>
+  <div class="tag">Control de ventas</div>
  </div>
+ <div class="menu-wrap acceso-resumen">
+  <button type="button" class="menu-btn boton-menu-resumen" id="botonMenuResumen" aria-label="Abrir menú" aria-expanded="false">☰</button>
+  <nav class="menu-pop menu-resumen-desplegable" id="menuResumenDesplegable">
+   <button type="button" class="menu-item opcion-menu-resumen" id="k124CloudAccess"><span>🔐</span> Entrar como administrador</button>
+   <div class="menu-separador"></div>
+   <button type="button" class="menu-item opcion-menu-resumen" id="abrirResumen"><span>📊</span> Resumen general</button>
+   <button type="button" class="menu-item opcion-menu-resumen" data-menu-action="estadisticas"><span>📈</span> Estadísticas</button>
+   <button type="button" class="menu-item opcion-menu-resumen" data-menu-action="cisternas"><span>🚛</span> Historial de cisternas</button>
+   <button type="button" class="menu-item opcion-menu-resumen" data-menu-action="pedidos"><span>📦</span> Pedidos</button>
+   <div class="menu-separador"></div>
+   <button type="button" class="menu-item opcion-menu-resumen" data-menu-action="copias"><span>💾</span> Copias de seguridad</button>
+   <button type="button" class="menu-item opcion-menu-resumen" data-menu-action="configuracion"><span>⚙️</span> Configuración</button>
+  </nav>
+ </div>
+</div>
+<div class="heading">
+ <h1 id="pageHeading">Partes diarios</h1>
+ <p id="pageSub">Control de ventas y liquidaciones</p>
+</div>
 </header>
 <main>
 <section class="panel panel-resumen-general" id="panelResumenGeneral">
