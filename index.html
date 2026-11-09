@@ -588,6 +588,12 @@ header p{
   <div class="tienda-total"><span>Margen acumulado del año</span><strong id="margenAno">—</strong></div>
   <div class="tabla-contenedor"><table><thead><tr><th>Mes</th><th>Margen total</th></tr></thead><tbody id="filasMargenAno"></tbody></table></div>
  </section>
+ <section class="panel">
+  <div class="cabecera-vista"><h2>🧾 Liquidación mensual</h2><select id="selectorAnoLiquidacion" class="selector-periodo" aria-label="Seleccionar año de liquidación"></select></div>
+  <p class="ayuda">Introduce la liquidación mensual cuando la recibas. Estos importes se guardan aparte del margen diario y no modifican sus cálculos.</p>
+  <div class="tabla-contenedor"><table><thead><tr><th>Mes</th><th>Liquidación</th><th></th></tr></thead><tbody id="filasLiquidacionMensual"></tbody></table></div>
+  <div class="tienda-total"><span>Total liquidación del año</span><strong id="totalLiquidacionAnual">—</strong></div>
+ </section>
 </div>
 
 
@@ -723,7 +729,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const K124_SUPABASE_URL="https://nkbmgtffoxwyfbeznver.supabase.co";
 const K124_SUPABASE_KEY="sb_publishable_8uTKDFTAGjEDxghIYDG5ng_OT8L26R_";
 const k124Supabase=createClient(K124_SUPABASE_URL,K124_SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const K124_KEYS=["k124_historial_sondas_v2","k124_margen_diario_v1","k124_resumen_anual_v1","k124_correcciones_mensuales_v1","k124_correcciones_diarias_v1","k124_ventas_tienda_v1","k124_sondas_actuales_v1","k124_sondas_fijadas_v1","k124_valores_sondas_fijadas_v1","k124_sondas_pendientes_recalculo_v1","k124_entregas_diarias_v1","k124_pedido_pendiente_v1","k124_margen_correcciones_v1","k124_pedidos_historico_v1"];
+const K124_KEYS=["k124_historial_sondas_v2","k124_margen_diario_v1","k124_resumen_anual_v1","k124_correcciones_mensuales_v1","k124_correcciones_diarias_v1","k124_ventas_tienda_v1","k124_sondas_actuales_v1","k124_sondas_fijadas_v1","k124_valores_sondas_fijadas_v1","k124_sondas_pendientes_recalculo_v1","k124_entregas_diarias_v1","k124_pedido_pendiente_v1","k124_margen_correcciones_v1","k124_pedidos_historico_v1","k124_liquidacion_mensual_v1"];
 let k124Admin=false,k124Hydrating=false,k124LastCloudUpdate=null,k124SaveTimer=null;
 const k124ReadLocal=()=>Object.fromEntries(K124_KEYS.map(k=>[k,localStorage.getItem(k)]).filter(x=>x[1]!==null));
 const k124ApplyLocal=data=>{k124Hydrating=true;try{for(const k of K124_KEYS){if(data&&Object.prototype.hasOwnProperty.call(data,k)&&data[k]!==null)localStorage.setItem(k,data[k]);else localStorage.removeItem(k)}}finally{k124Hydrating=false}};
@@ -1124,6 +1130,43 @@ function pintarMargen(){
  for(let m=1;m<=12;m++){const pref=ano+"-"+String(m).padStart(2,"0"),ks=claves.filter(k=>k.startsWith(pref));if(!ks.length)continue;const suma=ks.reduce((v,k)=>v+Number(margenesDiarios[k]||0),0);totalAno+=suma;const tr=document.createElement("tr"),n=document.createElement("td"),v=document.createElement("td");n.textContent=new Date(+ano,m-1,1).toLocaleDateString("es-ES",{month:"long"});v.textContent=euros(suma);tr.append(n,v);filasAno.appendChild(tr)}
  $("margenAno").textContent=ano?euros(totalAno):"—";
 }
+ 
+const CLAVE_LIQUIDACION_MENSUAL="k124_liquidacion_mensual_v1";
+const LIQUIDACION_2026={"01":2966.88,"02":3357.35,"03":5160.44,"04":5331.86,"05":5226.02,"06":-3713.52,"07":7202.14,"08":8038.39,"09":6064.85,"10":5989.83,"11":0};
+function leerLiquidacionesMensuales(){try{const d=JSON.parse(localStorage.getItem(CLAVE_LIQUIDACION_MENSUAL)||"null");return d&&typeof d==="object"?d:{"2026":{...LIQUIDACION_2026}}}catch(e){return {"2026":{...LIQUIDACION_2026}}}}
+let liquidacionesMensuales=leerLiquidacionesMensuales();
+if(!liquidacionesMensuales["2026"]){liquidacionesMensuales["2026"]={...LIQUIDACION_2026};localStorage.setItem(CLAVE_LIQUIDACION_MENSUAL,JSON.stringify(liquidacionesMensuales))}
+function guardarLiquidacionesMensuales(){localStorage.setItem(CLAVE_LIQUIDACION_MENSUAL,JSON.stringify(liquidacionesMensuales))}
+function editarLiquidacionMes(ano,mes){
+ if(!k124Admin)return;
+ const actual=liquidacionesMensuales[ano]?.[mes];
+ const nombre=new Date(Number(ano),Number(mes)-1,1).toLocaleDateString("es-ES",{month:"long"});
+ const entrada=prompt("Liquidación de "+nombre+" de "+ano+" (euros). Puedes introducir 0 o una cantidad negativa:",actual===undefined?"":String(actual).replace(".",","));
+ if(entrada===null)return;
+ const limpio=entrada.trim().replace(/\\s/g,"").replace(/\\./g,"").replace(",",".");
+ const valor=Number(limpio);
+ if(entrada.trim()===""||!Number.isFinite(valor)){alert("Introduce una cantidad válida en euros.");return}
+ if(!liquidacionesMensuales[ano])liquidacionesMensuales[ano]={};
+ liquidacionesMensuales[ano][mes]=valor;guardarLiquidacionesMensuales();pintarLiquidacionMensual();
+}
+function pintarLiquidacionMensual(){
+ const selector=$("selectorAnoLiquidacion"),anterior=selector.value;
+ const anos=[...new Set([...Object.keys(liquidacionesMensuales),"2026"])].sort().reverse();
+ selector.innerHTML=anos.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
+ selector.value=anos.includes(anterior)?anterior:(anos[0]||"2026");
+ const ano=selector.value,datos=liquidacionesMensuales[ano]||{},body=$("filasLiquidacionMensual");body.innerHTML="";
+ let total=0;
+ for(let m=1;m<=12;m++){
+  const mm=String(m).padStart(2,"0"),tr=document.createElement("tr"),tdMes=document.createElement("td"),tdValor=document.createElement("td"),tdAcc=document.createElement("td");
+  tdMes.textContent=new Date(Number(ano),m-1,1).toLocaleDateString("es-ES",{month:"long"});
+  if(Object.prototype.hasOwnProperty.call(datos,mm)){tdValor.textContent=euros(datos[mm]);total+=Number(datos[mm])||0}
+  else tdValor.textContent="—";
+  if(k124Admin){const b=document.createElement("button");b.type="button";b.className="btn-lapiz";b.textContent="✏️";b.title="Añadir o editar liquidación";b.addEventListener("click",()=>editarLiquidacionMes(ano,mm));tdAcc.appendChild(b)}
+  tr.append(tdMes,tdValor,tdAcc);body.appendChild(tr);
+ }
+ $("totalLiquidacionAnual").textContent=euros(total);
+}
+
 function pintarTienda(){
  const selector=$("selectorMesTienda"),prev=selector.value;
  const claves=Object.keys(ventasTienda).sort().reverse();
@@ -1997,9 +2040,10 @@ $("selectorMesTienda").addEventListener("change",()=>{diaTiendaSeleccionado=null
 $("selectorFechaMargen").addEventListener("change",pintarMargen);
 $("selectorMesMargen").addEventListener("change",pintarMargen);
 $("selectorAnoMargen").addEventListener("change",pintarMargen);
+$("selectorAnoLiquidacion").addEventListener("change",pintarLiquidacionMensual);
 ["estCombAno","estCombMes","estMargAno","estMargMes","estTiendaAno","estTiendaMes","estCistAno","estCistMes","estCompAnoA","estCompMesA","estCompAnoB","estCompMesB","estCompAnualA","estCompAnualB"].forEach(id=>$(id).addEventListener("change",pintarEstadisticas));
 document.querySelectorAll("[data-ir-estadistica]").forEach(b=>b.addEventListener("click",()=>{const destino=$("estadistica-"+b.dataset.irEstadistica);if(destino)destino.scrollIntoView({behavior:"smooth",block:"start"})}));
-pintarVistas();k124VistasListas=true;pintarTienda();pintarMargen();pintarPedido();if(pedidoPendiente){$("fechaPedido").value=pedidoPendiente.fecha;cantidadesPedido=pedidoPendiente.litros.slice();pintarPedido();actualizarEstadoPedidoGuardado()}
+pintarVistas();k124VistasListas=true;pintarTienda();pintarMargen();pintarLiquidacionMensual();pintarPedido();if(pedidoPendiente){$("fechaPedido").value=pedidoPendiente.fecha;cantidadesPedido=pedidoPendiente.litros.slice();pintarPedido();actualizarEstadoPedidoGuardado()}
 pintarUltimaGuardada();
 </script>
 </body>
