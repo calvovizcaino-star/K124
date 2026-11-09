@@ -1160,7 +1160,7 @@ function editarLiquidacionMes(ano,mes){
 }
 function pintarLiquidacionMensual(){
  const selector=$("selectorAnoLiquidacion"),anterior=selector.value;
- const anos=[...new Set([...Object.keys(liquidacionesMensuales),"2026"])].sort().reverse();
+ const anoActual=String(new Date().getFullYear());const anos=[...new Set([...Object.keys(liquidacionesMensuales),"2026",anoActual])].sort().reverse();
  selector.innerHTML=anos.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
  selector.value=anos.includes(anterior)?anterior:(anos[0]||"2026");
  const ano=selector.value,datos=liquidacionesMensuales[ano]||{},body=$("filasLiquidacionMensual");body.innerHTML="";
