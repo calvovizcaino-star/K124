@@ -594,6 +594,15 @@ header p{
   <div class="tabla-contenedor"><table><thead><tr><th>Mes</th><th>Liquidación</th><th></th></tr></thead><tbody id="filasLiquidacionMensual"></tbody></table></div>
   <div class="tienda-total"><span>Total liquidación del año</span><strong id="totalLiquidacionAnual">—</strong></div>
  </section>
+ <section class="panel">
+  <div class="cabecera-vista"><h2>🏆 Resultado anual conjunto</h2><span id="anoResultadoConjunto" class="etiqueta-periodo"></span></div>
+  <p class="ayuda">Suma del margen diario de carburante y las liquidaciones mensuales registradas.</p>
+  <div class="tienda-kpis">
+   <div class="tienda-kpi"><span>Margen diario anual</span><strong id="resultadoMargenDiario">—</strong></div>
+   <div class="tienda-kpi"><span>Liquidaciones anuales</span><strong id="resultadoLiquidaciones">—</strong></div>
+  </div>
+  <div class="tienda-total"><span>TOTAL ANUAL CONJUNTO</span><strong id="resultadoAnualConjunto">—</strong></div>
+ </section>
 </div>
 
 
@@ -1165,6 +1174,12 @@ function pintarLiquidacionMensual(){
   tr.append(tdMes,tdValor,tdAcc);body.appendChild(tr);
  }
  $("totalLiquidacionAnual").textContent=euros(total);
+ const clavesMargen=Object.keys(margenesDiarios).filter(k=>k.startsWith(ano+"-")&&Number.isFinite(Number(valorMargenDia(k))));
+ const totalMargen=clavesMargen.reduce((s,k)=>s+Number(valorMargenDia(k)||0),0);
+ $("anoResultadoConjunto").textContent=ano;
+ $("resultadoMargenDiario").textContent=euros(totalMargen);
+ $("resultadoLiquidaciones").textContent=euros(total);
+ $("resultadoAnualConjunto").textContent=euros(totalMargen+total);
 }
 
 function pintarTienda(){
