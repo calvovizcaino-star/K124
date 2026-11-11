@@ -188,6 +188,13 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .payment-nav #paymentYear{grid-column:3!important;grid-row:1!important;}
 .payment-nav #paymentPrev{grid-column:1!important;grid-row:1!important;}
 .payment-nav #paymentNext{grid-column:4!important;grid-row:1!important;}
+
+/* Selector de histórico: mes visible entre flechas y año debajo */
+.payment-nav{display:grid!important;grid-template-columns:48px minmax(0,1fr) 48px!important;grid-template-rows:48px 46px!important;gap:8px!important;align-items:stretch!important;width:100%!important;min-width:0!important;}
+.payment-nav #paymentPrev{grid-column:1!important;grid-row:1!important;width:48px!important;min-width:48px!important;height:48px!important;}
+.payment-nav #paymentMonth{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:48px!important;display:block!important;font-size:17px!important;padding:8px 12px!important;}
+.payment-nav #paymentNext{grid-column:3!important;grid-row:1!important;width:48px!important;min-width:48px!important;height:48px!important;}
+.payment-nav #paymentYear{grid-column:2!important;grid-row:2!important;justify-self:center!important;width:132px!important;min-width:132px!important;max-width:132px!important;height:46px!important;display:block!important;font-size:16px!important;padding:8px 12px!important;}
 </style></head><body>
 <header class="top k124-header">
  <div class="header-topline">
