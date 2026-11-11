@@ -392,7 +392,7 @@ function renderDueMenu(){
  $('dueMenu').innerHTML=dates.length?dates.map(d=>{
   const items=pending.filter(x=>(x.due||'')===d);
   const total=items.reduce((sum,x)=>sum+(Number(x.total)||0),0);
-  const label=d?new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}):'Sin fecha';
+  const label=d?('FIN DE '+monthLabel(monthKey(d)).toUpperCase()):'Sin fecha';
   return '<details class="due-menu-item"><summary><span>'+label+' · '+items.length+' albarán(es)</span><b>'+fmt(total)+'</b></summary><div class="due-menu-content">'+items.map(item).join('')+'</div></details>';
  }).join(''):'<p class="muted">No hay pagos pendientes.</p>';
 }
