@@ -175,7 +175,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 <div class="grid"><div class="card"><span class="muted">Pendiente de pago</span><strong class="big" id="sum">0,00 €</strong></div><div class="card"><span class="muted">Próximos vencimientos</span><strong class="big" id="count">0</strong></div></div>
 <div class="actions"><label class="pick green">📷 HACER FOTO<input id="cam" type="file" accept="image/*" capture="environment"></label><label class="pick white">▧ AÑADIR FOTO<input id="gal" type="file" accept="image/*"></label></div>
 <div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><img id="preview" style="width:100%;max-height:220px;object-fit:contain"></div>
-<div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num"></label><label>Fecha albarán<input id="doc" type="date"></label><label>Fecha de pago<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
+<div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num" required></label><label>Fecha albarán<input id="doc" type="date" required></label><label>Fecha de vencimiento<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
 <div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Albaranes pendientes de pago</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Albaranes pagados · Histórico</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Datos guardados en este dispositivo.</p></main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script>
 
@@ -201,20 +201,20 @@ function parseOCR(texts){
  const candidates=(texts.join(' ').match(/\b\d{8,14}\b/g)||[]).filter(x=>!/^20\d{2}$/.test(x));
  if(candidates.length)n=candidates.sort((a,b)=>b.length-a.length)[0];
  let doc='',due='';
+ const docLabel=/(fecha|date).*(albaran|documento|emision|expedicion)|(albaran|documento|emision).*(fecha|date)/;
+ const dueLabel=/(fecha|date).*(pago|vencimiento|vto|vence|limite|cargo|domiciliacion)|(vencimiento|vto\\.?|vence|pago hasta|due date|payment date|payment due|amount due)/;
+ const deliveryLabel=/(fecha|date).*(entrega|recepcion|servicio|transporte|descarga|pedido)|(entrega|recepcion|descarga)/;
  for(let i=0;i<lines.length;i++){
-   const z=norm(lines[i]), nearby=lines.slice(i,Math.min(lines.length,i+3)).join(' ');
-   if(!doc && /(fecha.*(albaran|documento|emision)|date.*(document|issue))/.test(z))doc=isoDate(nearby);
-   if(!due && /(fecha.*(pago|vencimiento|limite)|vencimiento|due date|payment date|end date)/.test(z))due=isoDate(nearby);
+  const z=norm(lines[i]), window=lines.slice(i,Math.min(lines.length,i+3)).join(' ');
+  if(!doc && docLabel.test(z) && !deliveryLabel.test(z))doc=isoDate(window);
+  if(!due && dueLabel.test(z) && !deliveryLabel.test(z))due=isoDate(window);
  }
- // No usar la primera fecha encontrada: suele ser la fecha de entrega.
- // Solo rellenar la fecha del albarán cuando esté asociada a una etiqueta de documento o emisión.
- if(!doc){
+ if(!due){
   for(let i=0;i<lines.length;i++){
    const z=norm(lines[i]);
-   if(/(fecha|date).*(entrega|recepcion|servicio|transporte|descarga|pedido)/.test(z))continue;
-   if(/(fecha|date).*(albaran|documento|emision|expedicion)|^(albaran|documento|emision)\b/.test(z)){
-    doc=isoDate(lines.slice(i,Math.min(lines.length,i+3)).join(' '));
-    if(doc)break;
+   if(/^(vto\\.?|vence|vencimiento|fecha de vencimiento|fecha pago|fecha de pago|pago hasta|payment due)\\s*:?$/.test(z)){
+    due=isoDate(lines.slice(i+1,Math.min(lines.length,i+3)).join(' '));
+    if(due)break;
    }
   }
  }
@@ -267,8 +267,13 @@ $('cam').onchange=e=>photo(e.target.files[0]);$('gal').onchange=e=>photo(e.targe
 let editingId=null;
 function cleanNumber(v){return (v||'').toString().trim().toLowerCase().replace(/[^a-z0-9]/g,'')}
 $('save').onclick=()=>{
- let due=$('due').value,total=Number($('total').value.replace(',','.')),num=$('num').value.trim();
- if(!due||!Number.isFinite(total)||total<=0)return alert('Indica una fecha de pago y un total a pagar válido.');
+ let due=$('due').value,total=Number($('total').value.replace(',','.')),num=$('num').value.trim(),doc=$('doc').value;
+ const missing=[];
+ if(!num)missing.push('número de albarán');
+ if(!doc)missing.push('fecha del albarán');
+ if(!due)missing.push('fecha de vencimiento');
+ if(!Number.isFinite(total)||total<=0)missing.push('total a pagar');
+ if(missing.length)return alert('No se puede guardar. Completa: '+missing.join(', ')+'.');
  const key=cleanNumber(num);
  if(key){
   const duplicate=data.find(x=>cleanNumber(x.n)===key&&x.id!==editingId);
