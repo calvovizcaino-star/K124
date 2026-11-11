@@ -205,7 +205,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 <div class="grid"><div class="card"><span class="muted">Pendiente de pago</span><strong class="big" id="sum">0,00 €</strong></div><div class="card"><span class="muted">Próximos vencimientos</span><strong class="big" id="count">0</strong></div></div>
 <div class="actions"><label class="pick green">📷 HACER FOTO<input id="cam" type="file" accept="image/*" capture="environment"></label><label class="pick white">▧ AÑADIR FOTO<input id="gal" type="file" accept="image/*"></label></div>
 <div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><img id="preview" style="width:100%;max-height:220px;object-fit:contain"></div>
-<div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num" required></label><label>Fecha de vencimiento<input id="due" type="date" required></label><label>Fecha de entrega<input id="doc" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
+<div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num" required></label><label>Fecha de entrega<input id="doc" type="date" required></label><label>Fecha de vencimiento<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
 <div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Albaranes pendientes de pago</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Albaranes pagados · Histórico</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Datos guardados en este dispositivo.</p>
 </div>
 <section id="duePage" class="app-page hidden">
@@ -227,6 +227,10 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 
 const $=x=>document.getElementById(x),fmt=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
 let data=JSON.parse(localStorage.getItem('logista_docs')||'[]');
+// Migración: corregir registros antiguos donde entrega y vencimiento quedaron intercambiados.
+let datesMigrated=false;
+for(const x of data){if(x.doc&&x.due&&x.due<x.doc){const t=x.doc;x.doc=x.due;x.due=t;datesMigrated=true;}}
+if(datesMigrated)localStorage.setItem('logista_docs',JSON.stringify(data));
 function norm(s){return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
 function isoDate(s){
  let m=(s||'').match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/);
@@ -243,7 +247,6 @@ function money(s){
 function parseOCR(texts){
  const raw=texts.join('\n'), lines=raw.split(/\n/).map(x=>x.trim()).filter(Boolean), all=norm(raw);
  let n='';
- // Prioridad al número que aparece junto a N.º en la cabecera.
  const numMatch=raw.match(/(?:n[º°o.]?\s*[:.]?\s*)(\d[\d\s.-]{7,15})/i);
  if(numMatch)n=(numMatch[1].match(/\d{8,14}/)||[])[0]||'';
  if(!n){
@@ -251,25 +254,21 @@ function parseOCR(texts){
   if(candidates.length)n=candidates.sort((a,b)=>b.length-a.length)[0];
  }
  let doc='',due='';
- // Fecha de albarán: no confundir con la fecha de entrega. Si el documento no la imprime, queda vacía.
+ // Logista Retail: DELIVERY DATE = entrega; END DATE = vencimiento.
  const datePattern='(\\d{1,2}[\\/.\\-]\\d{1,2}[\\/.\\-]20\\d{2})';
- const docLabels=/(fecha\s*(?:del?\s*)?(?:albaran|documento|emision)|date\s*(?:of\s*)?(?:document|issue))/i;
- const dueLabels=/(fecha\s*(?:de\s*)?vencimiento|fecha\s*(?:de\s*)?pago|vencimiento|end\s*date|due\s*date|payment\s*date|payment\s*due|pago\s*hasta|vto\.?)/i;
- const deliveryLabels=/(fecha\s*(?:de\s*)?entrega|delivery\s*date)/i;
- function dateAfterLabel(label){
-  const re=new RegExp(label.source+'[\\s\\S]{0,180}?'+datePattern,'i');
+ function dateForLabel(label){
+  const re=new RegExp(label+'[^\\d]{0,45}'+datePattern,'i');
   const m=raw.match(re);
   return m?isoDate(m[1]):'';
  }
- due=dateAfterLabel(dueLabels);
- doc=dateAfterLabel(docLabels);
- // Fallback para etiquetas separadas por saltos de línea.
- if(!due){
+ doc=dateForLabel('(?:fecha\\s*(?:de\\s*)?entrega|delivery\\s*date)');
+ due=dateForLabel('(?:fecha\\s*(?:de\\s*)?vencimiento|end\\s*date|due\\s*date)');
+ // Si el OCR divide la etiqueta y la fecha en líneas separadas, buscar en las líneas contiguas.
+ if(!doc||!due){
   for(let i=0;i<lines.length;i++){
-   if(dueLabels.test(norm(lines[i]))){
-    due=isoDate(lines.slice(i,Math.min(lines.length,i+5)).join(' '));
-    if(due)break;
-   }
+   const z=norm(lines[i]);
+   if(!doc&&/(fecha.*entrega|delivery.*date)/.test(z))doc=isoDate(lines.slice(i,i+3).join(' '));
+   if(!due&&/(fecha.*vencimiento|end.*date|due.*date)/.test(z))due=isoDate(lines.slice(i,i+3).join(' '));
   }
  }
  let total='';
@@ -336,7 +335,7 @@ $('save').onclick=()=>{
  let due=$('due').value,total=Number($('total').value.replace(',','.')),num=$('num').value.trim(),doc=$('doc').value;
  const missing=[];
  if(!num)missing.push('número de albarán');
- if(!doc)missing.push('fecha del albarán');
+ if(!doc)missing.push('fecha de entrega');
  if(!due)missing.push('fecha de vencimiento');
  if(!Number.isFinite(total)||total<=0)missing.push('total a pagar');
  if(missing.length)return alert('No se puede guardar. Completa: '+missing.join(', ')+'.');
@@ -432,7 +431,7 @@ function draw(){
  $('paid').innerHTML=groupedByMonth(h)||'<div class="card muted">No hay pagos registrados.</div>';
   renderDueMenu();
 }
-function item(x){return '<div class="invoice"><div style="min-width:0;flex:1"><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">'+(x.doc?'Albarán: '+new Date(x.doc+'T12:00:00').toLocaleDateString('es-ES')+' · ':'')+'Pago: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><div class="invoice-actions">'+(x.paid?'':'<button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'<button class="edit-btn" onclick="editItem('+x.id+')">✏️ Editar</button><button class="delete-btn" onclick="deleteItem('+x.id+')">🗑 Eliminar</button></div></div><b class="amount">'+fmt(x.total)+'</b></div>'}
+function item(x){return '<div class="invoice"><div style="min-width:0;flex:1"><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">'+(x.doc?'Entrega: '+new Date(x.doc+'T12:00:00').toLocaleDateString('es-ES')+' · ':'')+'Vencimiento: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><div class="invoice-actions">'+(x.paid?'':'<button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'<button class="edit-btn" onclick="editItem('+x.id+')">✏️ Editar</button><button class="delete-btn" onclick="deleteItem('+x.id+')">🗑 Eliminar</button></div></div><b class="amount">'+fmt(x.total)+'</b></div>'}
 window.pay=id=>{let x=data.find(y=>y.id===id);if(confirm('¿Confirmas que está pagado?')){x.paid=true;store()}};
 window.editItem=id=>{
  const x=data.find(y=>y.id===id);if(!x)return;
