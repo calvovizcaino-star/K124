@@ -437,9 +437,13 @@ function draw(){
  let p=data.filter(x=>!x.paid),h=data.filter(x=>x.paid),g={};
  p.forEach(x=>(g[x.due]??=[]).push(x));
  $('sum').textContent=fmt(p.reduce((s,x)=>s+x.total,0));$('count').textContent=Object.keys(g).length;
- $('groups').innerHTML=groupedByMonth(p)||'<div class="card muted">No hay albaranes pendientes.</div>';
+ // En Pendientes mostramos únicamente el mes con vencimiento más próximo.
+ const datedMonths=[...new Set(p.map(x=>monthKey(x.due)).filter(k=>/^\\d{4}-\\d{2}$/.test(k)))].sort();
+ const nearestMonth=datedMonths[0];
+ const nearestPending=nearestMonth?p.filter(x=>monthKey(x.due)===nearestMonth):p;
+ $('groups').innerHTML=groupedByMonth(nearestPending)||'<div class="card muted">No hay albaranes pendientes.</div>';
  $('paid').innerHTML=groupedByMonth(h)||'<div class="card muted">No hay pagos registrados.</div>';
-  renderDueMenu();
+ renderDueMenu();
 }
 function item(x){return '<div class="invoice"><div style="min-width:0;flex:1"><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">'+(x.doc?'Entrega: '+new Date(x.doc+'T12:00:00').toLocaleDateString('es-ES')+' · ':'')+'Vencimiento: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><div class="invoice-actions">'+(x.paid?'':'<button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'<button class="edit-btn" onclick="editItem('+x.id+')">✏️ Editar</button><button class="delete-btn" onclick="deleteItem('+x.id+')">🗑 Eliminar</button></div></div><b class="amount">'+fmt(x.total)+'</b></div>'}
 window.pay=id=>{let x=data.find(y=>y.id===id);if(confirm('¿Confirmas que está pagado?')){x.paid=true;store()}};
