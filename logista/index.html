@@ -120,6 +120,22 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .k124-header .heading h1{font-size:clamp(30px,6.5vw,46px)}
 .k124-header .heading p{max-width:620px}
 @media(max-width:520px){header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}}
+
+/* Campos de revisión: evitar desbordamientos de Safari en iPhone */
+.fields{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;min-width:0}
+.fields label{min-width:0;width:100%;display:block;overflow:hidden}
+.fields input,.fields input[type="date"],.fields input[type="text"],.fields input[type="number"]{
+ display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;
+ height:52px;margin:6px 0 0;padding:10px 11px;
+ border:1px solid var(--line);border-radius:12px;background:#fff;color:#17231c;
+ font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ -webkit-appearance:none;appearance:none;
+}
+.fields input[type="date"]{text-align:left;padding-right:7px}
+.fields input[type="date"]::-webkit-date-and-time-value{text-align:left}
+.fields input:focus{outline:2px solid #9ab9a7;outline-offset:1px}
+@media(max-width:430px){main{padding:12px 14px}.fields{gap:12px 9px}.fields input{font-size:16px;padding:9px 8px}.card{padding:14px}}
+#scan img{display:block;margin:8px auto;max-width:100%;border-radius:8px}
 </style></head><body>
 <header class="top k124-header">
  <div class="header-topline">
@@ -143,14 +159,99 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 <div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num"></label><label>Fecha albarán<input id="doc" type="date"></label><label>Fecha de pago<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
 <div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Pagos por fecha</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Histórico de pagos</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Datos guardados en este dispositivo.</p></main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script>
-const $=x=>document.getElementById(x),fmt=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});let data=JSON.parse(localStorage.getItem('logista_docs')||'[]');
-function date(t){let m=t.match(/(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})/);return m?m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):''}
-function parse(t){let a=t.split(/\n/).map(x=>x.trim()),d='',f='',n='',v='';for(let i=0;i<a.length;i++){let l=a[i],z=l.toLowerCase();if(/end\s*date|fecha.*(vencimiento|pago)|vencimiento/.test(z))d=date(l)||date(a[i+1]||'');if(/fecha/.test(z)&&!f)f=date(l)||date(a[i+1]||'');if(/albar[aá]n|delivery note/.test(z)&&!n)n=(l.match(/\b\d{7,14}\b/)||[])[0]||'';if(/total\s*(a\s*)?(pagar|payable)|importe\s*total/.test(z)){let m=(l+' '+(a[i+1]||'')).match(/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/);if(m)v=m[0].replace(/\./g,'').replace(',','.')}}return{d,f,n,v}}
-async function photo(file){if(!file)return;$('scan').classList.remove('hidden');$('form').classList.add('hidden');$('preview').src=URL.createObjectURL(file);$('msg').textContent='Leyendo la fotografía…';try{let r=await Tesseract.recognize(file,'spa+eng');let x=parse(r.data.text);$('num').value=x.n;$('doc').value=x.f;$('due').value=x.d;$('total').value=x.v;$('msg').textContent='Lectura terminada. Revisa fecha de pago y total a pagar.'}catch(e){$('msg').textContent='No se pudo leer automáticamente. Introduce los datos manualmente.'} $('form').classList.remove('hidden')}
+
+const $=x=>document.getElementById(x),fmt=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
+let data=JSON.parse(localStorage.getItem('logista_docs')||'[]');
+function norm(s){return (s||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase()}
+function isoDate(s){
+ let m=(s||'').match(/\\b(\\d{1,2})[\\/.-](\\d{1,2})[\\/.-](20\\d{2})\\b/);
+ if(m){let d=+m[1],mo=+m[2],y=+m[3];if(d>12){[d,mo]=[d,mo]}else if(mo>12){[d,mo]=[mo,d]}if(mo>=1&&mo<=12&&d>=1&&d<=31)return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0')}
+ const months={ene:1,jan:1,feb:2,mar:3,abr:4,apr:4,may:5,mai:5,jun:6,jul:7,ago:8,aug:8,sep:9,oct:10,nov:11,dic:12,dec:12};
+ m=(s||'').match(/\\b(\\d{1,2})\\s+([a-z]{3,})\\.?\\s+(20\\d{2})\\b/i);
+ if(m){let key=norm(m[2]).slice(0,3),mo=months[key];if(mo)return m[3]+'-'+String(mo).padStart(2,'0')+'-'+m[1].padStart(2,'0')}
+ return '';
+}
+function money(s){
+ const a=(s||'').match(/(?:\\d{1,3}(?:[. ]\\d{3})+|\\d+)[,.]\\d{2}/g)||[];
+ return a.map(x=>Number(x.replace(/[. ]/g,'').replace(',','.'))).filter(x=>Number.isFinite(x)&&x>0);
+}
+function parseOCR(texts){
+ const lines=texts.join('\\n').split(/\\n/).map(x=>x.trim()).filter(Boolean), all=norm(lines.join(' '));
+ let n='';
+ // En estos albaranes el identificador suele aparecer en la cabecera como una secuencia larga.
+ const candidates=(texts.join(' ').match(/\\b\\d{8,14}\\b/g)||[]).filter(x=>!/^20\\d{2}$/.test(x));
+ if(candidates.length)n=candidates.sort((a,b)=>b.length-a.length)[0];
+ let doc='',due='';
+ for(let i=0;i<lines.length;i++){
+   const z=norm(lines[i]), nearby=lines.slice(i,Math.min(lines.length,i+3)).join(' ');
+   if(!doc && /(fecha.*(albaran|documento|emision)|date.*(document|issue))/.test(z))doc=isoDate(nearby);
+   if(!due && /(fecha.*(pago|vencimiento|limite)|vencimiento|due date|payment date|end date)/.test(z))due=isoDate(nearby);
+ }
+ // fallback para fecha de documento: no tomarla como vencimiento automáticamente
+ if(!doc){for(const l of lines){let d=isoDate(l);if(d){doc=d;break}}}
+ let total='';
+ // Priorizar importes próximos a "total a pagar", "total factura/facturación" o "amount due".
+ for(let i=0;i<lines.length;i++){
+   const z=norm(lines[i]);
+   if(/(total.{0,18}(pagar|payable|factura|facturacion)|amount due|importe total)/.test(z)){
+     let vals=money(lines.slice(i,Math.min(lines.length,i+3)).join(' '));
+     if(vals.length){total=String(vals[vals.length-1].toFixed(2));break}
+   }
+ }
+ // Si no se detecta etiqueta clara, no rellenar un importe al azar.
+ return {n,doc,due,total};
+}
+async function enhance(file,region='full'){
+ const bitmap=await createImageBitmap(file), scale=region==='full'?2:3;
+ const c=document.createElement('canvas');
+ let sx=0,sy=0,sw=bitmap.width,sh=bitmap.height;
+ if(region==='top'){sh=Math.round(bitmap.height*.48)}
+ if(region==='bottom'){sy=Math.round(bitmap.height*.42);sh=bitmap.height-sy}
+ c.width=Math.round(sw*scale);c.height=Math.round(sh*scale);
+ const ctx=c.getContext('2d',{willReadFrequently:true});
+ ctx.drawImage(bitmap,sx,sy,sw,sh,0,0,c.width,c.height);
+ const im=ctx.getImageData(0,0,c.width,c.height),p=im.data;
+ for(let i=0;i<p.length;i+=4){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];g=Math.max(0,Math.min(255,(g-125)*1.55+145));p[i]=p[i+1]=p[i+2]=g}
+ ctx.putImageData(im,0,0);
+ return c;
+}
+async function photo(file){
+ if(!file)return;
+ $('scan').classList.remove('hidden');$('form').classList.add('hidden');
+ $('preview').src=URL.createObjectURL(file);$('msg').textContent='Mejorando imagen y leyendo el albarán…';
+ ['num','doc','due','total'].forEach(id=>$(id).value='');
+ try{
+   const texts=[];
+   for(const region of ['full','top','bottom']){
+     const canvas=await enhance(file,region);
+     const result=await Tesseract.recognize(canvas,'spa+eng',{logger:m=>{if(m.status==='recognizing text')$('msg').textContent='Leyendo albarán… '+Math.round((m.progress||0)*100)+'%'}});
+     texts.push(result.data.text||'');
+   }
+   const x=parseOCR(texts);
+   $('num').value=x.n;$('doc').value=x.doc;$('due').value=x.due;$('total').value=x.total;
+   const missing=[];if(!x.n)missing.push('número');if(!x.doc)missing.push('fecha del albarán');if(!x.due)missing.push('fecha de pago');if(!x.total)missing.push('total a pagar');
+   $('msg').textContent=missing.length?'Lectura parcial. Revisa la imagen e introduce los campos que faltan: '+missing.join(', ')+'.':'Lectura completada. Comprueba todos los datos antes de guardar.';
+ }catch(e){$('msg').textContent='No se pudo completar la lectura automática. Puedes introducir los datos manualmente.'}
+ $('form').classList.remove('hidden');
+}
 $('cam').onchange=e=>photo(e.target.files[0]);$('gal').onchange=e=>photo(e.target.files[0]);
-$('save').onclick=()=>{let due=$('due').value,total=Number($('total').value.replace(',','.'));if(!due||!Number.isFinite(total)||total<=0)return alert('Indica fecha de pago y total a pagar válido.');data.unshift({id:Date.now(),n:$('num').value,due,total,paid:false});store();$('form').classList.add('hidden');$('scan').classList.add('hidden')};
+$('save').onclick=()=>{
+ let due=$('due').value,total=Number($('total').value.replace(',','.'));
+ if(!due||!Number.isFinite(total)||total<=0)return alert('Indica una fecha de pago y un total a pagar válido.');
+ data.unshift({id:Date.now(),n:$('num').value.trim(),doc:$('doc').value,due,total,paid:false});store();
+ $('form').classList.add('hidden');$('scan').classList.add('hidden')
+};
 function store(){localStorage.setItem('logista_docs',JSON.stringify(data));draw()}
-function draw(){let p=data.filter(x=>!x.paid),h=data.filter(x=>x.paid),g={};p.forEach(x=>(g[x.due]??=[]).push(x));$('sum').textContent=fmt(p.reduce((s,x)=>s+x.total,0));$('count').textContent=Object.keys(g).length;$('groups').innerHTML=Object.keys(g).sort().map(k=>'<div class="card"><div class="row"><b>'+new Date(k+'T12:00:00').toLocaleDateString('es-ES')+'</b><b class="amount">'+fmt(g[k].reduce((s,x)=>s+x.total,0))+'</b></div>'+g[k].map(item).join('')+'</div>').join('')||'<div class="card muted">No hay albaranes pendientes.</div>';$('paid').innerHTML=h.map(item).join('')||'<div class="card muted">No hay pagos registrados.</div>'}
-function item(x){return '<div class="invoice"><div><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">Pago: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span>'+(x.paid?'':'<br><button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'</div><b>'+fmt(x.total)+'</b></div>'}
-window.pay=id=>{let x=data.find(y=>y.id===id);if(confirm('¿Confirmas que está pagado?')){x.paid=true;store()}};$('bt1').onclick=()=>tab(false);$('bt2').onclick=()=>tab(true);function tab(h){$('pending').classList.toggle('hidden',h);$('history').classList.toggle('hidden',!h);$('bt1').classList.toggle('on',!h);$('bt2').classList.toggle('on',h)}draw();
+function draw(){
+ let p=data.filter(x=>!x.paid),h=data.filter(x=>x.paid),g={};
+ p.forEach(x=>(g[x.due]??=[]).push(x));
+ $('sum').textContent=fmt(p.reduce((s,x)=>s+x.total,0));$('count').textContent=Object.keys(g).length;
+ $('groups').innerHTML=Object.keys(g).sort().map(k=>'<div class="card"><div class="row"><b>'+new Date(k+'T12:00:00').toLocaleDateString('es-ES')+'</b><b class="amount">'+fmt(g[k].reduce((s,x)=>s+x.total,0))+'</b></div>'+g[k].map(item).join('')+'</div>').join('')||'<div class="card muted">No hay albaranes pendientes.</div>';
+ $('paid').innerHTML=h.map(item).join('')||'<div class="card muted">No hay pagos registrados.</div>'
+}
+function item(x){return '<div class="invoice"><div><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">'+(x.doc?'Albarán: '+new Date(x.doc+'T12:00:00').toLocaleDateString('es-ES')+' · ':'')+'Pago: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span>'+(x.paid?'':'<br><button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'</div><b>'+fmt(x.total)+'</b></div>'}
+window.pay=id=>{let x=data.find(y=>y.id===id);if(confirm('¿Confirmas que está pagado?')){x.paid=true;store()}};
+$('bt1').onclick=()=>tab(false);$('bt2').onclick=()=>tab(true);
+function tab(h){$('pending').classList.toggle('hidden',h);$('history').classList.toggle('hidden',!h);$('bt1').classList.toggle('on',!h);$('bt2').classList.toggle('on',h)}
+draw();
 </script></body></html>
