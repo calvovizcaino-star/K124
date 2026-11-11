@@ -179,7 +179,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .app-page{background:#fff;border:1px solid var(--line);border-radius:17px;padding:16px;margin:0 0 18px;min-height:260px;box-shadow:0 3px 12px #173b2910}
 .app-page h2{font-size:23px;color:var(--g);margin:12px 0}
 .back-home{background:#eaf1fa;color:#123f78;padding:10px 13px;border-radius:10px}
-</style></head><body>
+\n.payment-nav{display:grid;grid-template-columns:42px minmax(0,1fr) 82px 42px;gap:7px;align-items:center;margin:16px 0}.payment-nav button{padding:8px;font-size:25px;background:#eaf1fa;color:#123f78}.payment-nav select{min-width:0;width:100%;padding:11px 7px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#173b63;font-size:14px;font-weight:700}.payment-total{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:14px;background:#eaf1fa;border:1px solid #d3e0ef;border-radius:12px;color:#123f78;margin:10px 0}.payment-total strong{font-size:20px;white-space:nowrap}.payment-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 3px;border-bottom:1px solid var(--line)}.payment-row span{min-width:0}.payment-row small{display:block;color:#66736b;margin-top:4px}.payment-row strong{color:#123f78;white-space:nowrap}.payment-empty{padding:20px 4px}.legacy-payments{margin-top:24px}.legacy-payments h3{font-size:16px;color:#173b63}\n</style></head><body>
 <header class="top k124-header">
  <div class="header-topline">
   <div class="header-brand">
@@ -199,6 +199,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 <main>
 <div id="mainMenuPanel" class="hidden menu-dropdown">
  <button class="menu-choice" id="goDuePage">📅 Fecha a pagar</button>
+ <button class="menu-choice" id="goPaymentsPage">💶 Histórico de pagos</button>
  <button class="menu-choice" id="goBackupPage">🗂️ Copias de seguridad</button>
 </div>
 <div id="homePage">
@@ -213,6 +214,20 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
  <h2>Fecha a pagar</h2>
  <p class="muted">Albaranes pendientes agrupados por fecha de vencimiento.</p>
  <div id="dueMenu"></div>
+</section>
+<section id="paymentsPage" class="app-page hidden">
+ <button class="back-home" data-home>← Volver</button>
+ <h2>Histórico de pagos</h2>
+ <p class="muted">Consulta los albaranes según el mes en que se marcaron como pagados.</p>
+ <div class="payment-nav">
+  <button id="paymentPrev" aria-label="Mes anterior">‹</button>
+  <select id="paymentMonth" aria-label="Mes"></select>
+  <select id="paymentYear" aria-label="Año"></select>
+  <button id="paymentNext" aria-label="Mes siguiente">›</button>
+ </div>
+ <div id="paymentSummary"></div>
+ <div id="paymentRows"></div>
+ <div id="paymentLegacy" class="legacy-payments"></div>
 </section>
 <section id="backupPage" class="app-page hidden">
  <button class="back-home" data-home>← Volver</button>
@@ -407,11 +422,13 @@ function showPage(page){
  $('mainMenuPanel').classList.add('hidden');
  $('homePage').classList.toggle('hidden',page!=='home');
  $('duePage').classList.toggle('hidden',page!=='due');
+ $('paymentsPage').classList.toggle('hidden',page!=='payments');
  $('backupPage').classList.toggle('hidden',page!=='backup');
  $('menuToggle').setAttribute('aria-expanded','false');
  window.scrollTo({top:0,behavior:'smooth'});
 }
 $('goDuePage').onclick=()=>{renderDueMenu();showPage('due')};
+$('goPaymentsPage').onclick=()=>{renderPaymentHistory();showPage('payments')};
 $('goBackupPage').onclick=()=>showPage('backup');
 document.querySelectorAll('[data-home]').forEach(btn=>btn.onclick=()=>showPage('home'));
 $('exportBackup').onclick=()=>{
@@ -433,6 +450,31 @@ $('importBackup').onchange=async e=>{
  e.target.value='';
 };
 
+const paymentMonths=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let paymentView=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+function paymentKey(date){return (date||'').slice(0,7)}
+function renderPaymentHistory(){
+ const [yy,mm]=paymentView.split('-').map(Number);
+ $('paymentMonth').innerHTML=paymentMonths.map((m,i)=>'<option value="'+(i+1)+'" '+(i+1===mm?'selected':'')+'>'+m+'</option>').join('');
+ const years=new Set([new Date().getFullYear()]);
+ data.filter(x=>x.paid&&x.paidAt).forEach(x=>years.add(Number(x.paidAt.slice(0,4))));
+ years.add(yy);
+ $('paymentYear').innerHTML=[...years].sort((a,b)=>b-a).map(y=>'<option value="'+y+'" '+(y===yy?'selected':'')+'>'+y+'</option>').join('');
+ const rows=data.filter(x=>x.paid&&paymentKey(x.paidAt)===paymentView).sort((a,b)=>(a.paidAt||'').localeCompare(b.paidAt||'')||(a.n||'').localeCompare(b.n||''));
+ const total=rows.reduce((s,x)=>s+(Number(x.total)||0),0);
+ $('paymentSummary').innerHTML='<div class="payment-total"><span>Total pagado en '+paymentMonths[mm-1]+' de '+yy+'</span><strong>'+fmt(total)+'</strong></div>';
+ $('paymentRows').innerHTML=rows.length?rows.map(x=>'<div class="payment-row"><span><b>Albarán '+(x.n||'sin número')+'</b><small>Pagado el '+new Date(x.paidAt+'T12:00:00').toLocaleDateString('es-ES')+'</small></span><strong>'+fmt(x.total)+'</strong></div>').join(''):'<p class="muted payment-empty">No hay albaranes marcados como pagados en este mes.</p>';
+ const legacy=data.filter(x=>x.paid&&!x.paidAt);
+ $('paymentLegacy').innerHTML=legacy.length?'<h3>Pagos anteriores sin fecha registrada</h3><p class="muted">Estos albaranes ya estaban marcados como pagados antes de activar el histórico mensual.</p>'+legacy.map(x=>'<div class="payment-row"><span><b>Albarán '+(x.n||'sin número')+'</b><small>Fecha de pago no registrada</small></span><strong>'+fmt(x.total)+'</strong></div>').join(''):'';
+}
+function shiftPaymentMonth(delta){
+ const [y,m]=paymentView.split('-').map(Number),d=new Date(y,m-1+delta,1);
+ paymentView=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');renderPaymentHistory();
+}
+$('paymentPrev').onclick=()=>shiftPaymentMonth(-1);
+$('paymentNext').onclick=()=>shiftPaymentMonth(1);
+$('paymentMonth').onchange=()=>{paymentView=paymentView.slice(0,4)+'-'+String(Number($('paymentMonth').value)).padStart(2,'0');renderPaymentHistory()};
+$('paymentYear').onchange=()=>{paymentView=$('paymentYear').value+'-'+paymentView.slice(5,7);renderPaymentHistory()};
 function draw(){
  let p=data.filter(x=>!x.paid),h=data.filter(x=>x.paid),g={};
  p.forEach(x=>(g[x.due]??=[]).push(x));
@@ -458,7 +500,7 @@ function draw(){
  renderDueMenu();
 }
 function item(x){return '<div class="invoice"><div style="min-width:0;flex:1"><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">'+(x.doc?'Entrega: '+new Date(x.doc+'T12:00:00').toLocaleDateString('es-ES')+' · ':'')+'Vencimiento: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><div class="invoice-actions">'+(x.paid?'':'<button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'<button class="edit-btn" onclick="editItem('+x.id+')">✏️ Editar</button><button class="delete-btn" onclick="deleteItem('+x.id+')">🗑 Eliminar</button></div></div><b class="amount">'+fmt(x.total)+'</b></div>'}
-window.pay=id=>{let x=data.find(y=>y.id===id);if(confirm('¿Confirmas que está pagado?')){x.paid=true;store()}};
+window.pay=id=>{let x=data.find(y=>y.id===id);if(confirm('¿Confirmas que está pagado?')){x.paid=true;x.paidAt=new Date().toISOString().slice(0,10);store()}};
 window.editItem=id=>{
  const x=data.find(y=>y.id===id);if(!x)return;
  editingId=id;$('num').value=x.n||'';$('doc').value=x.doc||'';$('due').value=x.due||'';$('total').value=String(x.total??'');
