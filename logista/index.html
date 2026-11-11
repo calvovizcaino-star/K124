@@ -254,22 +254,25 @@ function parseOCR(texts){
   if(candidates.length)n=candidates.sort((a,b)=>b.length-a.length)[0];
  }
  let doc='',due='';
- // Logista Retail: DELIVERY DATE = entrega; END DATE = vencimiento.
+ // En los albaranes Logista: Delivery date = fecha de entrega (doc)
+ // y End date = fecha de vencimiento (due). Extraer cada fecha de su propia etiqueta.
  const datePattern='(\\d{1,2}[\\/.\\-]\\d{1,2}[\\/.\\-]20\\d{2})';
- function dateForLabel(label){
-  const re=new RegExp(label+'[^\\d]{0,45}'+datePattern,'i');
+ function labeledDate(label){
+  const re=new RegExp(label+'\\s*[:：]?\\s*'+datePattern,'i');
   const m=raw.match(re);
   return m?isoDate(m[1]):'';
  }
- doc=dateForLabel('(?:fecha\\s*(?:de\\s*)?entrega|delivery\\s*date)');
- due=dateForLabel('(?:fecha\\s*(?:de\\s*)?vencimiento|end\\s*date|due\\s*date)');
- // Si el OCR divide la etiqueta y la fecha en líneas separadas, buscar en las líneas contiguas.
- if(!doc||!due){
-  for(let i=0;i<lines.length;i++){
-   const z=norm(lines[i]);
-   if(!doc&&/(fecha.*entrega|delivery.*date)/.test(z))doc=isoDate(lines.slice(i,i+3).join(' '));
-   if(!due&&/(fecha.*vencimiento|end.*date|due.*date)/.test(z))due=isoDate(lines.slice(i,i+3).join(' '));
-  }
+ // Etiquetas exactas para evitar que una fecha cercana se asigne al campo equivocado.
+ doc=labeledDate('(?:fecha\\s*entrega|delivery\\s*date)');
+ due=labeledDate('(?:fecha\\s*vencimiento|fecha\\s*pago|end\\s*date|due\\s*date|payment\\s*due|vto\\.?)');
+ // OCR puede separar etiqueta y fecha o intercalar saltos/columnas.
+ if(!doc){
+  const m=raw.match(/(?:fecha\\s*entrega|delivery\\s*date)[^0-9]{0,55}(\\d{1,2}[\\/.\\-]\\d{1,2}[\\/.\\-]20\\d{2})/i);
+  if(m)doc=isoDate(m[1]);
+ }
+ if(!due){
+  const m=raw.match(/(?:fecha\\s*vencimiento|fecha\\s*pago|end\\s*date|due\\s*date|payment\\s*due|vto\\.?)[^0-9]{0,55}(\\d{1,2}[\\/.\\-]\\d{1,2}[\\/.\\-]20\\d{2})/i);
+  if(m)due=isoDate(m[1]);
  }
  let total='';
  // En este modelo el importe correcto está junto a TOTAL PAGAR/TOTAL PAY, no junto a PVP.
