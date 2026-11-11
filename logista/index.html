@@ -502,8 +502,6 @@ function draw(){
  const now=new Date();
  const currentMonth=monthKey(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
  $('sum').textContent=fmt(p.filter(x=>monthKey(x.due)===currentMonth).reduce((s,x)=>s+(Number(x.total)||0),0));
- // El contador refleja los albaranes visibles en la sección Pendientes.
- $('count').textContent=nearestPending.length;
  // En Pendientes mostramos el mes más cercano al mes actual.
  // Si hoy estamos en noviembre y se añade un albarán de noviembre,
  // noviembre aparece antes que diciembre o enero. Si solo hay meses pasados,
@@ -517,6 +515,8 @@ function draw(){
  });
  const nearestMonth=datedMonths[0];
  const nearestPending=nearestMonth?p.filter(x=>monthKey(x.due)===nearestMonth):p;
+ // El contador refleja los albaranes visibles en la sección Pendientes.
+ $('count').textContent=nearestPending.length;
  $('groups').innerHTML=groupedByMonth(nearestPending)||'<div class="card muted">No hay albaranes pendientes.</div>';
  $('paid').innerHTML=groupedByMonth(h)||'<div class="card muted">No hay pagos registrados.</div>';
  renderDueMenu();
