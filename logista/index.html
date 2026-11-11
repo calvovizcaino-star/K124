@@ -127,6 +127,11 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .month-title{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 13px;background:#eaf1fa;border:1px solid #d3e0ef;border-radius:11px;color:#123f78;font-weight:850}
 .month-title strong{font-size:14px}
 .month-total{font-size:13px;white-space:nowrap}
+.pending-month-nav{display:grid;grid-template-columns:40px minmax(0,1fr) auto 40px;align-items:center;gap:7px;margin:14px 0 18px;padding:8px;background:#eaf1fa;border:1px solid #d3e0ef;border-radius:12px;color:#123f78}
+.pending-month-nav strong{min-width:0;text-align:center;font-size:15px;font-weight:850;text-transform:capitalize}
+.pending-month-nav button{height:40px;width:40px;padding:0;border-radius:9px;background:#fff;color:#123f78;border:1px solid #d3e0ef;font-size:25px;line-height:1}
+.pending-month-nav .month-total{font-size:14px;font-weight:850;white-space:nowrap}
+@media(max-width:390px){.pending-month-nav{grid-template-columns:36px minmax(0,1fr) auto 36px;gap:5px;padding:7px}.pending-month-nav button{width:36px;height:38px}.pending-month-nav strong{font-size:13px}.pending-month-nav .month-total{font-size:12px}}
 .due-group{margin:9px 0 0;padding:11px 12px;border:1px solid #e0e7f0;border-radius:12px;background:#fbfcff}
 .due-title{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#34463a;font-size:13px;font-weight:800;margin-bottom:3px}
 .due-title .amount{font-size:15px}
@@ -399,7 +404,7 @@ function monthLabel(k){
  const [y,m]=k.split('-').map(Number);
  return new Date(y,m-1,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
 }
-function groupedByMonth(items){
+function groupedByMonth(items,includeMonthHeader=true){
  const months={};
  items.forEach(x=>{
   const mk=monthKey(x.due);
@@ -414,7 +419,7 @@ function groupedByMonth(items){
    const label=d?new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}):'Sin fecha';
    return '<div class="due-group"><div class="due-title"><span>Vencimiento · '+label+'</span><b class="amount">'+fmt(sum)+'</b></div>'+rows.map(item).join('')+'</div>';
   }).join('');
-  return '<div class="month-group"><div class="month-title"><strong>'+monthLabel(mk)+'</strong><span class="month-total">'+fmt(m.total)+'</span></div>'+dates+'</div>';
+  return includeMonthHeader?'<div class="month-group"><div class="month-title"><strong>'+monthLabel(mk)+'</strong><span class="month-total">'+fmt(m.total)+'</span></div>'+dates+'</div>':dates;
  }).join('');
 }
 function renderDueMenu(){
@@ -466,6 +471,27 @@ $('importBackup').onchange=async e=>{
  e.target.value='';
 };
 
+let pendingMonthView=null;
+function nearestPendingMonth(p,now){
+ const currentIndex=now.getFullYear()*12+now.getMonth();
+ const months=[...new Set(p.map(x=>monthKey(x.due)).filter(k=>/^\d{4}-\d{2}$/.test(k)))];
+ months.sort((a,b)=>{const [ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number);const ai=ay*12+am-1,bi=by*12+bm-1;return Math.abs(ai-currentIndex)-Math.abs(bi-currentIndex)||ai-bi;});
+ return months[0]||monthKey(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+}
+function renderPendingMonth(p,now){
+ if(!pendingMonthView)pendingMonthView=nearestPendingMonth(p,now);
+ const visible=p.filter(x=>monthKey(x.due)===pendingMonthView);
+ const total=visible.reduce((sum,x)=>sum+(Number(x.total)||0),0);
+ $('count').textContent=visible.length;
+ $('groups').innerHTML='<div class="pending-month-nav"><button id="pendingMonthPrev" aria-label="Mes anterior">‹</button><strong>'+monthLabel(pendingMonthView)+'</strong><span class="month-total">'+fmt(total)+'</span><button id="pendingMonthNext" aria-label="Mes siguiente">›</button></div>'+(groupedByMonth(visible,false)||'<div class="card muted">No hay albaranes pendientes en este mes.</div>');
+ $('pendingMonthPrev').onclick=()=>shiftPendingMonth(-1);
+ $('pendingMonthNext').onclick=()=>shiftPendingMonth(1);
+}
+function shiftPendingMonth(delta){
+ const [y,m]=pendingMonthView.split('-').map(Number),d=new Date(y,m-1+delta,1);
+ pendingMonthView=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+ draw();
+}
 const paymentMonths=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 let paymentView=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
 function paymentKey(date){return (date||'').slice(0,7)}
@@ -502,23 +528,7 @@ function draw(){
  const now=new Date();
  const currentMonth=monthKey(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
  $('sum').textContent=fmt(p.filter(x=>monthKey(x.due)===currentMonth).reduce((s,x)=>s+(Number(x.total)||0),0));
- // En Pendientes mostramos el mes más cercano al mes actual.
- // Si hoy estamos en noviembre y se añade un albarán de noviembre,
- // noviembre aparece antes que diciembre o enero. Si solo hay meses pasados,
- // se muestra el más reciente; en caso de empate, tiene prioridad el vencido.
- const currentMonthIndex=now.getFullYear()*12+now.getMonth();
- const datedMonths=[...new Set(p.map(x=>monthKey(x.due)).filter(k=>/^\d{4}-\d{2}$/.test(k)))];
- datedMonths.sort((a,b)=>{
-  const [ay,am]=a.split('-').map(Number),[by,bm]=b.split('-').map(Number);
-  const ai=ay*12+(am-1),bi=by*12+(bm-1);
-  return Math.abs(ai-currentMonthIndex)-Math.abs(bi-currentMonthIndex)||ai-bi;
- });
- const nearestMonth=datedMonths[0];
- const nearestPending=nearestMonth?p.filter(x=>monthKey(x.due)===nearestMonth):p;
- // El contador refleja los albaranes visibles en la sección Pendientes.
- $('count').textContent=nearestPending.length;
- $('groups').innerHTML=groupedByMonth(nearestPending)||'<div class="card muted">No hay albaranes pendientes.</div>';
- $('paid').innerHTML=groupedByMonth(h)||'<div class="card muted">No hay pagos registrados.</div>';
+ // El selector conserva el mes consultado; al abrir por primera vez,\n // selecciona el mes pendiente más cercano al actual.\n renderPendingMonth(p,now);\n $('paid').innerHTML=groupedByMonth(h)||'<div class="card muted">No hay pagos registrados.</div>';
  renderDueMenu();
 }
 function item(x){return '<div class="invoice"><div style="min-width:0;flex:1"><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">'+(x.doc?'Entrega: '+new Date(x.doc+'T12:00:00').toLocaleDateString('es-ES')+' · ':'')+'Vencimiento: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><div class="invoice-actions">'+(x.paid?'':'<button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'<button class="edit-btn" onclick="editItem('+x.id+')">✏️ Editar</button><button class="delete-btn" onclick="deleteItem('+x.id+')">🗑 Eliminar</button></div></div><b class="amount">'+fmt(x.total)+'</b></div>'}
