@@ -444,7 +444,6 @@ function draw(){
  // Si hoy estamos en noviembre y se añade un albarán de noviembre,
  // noviembre aparece antes que diciembre o enero. Si solo hay meses pasados,
  // se muestra el más reciente; en caso de empate, tiene prioridad el vencido.
- const now=new Date();
  const currentMonthIndex=now.getFullYear()*12+now.getMonth();
  const datedMonths=[...new Set(p.map(x=>monthKey(x.due)).filter(k=>/^\\d{4}-\\d{2}$/.test(k)))];
  datedMonths.sort((a,b)=>{
