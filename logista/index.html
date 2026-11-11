@@ -155,6 +155,17 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .fields input:focus{outline:2px solid #9ab9a7;outline-offset:1px}
 @media(max-width:430px){main{padding:12px 14px}.fields{gap:12px 9px}.fields input{font-size:16px;padding:9px 8px}.card{padding:14px}}
 #scan img{display:block;margin:8px auto;max-width:100%;border-radius:8px}
+
+/* Menú desplegable de fechas de pago */
+.menu-toggle{margin-left:auto;flex:none;width:44px;height:42px;padding:8px;background:#ffffff16;border:1px solid #ffffff55;border-radius:11px;display:flex;flex-direction:column;justify-content:center;gap:5px;align-items:center}
+.menu-toggle span{display:block;width:21px;height:2px;background:#fff;border-radius:3px}
+#dueMenuPanel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 16px;box-shadow:0 5px 18px #102c5312}
+#dueMenuPanel h3{margin:2px 0 12px;color:var(--g);font-size:18px}
+.due-menu-item{border:1px solid #dce5f0;border-radius:11px;margin:8px 0;overflow:hidden;background:#fbfcff}
+.due-menu-item summary{cursor:pointer;list-style:none;padding:12px;display:flex;justify-content:space-between;gap:8px;align-items:center;font-weight:800;color:#173b63}
+.due-menu-item summary::-webkit-details-marker{display:none}
+.due-menu-item summary:after{content:'⌄';font-size:18px;color:#54708f}
+.due-menu-content{padding:0 12px 10px}
 </style></head><body>
 <header class="top k124-header">
  <div class="header-topline">
@@ -331,12 +342,28 @@ function groupedByMonth(items){
   return '<div class="month-group"><div class="month-title"><strong>'+monthLabel(mk)+'</strong><span class="month-total">'+fmt(m.total)+'</span></div>'+dates+'</div>';
  }).join('');
 }
+function renderDueMenu(){
+ const pending=data.filter(x=>!x.paid);
+ const dates=[...new Set(pending.map(x=>x.due||''))].sort((a,b)=>a.localeCompare(b));
+ $('dueMenu').innerHTML=dates.length?dates.map(d=>{
+  const items=pending.filter(x=>(x.due||'')===d);
+  const total=items.reduce((sum,x)=>sum+(Number(x.total)||0),0);
+  const label=d?new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}):'Sin fecha';
+  return '<details class="due-menu-item"><summary><span>'+label+' · '+items.length+' albarán(es)</span><b>'+fmt(total)+'</b></summary><div class="due-menu-content">'+items.map(item).join('')+'</div></details>';
+ }).join(''):'<p class="muted">No hay pagos pendientes.</p>';
+}
+$('menuToggle').onclick=()=>{
+ const panel=$('dueMenuPanel'),opening=panel.classList.contains('hidden');
+ panel.classList.toggle('hidden',!opening);
+ $('menuToggle').setAttribute('aria-expanded',String(opening));
+};
 function draw(){
  let p=data.filter(x=>!x.paid),h=data.filter(x=>x.paid),g={};
  p.forEach(x=>(g[x.due]??=[]).push(x));
  $('sum').textContent=fmt(p.reduce((s,x)=>s+x.total,0));$('count').textContent=Object.keys(g).length;
  $('groups').innerHTML=groupedByMonth(p)||'<div class="card muted">No hay albaranes pendientes.</div>';
  $('paid').innerHTML=groupedByMonth(h)||'<div class="card muted">No hay pagos registrados.</div>';
+  renderDueMenu();
 }
 function item(x){return '<div class="invoice"><div style="min-width:0;flex:1"><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">'+(x.doc?'Albarán: '+new Date(x.doc+'T12:00:00').toLocaleDateString('es-ES')+' · ':'')+'Pago: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><div class="invoice-actions">'+(x.paid?'':'<button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'<button class="edit-btn" onclick="editItem('+x.id+')">✏️ Editar</button><button class="delete-btn" onclick="deleteItem('+x.id+')">🗑 Eliminar</button></div></div><b class="amount">'+fmt(x.total)+'</b></div>'}
 window.pay=id=>{let x=data.find(y=>y.id===id);if(confirm('¿Confirmas que está pagado?')){x.paid=true;store()}};
