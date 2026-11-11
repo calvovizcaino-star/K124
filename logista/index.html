@@ -247,8 +247,15 @@ function money(s){
 function parseOCR(texts){
  const raw=texts.join('\n'), lines=raw.split(/\n/).map(x=>x.trim()).filter(Boolean), all=norm(raw);
  let n='';
- const numMatch=raw.match(/(?:n[º°o.]?\s*[:.]?\s*)(\d[\d\s.-]{7,15})/i);
- if(numMatch)n=(numMatch[1].match(/\d{8,14}/)||[])[0]||'';
+ // Número principal impreso arriba a la derecha, entre símbolos.
+ // Ejemplo visual: {1928087154§. Se conservan únicamente los dígitos.
+ const topNumber=raw.match(/[\{¿(]\s*(\d{8,14})\s*[®©§$}\])]/);
+ if(topNumber)n=topNumber[1];
+ // Respaldo: número del recuadro N.º.
+ if(!n){
+  const numMatch=raw.match(/(?:n[º°o.]?\s*[:.]?\s*)(\d[\d\s.-]{7,15})/i);
+  if(numMatch)n=(numMatch[1].match(/\d{8,14}/)||[])[0]||'';
+ }
  if(!n){
   const candidates=(raw.match(/\b\d{8,14}\b/g)||[]).filter(x=>!/^20\d{2}$/.test(x));
   if(candidates.length)n=candidates.sort((a,b)=>b.length-a.length)[0];
