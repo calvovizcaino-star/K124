@@ -202,7 +202,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
  <button class="menu-choice" id="goBackupPage">🗂️ Copias de seguridad</button>
 </div>
 <div id="homePage">
-<div class="grid"><div class="card"><span class="muted">Pendiente de pago</span><strong class="big" id="sum">0,00 €</strong></div><div class="card"><span class="muted">Próximos vencimientos</span><strong class="big" id="count">0</strong></div></div>
+<div class="grid"><div class="card"><span class="muted">Siguiente pago</span><strong class="big" id="sum">0,00 €</strong></div><div class="card"><span class="muted">Próximos vencimientos</span><strong class="big" id="count">0</strong></div></div>
 <div class="actions"><label class="pick green">📷 HACER FOTO<input id="cam" type="file" accept="image/*" capture="environment"></label><label class="pick white">▧ AÑADIR FOTO<input id="gal" type="file" accept="image/*"></label></div>
 <div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><img id="preview" style="width:100%;max-height:220px;object-fit:contain"></div>
 <div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num" required></label><label>Fecha de entrega<input id="doc" type="date" required></label><label>Fecha de vencimiento<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
@@ -436,7 +436,10 @@ $('importBackup').onchange=async e=>{
 function draw(){
  let p=data.filter(x=>!x.paid),h=data.filter(x=>x.paid),g={};
  p.forEach(x=>(g[x.due]??=[]).push(x));
- $('sum').textContent=fmt(p.reduce((s,x)=>s+x.total,0));$('count').textContent=Object.keys(g).length;
+ const now=new Date();
+ const currentMonth=monthKey(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'));
+ $('sum').textContent=fmt(p.filter(x=>monthKey(x.due)===currentMonth).reduce((s,x)=>s+(Number(x.total)||0),0));
+ $('count').textContent=Object.keys(g).length;
  // En Pendientes mostramos el mes más cercano al mes actual.
  // Si hoy estamos en noviembre y se añade un albarán de noviembre,
  // noviembre aparece antes que diciembre o enero. Si solo hay meses pasados,
