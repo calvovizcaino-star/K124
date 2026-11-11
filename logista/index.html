@@ -173,6 +173,12 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .backup-sheet{border-top:1px solid var(--line);padding-top:13px}
 .backup-action{display:block;width:100%;margin:9px 0;padding:14px;background:#eaf1fa;color:#123f78;border:1px solid #d3e0ef;border-radius:11px;font-weight:800;text-align:center;font-size:14px}
 .restore-label{cursor:pointer}.restore-label input{display:none}
+
+.menu-dropdown{position:absolute;z-index:20;right:14px;top:78px;width:min(280px,calc(100vw - 28px));padding:8px;background:#fff;border:1px solid #d5dfeb;border-radius:14px;box-shadow:0 12px 32px #07172f35}
+.menu-choice{display:block;width:100%;margin:4px 0;padding:14px;text-align:left;background:#f3f6fb;color:#173b63;border-radius:10px;font-size:15px}
+.app-page{background:#fff;border:1px solid var(--line);border-radius:17px;padding:16px;margin:0 0 18px;min-height:260px;box-shadow:0 3px 12px #173b2910}
+.app-page h2{font-size:23px;color:var(--g);margin:12px 0}
+.back-home{background:#eaf1fa;color:#123f78;padding:10px 13px;border-radius:10px}
 </style></head><body>
 <header class="top k124-header">
  <div class="header-topline">
@@ -191,21 +197,32 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 </header>
 <div class="sync-status-row"><div class="status">Datos guardados en este dispositivo</div></div>
 <main>
-<div id="mainMenuPanel" class="hidden">
- <section id="dueMenuPanel"><h3>Fecha a pagar</h3><div id="dueMenu"></div></section>
- <section id="backupPanel" class="backup-sheet">
-  <h3>Copias de seguridad</h3>
-  <p class="muted">Guarda una copia de todos tus albaranes o recupera una copia anterior.</p>
-  <button class="backup-action" id="exportBackup">⬇️ Descargar copia de seguridad</button>
-  <label class="backup-action restore-label">⬆️ Restaurar copia de seguridad<input id="importBackup" type="file" accept=".json,application/json"></label>
-  <p class="muted">La copia incluye albaranes pendientes y pagados.</p>
- </section>
+<div id="mainMenuPanel" class="hidden menu-dropdown">
+ <button class="menu-choice" id="goDuePage">📅 Fecha a pagar</button>
+ <button class="menu-choice" id="goBackupPage">🗂️ Copias de seguridad</button>
 </div>
+<div id="homePage">
 <div class="grid"><div class="card"><span class="muted">Pendiente de pago</span><strong class="big" id="sum">0,00 €</strong></div><div class="card"><span class="muted">Próximos vencimientos</span><strong class="big" id="count">0</strong></div></div>
 <div class="actions"><label class="pick green">📷 HACER FOTO<input id="cam" type="file" accept="image/*" capture="environment"></label><label class="pick white">▧ AÑADIR FOTO<input id="gal" type="file" accept="image/*"></label></div>
 <div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><img id="preview" style="width:100%;max-height:220px;object-fit:contain"></div>
 <div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num" required></label><label>Fecha albarán<input id="doc" type="date" required></label><label>Fecha de vencimiento<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
-<div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Albaranes pendientes de pago</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Albaranes pagados · Histórico</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Datos guardados en este dispositivo.</p></main>
+<div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Albaranes pendientes de pago</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Albaranes pagados · Histórico</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Datos guardados en este dispositivo.</p>
+</div>
+<section id="duePage" class="app-page hidden">
+ <button class="back-home" data-home>← Volver</button>
+ <h2>Fecha a pagar</h2>
+ <p class="muted">Albaranes pendientes agrupados por fecha de vencimiento.</p>
+ <div id="dueMenu"></div>
+</section>
+<section id="backupPage" class="app-page hidden">
+ <button class="back-home" data-home>← Volver</button>
+ <h2>Copias de seguridad</h2>
+ <p class="muted">Guarda una copia de todos tus albaranes o recupera una copia anterior.</p>
+ <button class="backup-action" id="exportBackup">⬇️ Descargar copia de seguridad</button>
+ <label class="backup-action restore-label">⬆️ Restaurar copia de seguridad<input id="importBackup" type="file" accept=".json,application/json"></label>
+ <p class="muted">La copia incluye albaranes pendientes y pagados.</p>
+</section>
+</main>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script>
 
 const $=x=>document.getElementById(x),fmt=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
@@ -371,12 +388,23 @@ function renderDueMenu(){
  }).join(''):'<p class="muted">No hay pagos pendientes.</p>';
 }
 
-// Menú principal y copias de seguridad locales.
+// Navegación entre páginas desde el menú de tres rayas.
 $('menuToggle').onclick=()=>{
  const panel=$('mainMenuPanel'),opening=panel.classList.contains('hidden');
  panel.classList.toggle('hidden',!opening);
  $('menuToggle').setAttribute('aria-expanded',String(opening));
 };
+function showPage(page){
+ $('mainMenuPanel').classList.add('hidden');
+ $('homePage').classList.toggle('hidden',page!=='home');
+ $('duePage').classList.toggle('hidden',page!=='due');
+ $('backupPage').classList.toggle('hidden',page!=='backup');
+ $('menuToggle').setAttribute('aria-expanded','false');
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+$('goDuePage').onclick=()=>{renderDueMenu();showPage('due')};
+$('goBackupPage').onclick=()=>showPage('backup');
+document.querySelectorAll('[data-home]').forEach(btn=>btn.onclick=()=>showPage('home'));
 $('exportBackup').onclick=()=>{
  const backup={app:'LOGISTA',version:1,createdAt:new Date().toISOString(),data};
  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
