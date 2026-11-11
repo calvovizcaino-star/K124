@@ -649,6 +649,7 @@ header::after{left:0!important;right:0!important;width:100%!important}
     <div class="tarjeta"><span>Venta acumulada</span><strong id="ventaAnual">—</strong><small>Litros</small></div>
     <div class="tarjeta"><span>Posible cierre</span><strong id="cierreAnual">—</strong><small>Litros</small></div>
     <div class="tarjeta"><span>Desviación prevista</span><strong id="desviacionAnual">—</strong><small id="porcentajeAnual">—</small></div>
+    <div class="tarjeta"><span>Variación vs. año anterior</span><strong id="variacionAnualAnterior">—</strong><small id="detalleVariacionAnualAnterior">Hasta la última lectura de sondas</small></div>
    </div>
    <div class="anual-datos-extra">
     <div><span>Días transcurridos</span><strong id="diasTranscurridos">—</strong></div>
@@ -1733,6 +1734,21 @@ function pintarVistas(){
 
 function pintarResumenAnual(a){
  const fmt=v=>v===null||v===undefined?"—":numeroES(v);
+ const anio=Number(a.anio),filasSondas=todasLasFilas().map(filaConCorreccionDiaria).filter(f=>f.key.startsWith(String(anio)+"-")).sort((x,y)=>x.key.localeCompare(y.key));
+ const ultima=filasSondas.length?filasSondas[filasSondas.length-1].key:null;
+ const indicador=$("variacionAnualAnterior"),detalle=$("detalleVariacionAnualAnterior");
+ if(indicador&&detalle){
+  const fecha=ultima?new Date(Number(ultima.slice(0,4)),Number(ultima.slice(5,7))-1,Number(ultima.slice(8,10))):null;
+  const mesCorte=fecha?fecha.getMonth():-1,diaCorte=fecha?fecha.getDate():0,datosPrev=k124VentasHistorico[String(anio-1)]||{};
+  const nombres=["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
+  let baseAnterior=0,completo=true;
+  if(fecha){for(let m=0;m<mesCorte;m++){const v=datosPrev[nombres[m]];if(v===null||v===undefined||!Number.isFinite(Number(v))){completo=false;break;}baseAnterior+=Number(v);}
+   if(completo){const v=datosPrev[nombres[mesCorte]];if(v===null||v===undefined||!Number.isFinite(Number(v)))completo=false;else{const dias=new Date(anio-1,mesCorte+1,0).getDate();baseAnterior+=Number(v)/dias*diaCorte;}}
+  }
+  const ventasActuales=filasSondas.filter(f=>f.key<=ultima).reduce((sum,f)=>sum+Number(f.total||0),0);
+  if(fecha&&completo&&baseAnterior>0){const variacion=(ventasActuales-baseAnterior)/baseAnterior*100;indicador.textContent=(variacion>0?"+":"")+variacion.toFixed(1).replace(".",",")+" %";indicador.style.color=variacion>=0?"#16834a":"#c0392b";detalle.textContent="A fecha "+fecha.toLocaleDateString("es-ES")+" · "+numeroES(ventasActuales)+" L frente a "+numeroES(baseAnterior)+" L";}
+  else{indicador.textContent="—";indicador.style.color="";detalle.textContent=fecha?"Faltan datos históricos del año anterior":"Sin lecturas de sondas registradas";}
+ }
  $("previsionAnual").textContent=fmt(a.previstos);
  $("cierreAnual").textContent=fmt(a.posible);
  $("desviacionAnual").textContent=a.desviacion===null?"—":(a.desviacion>0?"+":"")+fmt(a.desviacion)+" L";
