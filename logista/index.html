@@ -122,6 +122,14 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .k124-header .heading p{max-width:620px}
 @media(max-width:520px){header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}}
 
+/* Agrupación mensual y por fecha de vencimiento */
+.month-group{margin:14px 0 18px}
+.month-title{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 13px;background:#eaf1ec;border:1px solid #d6e3d9;border-radius:11px;color:#173b2b;font-weight:850}
+.month-title strong{font-size:14px}
+.month-total{font-size:13px;white-space:nowrap}
+.due-group{margin:9px 0 0;padding:11px 12px;border:1px solid #e2e9e3;border-radius:12px;background:#fbfdfb}
+.due-title{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#34463a;font-size:13px;font-weight:800;margin-bottom:3px}
+.due-title .amount{font-size:15px}
 /* Hojas independientes para Pendientes y Pagados */
 .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0 14px;padding:5px;background:#e7ede8;border:1px solid #d7e1d9;border-radius:16px}
 .tabs button{min-height:54px;background:transparent;color:#53645a;border:0;border-radius:12px;font-size:16px;font-weight:800}
@@ -264,12 +272,36 @@ $('save').onclick=()=>{
  store();$('form').classList.add('hidden');$('scan').classList.add('hidden');
 };
 function store(){localStorage.setItem('logista_docs',JSON.stringify(data));draw()}
+function monthKey(d){return (d||'').slice(0,7)||'sin-fecha'}
+function monthLabel(k){
+ if(k==='sin-fecha')return 'Sin fecha de vencimiento';
+ const [y,m]=k.split('-').map(Number);
+ return new Date(y,m-1,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'}).replace(/^./,c=>c.toUpperCase());
+}
+function groupedByMonth(items){
+ const months={};
+ items.forEach(x=>{
+  const mk=monthKey(x.due);
+  if(!months[mk])months[mk]={dates:{},total:0};
+  if(!months[mk].dates[x.due])months[mk].dates[x.due]=[];
+  months[mk].dates[x.due].push(x);months[mk].total+=Number(x.total)||0;
+ });
+ return Object.keys(months).sort((a,b)=>a.localeCompare(b)).map(mk=>{
+  const m=months[mk];
+  const dates=Object.keys(m.dates).sort().map(d=>{
+   const rows=m.dates[d],sum=rows.reduce((v,x)=>v+(Number(x.total)||0),0);
+   const label=d?new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}):'Sin fecha';
+   return '<div class="due-group"><div class="due-title"><span>Vencimiento · '+label+'</span><b class="amount">'+fmt(sum)+'</b></div>'+rows.map(item).join('')+'</div>';
+  }).join('');
+  return '<div class="month-group"><div class="month-title"><strong>'+monthLabel(mk)+'</strong><span class="month-total">'+fmt(m.total)+'</span></div>'+dates+'</div>';
+ }).join('');
+}
 function draw(){
  let p=data.filter(x=>!x.paid),h=data.filter(x=>x.paid),g={};
  p.forEach(x=>(g[x.due]??=[]).push(x));
  $('sum').textContent=fmt(p.reduce((s,x)=>s+x.total,0));$('count').textContent=Object.keys(g).length;
- $('groups').innerHTML=Object.keys(g).sort().map(k=>'<div class="card"><div class="row"><b>'+new Date(k+'T12:00:00').toLocaleDateString('es-ES')+'</b><b class="amount">'+fmt(g[k].reduce((s,x)=>s+x.total,0))+'</b></div>'+g[k].map(item).join('')+'</div>').join('')||'<div class="card muted">No hay albaranes pendientes.</div>';
- $('paid').innerHTML=h.map(item).join('')||'<div class="card muted">No hay pagos registrados.</div>'
+ $('groups').innerHTML=groupedByMonth(p)||'<div class="card muted">No hay albaranes pendientes.</div>';
+ $('paid').innerHTML=groupedByMonth(h)||'<div class="card muted">No hay pagos registrados.</div>';
 }
 function item(x){return '<div class="invoice"><div style="min-width:0;flex:1"><b>Albarán '+(x.n||'sin número')+'</b><div class="muted">'+(x.doc?'Albarán: '+new Date(x.doc+'T12:00:00').toLocaleDateString('es-ES')+' · ':'')+'Pago: '+new Date(x.due+'T12:00:00').toLocaleDateString('es-ES')+'</div><span class="status '+(x.paid?'paid':'')+'">'+(x.paid?'Pagado':'Pendiente')+'</span><div class="invoice-actions">'+(x.paid?'':'<button class="small" onclick="pay('+x.id+')">Marcar como pagado</button>')+'<button class="edit-btn" onclick="editItem('+x.id+')">✏️ Editar</button><button class="delete-btn" onclick="deleteItem('+x.id+')">🗑 Eliminar</button></div></div><b class="amount">'+fmt(x.total)+'</b></div>'}
 window.pay=id=>{let x=data.find(y=>y.id===id);if(confirm('¿Confirmas que está pagado?')){x.paid=true;store()}};
