@@ -329,6 +329,22 @@ function simplifyEmbeddedHeader(frameId,kind){
 simplifyEmbeddedHeader("dailyFrame","daily");
 simplifyEmbeddedHeader("controlFrame","control");
 simplifyEmbeddedHeader("logistaFrame","logista");
+function simplifyFuelHistoryHeader(){
+ const frame=$("fuelHistoryFrame");if(!frame)return;
+ const apply=()=>{
+  try{
+   const doc=frame.contentDocument;if(!doc)return;
+   const style=doc.createElement("style");
+   style.textContent=`header{display:none!important}
+    .wrap{padding-top:18px!important}
+   `;
+   doc.head.appendChild(style);
+  }catch(e){console.warn("No se pudo adaptar la cabecera del histórico de carburante",e)}
+ };
+ frame.addEventListener("load",apply);
+ if(frame.contentDocument?.readyState==="complete")apply();
+}
+simplifyFuelHistoryHeader();
 
 $("k124MenuToggle").addEventListener("click",()=>document.body.classList.toggle("menu-open"));
 $("k124Scrim").addEventListener("click",()=>document.body.classList.remove("menu-open"));
