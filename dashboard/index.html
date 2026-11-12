@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#073b83">
+<title>K124 · Dashboard</title>
+<style>
+:root{--blue:#073b83;--blue2:#0879df;--orange:#ff7900;--bg:#f3f7fc;--ink:#152644;--muted:#64748b;--line:#dce6f2;--green:#16804a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:linear-gradient(145deg,#07509b,#041b46);color:white;padding:22px 18px 24px;border-bottom:7px solid var(--orange)}
+.head{max-width:1100px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:29px;font-weight:900;font-style:italic;letter-spacing:-1px}.brand small{font-size:11px;letter-spacing:1px;display:block;font-style:normal;font-weight:700;opacity:.85}
+.pill{font-size:12px;border:1px solid #ffffff55;background:#ffffff14;padding:7px 10px;border-radius:20px;white-space:nowrap}
+main{max-width:1100px;margin:18px auto 40px;padding:0 14px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:22px;margin:0}select,button{font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:white;color:var(--blue)}
+.filters{display:flex;gap:8px;align-items:center}.filters select{min-width:110px}
+.status{font-size:12px;color:var(--muted);margin:0 0 14px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.card{background:white;border:1px solid var(--line);border-radius:15px;padding:15px;box-shadow:0 3px 12px #183b2910;min-width:0}
+.kpi span{font-size:12px;color:var(--muted);display:block}.kpi strong{display:block;font-size:clamp(19px,3vw,27px);margin-top:7px;color:var(--blue);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.kpi small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.section{margin-top:14px}.section h2{font-size:16px;margin:0 0 12px}
+.two{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin-top:14px}
+.chart{height:240px;display:flex;align-items:end;gap:7px;padding:12px 4px 24px;position:relative;border-bottom:1px solid var(--line)}
+.barwrap{height:100%;flex:1;display:flex;align-items:end;justify-content:center;position:relative;min-width:0}
+.bar{width:min(100%,34px);min-height:2px;background:linear-gradient(180deg,#1689ee,#073b83);border-radius:6px 6px 2px 2px;position:relative}
+.bar.orange{background:linear-gradient(180deg,#ffad45,#ff7900)}
+.barlabel{position:absolute;bottom:-21px;font-size:10px;color:var(--muted)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:10px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--blue2)}.dot.orange{background:var(--orange)}
+.breakdown{display:grid;gap:13px}.fuelrow{display:grid;grid-template-columns:75px 1fr auto;gap:9px;align-items:center;font-size:13px}.track{height:9px;border-radius:20px;background:#edf2f7;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#0879df,#073b83);border-radius:20px}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap}th,td{text-align:right;padding:11px 9px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600;background:#f7faff}
+.empty{padding:24px;text-align:center;color:var(--muted);font-size:13px}.error{color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;padding:13px;border-radius:12px}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
+@media(max-width:720px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.card{padding:13px}.chart{height:210px}}
+@media(max-width:380px){.brand{font-size:24px}.pill{font-size:10px}.filters{width:100%}.filters select{flex:1;min-width:0}}
+</style>
+</head>
+<body>
+<header><div class="head"><div class="brand">K124 <small>DASHBOARD · PARTE DIARIO</small></div><div class="pill">◉ Solo consulta</div></div></header>
+<main>
+ <div class="toolbar"><h1>Resumen de actividad</h1><div class="filters"><select id="year"></select><select id="month"><option value="all">Todo el año</option></select><button id="refresh" title="Actualizar">↻</button></div></div>
+ <p class="status" id="status">Conectando con los datos compartidos…</p>
+ <div id="error"></div>
+ <section class="grid">
+  <article class="card kpi"><span>Litros vendidos</span><strong id="liters">—</strong><small id="days">Carburantes · sondas</small></article>
+  <article class="card kpi"><span>Margen carburante</span><strong id="margin">—</strong><small>Margen diario acumulado</small></article>
+  <article class="card kpi"><span>Ventas tienda</span><strong id="store">—</strong><small>Efectivo + tarjeta</small></article>
+  <article class="card kpi"><span>Entregas registradas</span><strong id="deliveries">—</strong><small>Litros recibidos</small></article>
+ </section>
+ <section class="two">
+  <article class="card"><h2>Evolución de litros</h2><div id="litersChart" class="chart"><div class="empty">Esperando datos…</div></div><div class="legend"><span><i class="dot"></i>Litros vendidos</span></div></article>
+  <article class="card"><h2>Carburantes</h2><div id="fuelBreakdown" class="breakdown"><div class="empty">Esperando datos…</div></div></article>
+ </section>
+ <section class="two">
+  <article class="card"><h2>Margen por mes</h2><div id="marginChart" class="chart"><div class="empty">Esperando datos…</div></div><div class="legend"><span><i class="dot orange"></i>Margen (€)</span></div></article>
+  <article class="card"><h2>Ventas de tienda por mes</h2><div id="storeChart" class="chart"><div class="empty">Esperando datos…</div></div><div class="legend"><span><i class="dot"></i>Ventas (€)</span></div></article>
+ </section>
+ <section class="card section"><h2>Detalle mensual</h2><div class="tablewrap"><table><thead><tr><th>Mes</th><th>Litros</th><th>Margen</th><th>Tienda</th></tr></thead><tbody id="monthlyRows"><tr><td colspan="4" class="empty">Esperando datos…</td></tr></tbody></table></div></section>
+ <footer>Datos compartidos de K124 · Panel de solo lectura · <span id="updated">—</span></footer>
+</main>
+<script type="module">
+import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
+const URL="https://nkbmgtffoxwyfbeznver.supabase.co";
+const KEY="sb_publishable_8uTKDFTAGjEDxghIYDG5ng_OT8L26R_";
+const db=createClient(URL,KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const $=id=>document.getElementById(id);
+const euro=n=>Number(n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const num=n=>Number(n||0).toLocaleString("es-ES",{maximumFractionDigits:0});
+const monthNames=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+let shared={},salesHistory={},lastUpdated=null;
+function obj(key){try{const v=shared[key];return typeof v==="string"?JSON.parse(v||"{}"):(v||{})}catch{return {}}}
+function validDate(k){return /^\d{4}-\d{2}-\d{2}$/.test(k)}
+function dailyRows(){
+ const history=obj("k124_historial_sondas_v2"),corr=obj("k124_correcciones_diarias_v1");
+ return Object.entries(history).filter(([k,v])=>validDate(k)&&v&&typeof v==="object").map(([key,v])=>{
+  const c=corr[key];let e=Number(v.e||0),e10=Number(v.e10||0),g95=Number(v.g95||0),g98=Number(v.g98||0);
+  if(c&&typeof c==="object"){e=Number(c.e??e);e10=Number(c.e10??e10);g95=Number(c.g95??g95);g98=Number(c.g98??g98)}
+  const total=(c&&typeof c==="number")?Number(c):e+e10+g95+g98;
+  return {key,e,e10,g95,g98,total};
+ }).sort((a,b)=>a.key.localeCompare(b.key));
+}
+function monthlyData(){
+ const rows=dailyRows(),margin=obj("k124_margen_diario_v1"),marginCorr=obj("k124_margen_correcciones_v1"),store=obj("k124_ventas_tienda_v1"),deliveries=obj("k124_entregas_diarias_v1");
+ const map={};
+ const ensure=k=>map[k]||(map[k]={month:k,liters:0,e:0,e10:0,g95:0,g98:0,margin:0,store:0,delivery:0,days:0});
+ rows.forEach(r=>{const m=r.key.slice(0,7),x=ensure(m);x.liters+=r.total;x.e+=r.e;x.e10+=r.e10;x.g95+=r.g95;x.g98+=r.g98;x.days++});
+ Object.entries(margin).forEach(([k,v])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const x=ensure(k.slice(0,7));x.margin+=Number(Object.hasOwn(marginCorr,k)?marginCorr[k]:v)||0}});
+ Object.entries(store).forEach(([k,v])=>{if(/^\d{4}-\d{2}$/.test(k)&&v){const x=ensure(k);if(Array.isArray(v.filas))x.store+=v.filas.reduce((s,r)=>s+Number(r.total||0),0);else x.store+=Number(v.total??v.suma??v.tienda??0)}});
+ Object.entries(deliveries).forEach(([k,v])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const x=ensure(k.slice(0,7));if(v&&typeof v==="object")x.delivery+=Object.values(v).reduce((s,n)=>s+Number(n||0),0)}});
+ return Object.values(map).sort((a,b)=>a.month.localeCompare(b.month));
+}
+function drawBars(id,items,key,kind="blue"){
+ const el=$(id);el.innerHTML="";
+ const max=Math.max(1,...items.map(x=>Number(x[key]||0)));
+ if(!items.length){el.innerHTML='<div class="empty">No hay datos para este periodo</div>';return}
+ items.forEach(x=>{const w=document.createElement("div");w.className="barwrap";const b=document.createElement("div");b.className="bar"+(kind==="orange"?" orange":"");b.style.height=Math.max(2,Number(x[key]||0)/max*100)+"%";b.title=(x.label||x.month)+": "+(kind==="orange"?euro(x[key]):num(x[key])+" L");const l=document.createElement("span");l.className="barlabel";l.textContent=x.label||monthNames[Number(x.month.slice(5,7))-1];w.append(b,l);el.append(w)});
+}
+function render(){
+ const year=$("year").value,month=$("month").value;
+ const all=monthlyData().filter(x=>x.month.startsWith(year)),shown=month==="all"?all:all.filter(x=>x.month.endsWith("-"+month));
+ const sum=k=>shown.reduce((s,x)=>s+Number(x[k]||0),0);
+ $("liters").textContent=num(sum("liters"))+" L";$("margin").textContent=euro(sum("margin"));$("store").textContent=euro(sum("store"));$("deliveries").textContent=num(sum("delivery"))+" L";
+ $("days").textContent=shown.reduce((s,x)=>s+x.days,0)+" días con lecturas";
+ const fuels=[["E+",sum("e")],["E+10",sum("e10")],["Gasolina 95",sum("g95")],["Gasolina 98",sum("g98")]],max=Math.max(1,...fuels.map(x=>x[1]));
+ $("fuelBreakdown").innerHTML="";
+ fuels.forEach(([name,value])=>{const row=document.createElement("div");row.className="fuelrow";const n=document.createElement("span");n.textContent=name;const track=document.createElement("div");track.className="track";const fill=document.createElement("div");fill.className="fill";fill.style.width=(value/max*100)+"%";track.append(fill);const v=document.createElement("strong");v.textContent=num(value)+" L";row.append(n,track,v);$("fuelBreakdown").append(row)});
+ const chartData=shown.map(x=>({...x,label:month==="all"?monthNames[Number(x.month.slice(5,7))-1]:x.month.slice(8,10)}));
+ drawBars("litersChart",chartData,"liters");drawBars("marginChart",shown,"margin","orange");drawBars("storeChart",shown,"store");
+ $("monthlyRows").innerHTML="";
+ const rows=[...shown].reverse();
+ if(!rows.length){$("monthlyRows").innerHTML='<tr><td colspan="4" class="empty">No hay datos en este periodo</td></tr>'}
+ rows.forEach(x=>{const tr=document.createElement("tr");[new Date(Number(x.month.slice(0,4)),Number(x.month.slice(5,7))-1,1).toLocaleDateString("es-ES",{month:"long"}),num(x.liters)+" L",euro(x.margin),euro(x.store)].forEach(t=>{const td=document.createElement("td");td.textContent=t;tr.append(td)});$("monthlyRows").append(tr)});
+}
+async function load(){
+ $("status").textContent="Actualizando datos…";$("error").innerHTML="";
+ try{
+  const {data,error}=await db.from("k124_datos").select("datos,updated_at").eq("id","principal").maybeSingle();
+  if(error)throw error;if(!data?.datos)throw new Error("No hay datos compartidos disponibles.");
+  shared=data.datos;lastUpdated=data.updated_at;
+  const years=[...new Set([...Object.keys(obj("k124_historial_sondas_v2")).map(k=>k.slice(0,4)),...Object.keys(obj("k124_margen_diario_v1")).map(k=>k.slice(0,4)),String(new Date().getFullYear())])].filter(x=>/^\d{4}$/.test(x)).sort().reverse();
+  const old=$("year").value;$("year").innerHTML="";
+  years.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;$("year").append(o)});
+  $("year").value=years.includes(old)?old:years[0];
+  $("month").value="all";
+  $("status").textContent="Conectado · actualización automática cada minuto";
+  $("updated").textContent="Última sincronización: "+(lastUpdated?new Date(lastUpdated).toLocaleString("es-ES"):"sin fecha");
+  render();
+ }catch(e){$("status").textContent="No se pudo conectar con los datos";$("error").innerHTML='<div class="error"></div>';$("error").firstChild.textContent=e.message||"Error de conexión"}
+}
+$("year").addEventListener("change",render);$("month").addEventListener("change",render);$("refresh").addEventListener("click",load);
+await load();setInterval(load,60000);
+</script>
+</body></html>
