@@ -219,6 +219,17 @@ function monthlyData(){
  rows.forEach(r=>{const m=r.key.slice(0,7),x=ensure(m);x.liters+=r.total;x.e+=r.e;x.e10+=r.e10;x.g95+=r.g95;x.g98+=r.g98;x.days++});
  Object.entries(margin).forEach(([k,v])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const x=ensure(k.slice(0,7));x.margin+=Number(Object.hasOwn(marginCorr,k)?marginCorr[k]:v)||0}});
  Object.entries(store).forEach(([k,v])=>{if(/^\d{4}-\d{2}$/.test(k)&&v){const x=ensure(k);if(Array.isArray(v.filas)){const resumen=v.resumen||{};x.store+=Number(resumen.suma??resumen.tienda??v.total??v.suma??v.tienda??v.filas.reduce((s,r)=>s+Number(r.total||0),0))}else x.store+=Number(v.total??v.suma??v.tienda??0)}});
+ // El histórico de Control de tienda es la fuente principal de facturación mensual.
+ // Sustituye los importes parciales del resumen del Parte diario cuando exista un dato válido.
+ Object.entries(controlStoreData||{}).forEach(([year,months])=>{
+  if(!/^\d{4}$/.test(year)||!Array.isArray(months))return;
+  months.forEach((value,index)=>{
+   if(typeof value==="number"&&Number.isFinite(value)){
+    const key=year+"-"+String(index+1).padStart(2,"0");
+    ensure(key).store=value;
+   }
+  });
+ });
  Object.entries(deliveries).forEach(([k,v])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const x=ensure(k.slice(0,7));if(v&&typeof v==="object")x.delivery+=Object.values(v).reduce((s,n)=>s+Number(n||0),0)}});
  return Object.values(map).sort((a,b)=>a.month.localeCompare(b.month));
 }
