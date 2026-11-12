@@ -83,7 +83,26 @@ main.pane{max-width:1180px;margin:20px auto 40px;padding-left:14px;padding-right
  #pane-daily,#pane-control,#pane-logista{padding:0 10px 20px;margin:0}
  #dailyFrame,#controlFrame,#logistaFrame{height:calc(100vh - 90px);min-height:620px;border-radius:10px}
  main.pane{padding-left:12px;padding-right:12px}
-}</style>
+}
+/* Cabecera corporativa unificada K124 */
+header.k124-header{position:relative!important;isolation:isolate!important;overflow:hidden!important;width:100%!important;max-width:none!important;margin:0!important;padding:20px 22px 36px 270px!important;border:0!important;border-radius:0!important;background:radial-gradient(ellipse at 10% 0%,#244b78 0%,transparent 48%),radial-gradient(ellipse at 90% 15%,#7c263b 0%,transparent 34%),linear-gradient(115deg,#07172f 0%,#102c53 52%,#101b2b 100%)!important;box-shadow:0 9px 24px #101b2b20!important;display:block!important}
+header.k124-header:before{content:""!important;position:absolute!important;z-index:0!important;left:0!important;right:0!important;top:auto!important;bottom:0!important;width:100%!important;height:116px!important;border-radius:0!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 180' preserveAspectRatio='none'%3E%3Cpath d='M0 180 C190 180 315 166 455 126 C625 77 760 35 900 -12 L900 180Z' fill='%23ffffff'/%3E%3Cpath d='M0 180 C205 180 330 172 480 139 C650 101 775 61 900 12 L900 180Z' fill='%23ffb21a'/%3E%3Cpath d='M0 180 C225 180 350 177 510 151 C675 124 790 91 900 48 L900 180Z' fill='%23f47721'/%3E%3Cpath d='M0 180 C245 180 370 180 535 163 C695 145 805 119 900 82 L900 180Z' fill='%23d7193f'/%3E%3C/svg%3E")!important;background-size:100% 100%!important;background-repeat:no-repeat!important}
+header.k124-header:after{content:""!important;position:absolute!important;z-index:0!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;width:100%!important;height:4px!important;border-radius:0!important;background:linear-gradient(90deg,#ff8a19 0 58%,#fff 58% 78%,#d7193f 78% 100%)!important}
+.k124-header .header-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;z-index:2}
+.k124-header .header-brand{display:flex;align-items:center;gap:12px;min-width:0}
+.k124-header .header-mark{width:37px;height:34px;display:flex;align-items:flex-end;gap:4px;flex:none}
+.k124-header .header-mark i{display:block;width:7px;border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,#ffb52e,#f47721);box-shadow:0 0 10px #ff811c55}
+.k124-header .header-mark i:nth-child(1){height:12px}.k124-header .header-mark i:nth-child(2){height:19px}.k124-header .header-mark i:nth-child(3){height:26px}.k124-header .header-mark i:nth-child(4){height:34px}
+.k124-header .header-logo{font-size:clamp(35px,7vw,48px);line-height:1;font-weight:1000;letter-spacing:-3px;color:#fff;text-shadow:0 2px 0 #7d8795,0 5px 0 #0008,0 9px 18px #0008;white-space:nowrap}
+.k124-header .header-logo small{font-size:15px;letter-spacing:-.5px;margin-left:4px;font-style:italic;color:#aab6c7}
+.k124-header .header-tag{font-size:10px;color:#d4deeb;letter-spacing:2px;text-transform:uppercase;border-left:1px solid #ffffff35;padding:7px 0 7px 12px;line-height:1.5;font-weight:800}
+.k124-header .heading{position:relative;z-index:2;margin:25px 0 0;text-align:left}
+.k124-header .eyebrow{color:#ff9a4a;font-size:9px;font-weight:900;letter-spacing:2.3px}
+.k124-header .heading h1{margin:7px 0 0;color:#fff;font-size:clamp(30px,6.5vw,46px);line-height:1.08;letter-spacing:-1.2px;font-weight:850}
+.k124-header .heading p{margin:7px 0 0;color:#c1ccda;font-size:14px;line-height:1.4;letter-spacing:.2px}
+.k124-menu-toggle{display:flex!important;align-items:center;justify-content:center;position:relative;z-index:4;width:44px;height:42px;background:#ffffff12!important;color:#fff!important;border:1px solid #ffffff66!important;border-radius:10px!important;font-size:24px!important;padding:0!important}
+@media(max-width:760px){header.k124-header{padding:16px 14px 34px!important}.k124-header .header-topline{gap:7px}.k124-header .header-brand{gap:8px}.k124-header .header-mark{width:29px;height:29px;gap:3px}.k124-header .header-mark i{width:6px}.k124-header .header-mark i:nth-child(1){height:10px}.k124-header .header-mark i:nth-child(2){height:16px}.k124-header .header-mark i:nth-child(3){height:22px}.k124-header .header-mark i:nth-child(4){height:29px}.k124-header .header-logo{font-size:36px;letter-spacing:-2.5px}.k124-header .header-logo small{font-size:12px}.k124-header .header-tag{font-size:8px;letter-spacing:1px;padding-left:8px}.k124-header .heading{margin-top:20px}.k124-header .heading h1{font-size:clamp(29px,7.5vw,36px);letter-spacing:-.8px}.k124-header .heading p{font-size:11px}.k124-header:before{height:92px}}
+</style>
 </head>
 <body>
 
@@ -100,7 +119,13 @@ main.pane{max-width:1180px;margin:20px auto 40px;padding-left:14px;padding-right
  <div class="k124-sidefoot">K124 SL · Gestión de estación<br>Datos compartidos y módulos conectados</div>
 </aside>
 <div class="k124-scrim" id="k124Scrim"></div>
-<header><button class="k124-menu-toggle" id="k124MenuToggle" aria-label="Abrir menú">☰</button><div class="head"><div class="brand">K124 <small>GESTIÓN INTEGRAL</small></div><div class="pill">◉ Panel de gestión</div></div></header>
+<header class="k124-header">
+ <div class="header-topline">
+  <div class="header-brand"><div class="header-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="header-logo">K124<small>SL</small></div><div class="header-tag">GESTIÓN INTEGRAL</div></div>
+  <button class="k124-menu-toggle" id="k124MenuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button>
+ </div>
+ <div class="heading"><div class="eyebrow">K124 SL / GESTIÓN INTEGRAL</div><h1 id="mainHeading">Parte diario</h1><p id="mainSubheading">Control de ventas y liquidaciones</p></div>
+</header>
 <nav class="tabs" aria-label="Secciones del panel">
  <button class="tab" data-pane="daily">Parte diario</button>
  <button class="tab" data-pane="parts">Dashboard partes</button>
