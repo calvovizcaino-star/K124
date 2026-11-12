@@ -63,6 +63,16 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 .chart,.storechart{position:relative;touch-action:pan-y}
 .barwrap{cursor:crosshair}
 
+/* Evitar selección de texto y los tiradores azules de iOS al tocar/deslizar gráficos */
+.chart,.storechart,.chart *,.storechart *{
+ -webkit-user-select:none!important;
+ user-select:none!important;
+ -webkit-touch-callout:none!important;
+}
+.chart{-webkit-tap-highlight-color:transparent}
+.storechart{-webkit-tap-highlight-color:transparent}
+
+
 .store-table{overflow:auto}#storeRows td,#storeRows th{padding:10px 8px}
 @media(max-width:700px){.storegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs{gap:5px}.tab{padding:10px 11px;font-size:12px}}
 
