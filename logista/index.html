@@ -211,6 +211,13 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 #scan.scanning .laser-line{display:block;animation:laserSweep 2.1s ease-in-out infinite}
 @keyframes laserSweep{0%{top:0}50%{top:calc(100% - 3px)}100%{top:0}}
 @media(prefers-reduced-motion:reduce){#scan.scanning .laser-line{animation-duration:5s}}
+
+.ocr-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.ocr-overlay rect{fill-opacity:.12;stroke-width:9;vector-effect:non-scaling-stroke;rx:8}
+.ocr-overlay rect.n{stroke:#00b7ff;fill:#00b7ff}.ocr-overlay rect.d{stroke:#ffbd2e;fill:#ffbd2e}.ocr-overlay rect.v{stroke:#27c77b;fill:#27c77b}.ocr-overlay rect.t{stroke:#ff6b35;fill:#ff6b35}
+.ocr-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:#526477}
+.ocr-legend span{display:flex;align-items:center;gap:5px}.ocr-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.ocr-legend i.n{background:#00b7ff}.ocr-legend i.d{background:#ffbd2e}.ocr-legend i.v{background:#27c77b}.ocr-legend i.t{background:#ff6b35}
 </style></head><body>
 <header class="top k124-header">
  <div class="header-topline">
@@ -237,7 +244,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 <div id="homePage">
 <div class="grid"><div class="card"><span class="muted">Siguiente pago</span><strong class="big" id="sum">0,00 €</strong></div><div class="card"><span class="muted">Próximos vencimientos</span><strong class="big" id="count">0</strong></div></div>
 <div class="actions"><label class="pick green">📷 HACER FOTO<input id="cam" type="file" accept="image/*" capture="environment"></label><label class="pick white">▧ AÑADIR FOTO<input id="gal" type="file" accept="image/*"></label></div>
-<div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><div class="scan-photo-wrap"><img id="preview" style="width:100%;max-height:220px;object-fit:contain"><div id="laserLine" class="laser-line"></div></div></div>
+<div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><div class="scan-photo-wrap"><img id="preview" style="width:100%;max-height:420px;object-fit:contain"><svg id="ocrOverlay" class="ocr-overlay" aria-hidden="true"></svg><div id="laserLine" class="laser-line"></div></div><div id="ocrLegend" class="ocr-legend hidden"><span><i class="n"></i>Número</span><span><i class="d"></i>Entrega</span><span><i class="v"></i>Vencimiento</span><span><i class="t"></i>Total</span></div></div>
 <div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num" required></label><label>Fecha de entrega<input id="doc" type="date" required></label><label>Fecha de vencimiento<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
 <div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Albaranes pendientes de pago</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Albaranes pagados · Histórico</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Datos guardados en este dispositivo.</p>
 </div>
@@ -362,10 +369,28 @@ async function enhance(file){
  }
  ctx.putImageData(im,0,0);return c;
 }
+function drawOCRHighlights(words,parsed,width,height){
+ const svg=$('ocrOverlay');svg.setAttribute('viewBox','0 0 '+width+' '+height);svg.innerHTML='';
+ const targets=[{key:'n',value:parsed.n},{key:'d',value:parsed.doc},{key:'v',value:parsed.due},{key:'t',value:parsed.total}];
+ const digits=v=>(v||'').toString().replace(/[^0-9]/g,'');
+ const parts=v=>{const d=digits(v);return d.length===8?[d.slice(0,2),d.slice(2,4),d.slice(4)]:[d]};
+ const rects=[];
+ targets.forEach(t=>{
+  if(!t.value)return;
+  const ds=digits(t.value),pieces=parts(t.value);
+  (words||[]).forEach(w=>{
+   const wd=digits(w.text);if(!wd||!w.bbox)return;
+   const hit=t.key==='n'?(wd===ds||(ds.length>=8&&wd.length>=8&&ds.includes(wd))):(wd===ds||pieces.some(p=>p.length>=2&&wd===p));
+   if(hit)rects.push({key:t.key,b:w.bbox});
+  });
+ });
+ rects.forEach(r=>{const b=r.b,el=document.createElementNS('http://www.w3.org/2000/svg','rect');el.setAttribute('x',b.x0);el.setAttribute('y',b.y0);el.setAttribute('width',Math.max(1,b.x1-b.x0));el.setAttribute('height',Math.max(1,b.y1-b.y0));el.setAttribute('class',r.key);svg.appendChild(el)});
+ $('ocrLegend').classList.toggle('hidden',rects.length===0);
+}
 async function photo(file){
  if(!file)return;
  $('scan').classList.remove('hidden');$('scan').classList.add('scanning');$('form').classList.add('hidden');
- $('preview').src=URL.createObjectURL(file);
+ $('preview').src=URL.createObjectURL(file);$('ocrOverlay').innerHTML='';$('ocrLegend').classList.add('hidden');
  $('msg').textContent='Preparando fotografía…';
  ['num','doc','due','total'].forEach(id=>$(id).value='');
  try{
@@ -375,6 +400,8 @@ async function photo(file){
    logger:m=>{if(m.status==='recognizing text')$('msg').textContent='Leyendo albarán… '+Math.round((m.progress||0)*100)+'%'}
   });
   const x=parseOCR([result.data.text||'']);
+  $('preview').src=canvas.toDataURL('image/jpeg',0.88);
+  drawOCRHighlights(result.data.words||[],x,canvas.width,canvas.height);
   $('num').value=x.n;$('doc').value=x.doc;$('due').value=x.due;$('total').value=x.total;
   const missing=[];if(!x.n)missing.push('número');if(!x.doc)missing.push('fecha del albarán');if(!x.due)missing.push('fecha de vencimiento');if(!x.total)missing.push('total a pagar');
   $('msg').textContent=missing.length?'Lectura parcial. Completa o corrige: '+missing.join(', ')+'.':'Lectura completada. Comprueba los datos antes de guardar.';
