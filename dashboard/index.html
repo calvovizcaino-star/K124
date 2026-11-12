@@ -92,10 +92,10 @@ header{position:relative;padding:17px 20px 18px 270px;border-bottom:5px solid va
 .k124-sidefoot{margin-top:auto;padding:12px 13px;color:#a9c2e2;font-size:11px;line-height:1.5}
 .k124-menu-toggle{display:none;background:#ffffff18;color:white;border:1px solid #ffffff55;border-radius:9px;padding:8px 11px;font-size:20px}
 main.pane{max-width:1180px;margin:20px auto 40px;padding-left:14px;padding-right:14px}
-#pane-daily,#pane-control,#pane-logista{max-width:none;margin:0;padding:0 18px 25px 264px}
-#dailyFrame,#controlFrame,#logistaFrame{width:100%;height:calc(100vh - 105px);min-height:680px;border:1px solid var(--line);border-radius:13px;background:white}
-#pane-daily.active,#pane-control.active,#pane-logista.active{display:block}
-#pane-fuel,#pane-parts,#pane-store{margin-left:246px}
+#pane-daily,#pane-control,#pane-logista,#pane-fuelhistory{max-width:none;margin:0;padding:0 18px 25px 264px}
+#dailyFrame,#controlFrame,#logistaFrame,#fuelHistoryFrame{width:100%;height:calc(100vh - 105px);min-height:680px;border:1px solid var(--line);border-radius:13px;background:white}
+#pane-daily.active,#pane-control.active,#pane-logista.active,#pane-fuelhistory.active{display:block}
+#pane-fuel,#pane-parts,#pane-store,#pane-fuelhistory{margin-left:246px}
 @media(max-width:760px){
  header{padding:12px 14px 12px 66px;min-height:67px}
  .head{gap:8px}.brand{font-size:22px}.brand small{font-size:9px}
@@ -105,9 +105,9 @@ main.pane{max-width:1180px;margin:20px auto 40px;padding-left:14px;padding-right
  body.menu-open .k124-sidebar{transform:translateX(0)}
  .k124-scrim{display:none;position:fixed;inset:0;background:#06152b77;z-index:45}
  body.menu-open .k124-scrim{display:block}
- #pane-fuel,#pane-parts,#pane-store{margin:15px auto 35px}
- #pane-daily,#pane-control,#pane-logista{padding:0 10px 20px;margin:0}
- #dailyFrame,#controlFrame,#logistaFrame{height:calc(100vh - 90px);min-height:620px;border-radius:10px}
+ #pane-fuel,#pane-parts,#pane-store,#pane-fuelhistory{margin:15px auto 35px}
+ #pane-daily,#pane-control,#pane-logista,#pane-fuelhistory{padding:0 10px 20px;margin:0}
+ #dailyFrame,#controlFrame,#logistaFrame,#fuelHistoryFrame{height:calc(100vh - 90px);min-height:620px;border-radius:10px}
  main.pane{padding-left:12px;padding-right:12px}
 }
 /* Cabecera corporativa unificada K124 */
@@ -138,7 +138,7 @@ header.k124-header:after{content:""!important;position:absolute!important;z-inde
  <button class="tab active" data-pane="daily"><span class="navico">▤</span>Parte diario</button>
  <button class="tab" data-pane="fuel"><span class="navico">⌂</span>Inicio / Resumen</button>
  <button class="tab" data-pane="control"><span class="navico">🛒</span>Control de tienda</button>
- <button class="tab" data-pane="logista"><span class="navico">▣</span>LOGISTA</button>
+ <button class="tab" data-pane="logista"><span class="navico">▣</span>LOGISTA</button>\n <button class="tab" data-pane="fuelhistory"><span class="navico">⛽</span>Histórico carburante</button>
  <div class="k124-navlabel">INFORMES Y ESTADÍSTICAS</div>
  <button class="tab" data-pane="parts"><span class="navico">▥</span>Dashboard partes</button>
  <button class="tab" data-pane="store"><span class="navico">€</span>Ventas tienda</button>
@@ -160,7 +160,7 @@ header.k124-header:after{content:""!important;position:absolute!important;z-inde
 </nav>
 <section id="pane-daily" class="pane active"><iframe id="dailyFrame" src="../index.html" title="Parte diario K124" loading="lazy"></iframe></section>
 <section id="pane-control" class="pane"><iframe id="controlFrame" src="../control-tienda/" title="Control de tienda K124" loading="lazy"></iframe></section>
-<section id="pane-logista" class="pane"><iframe id="logistaFrame" src="../logista/" title="LOGISTA K124" loading="lazy"></iframe></section>
+<section id="pane-logista" class="pane"><iframe id="logistaFrame" src="../logista/" title="LOGISTA K124" loading="lazy"></iframe></section>\n<section id="pane-fuelhistory" class="pane"><iframe id="fuelHistoryFrame" src="https://calvovizcaino-star.github.io/Historico-Ventas-K124/" title="Histórico de ventas de carburante K124" loading="lazy"></iframe></section>
 <main class="pane" id="pane-parts">
  <div class="toolbar"><h1>Dashboard partes</h1><div class="filters"><select id="partsYear" aria-label="Año de los partes"></select></div></div>
  <p class="status">Resumen sencillo de los partes diarios guardados</p>
@@ -283,8 +283,8 @@ function bindGraphTip(el){
 
 function showPane(name){
  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.pane===name));
- document.querySelectorAll("main.pane,#pane-daily,#pane-control,#pane-logista").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));
- const titles={daily:["Parte diario","Control de ventas y liquidaciones"],fuel:["Resumen general","Actividad y resultados de K124"],control:["Control de tienda","Ventas, artículos y comparativas"],logista:["LOGISTA","Albaranes, vencimientos y pagos"],parts:["Dashboard partes","Lecturas de sondas y márgenes"],store:["Ventas tienda","Histórico y evolución de ventas"]};
+ document.querySelectorAll("main.pane,#pane-daily,#pane-control,#pane-logista,#pane-fuelhistory").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));
+ const titles={daily:["Parte diario","Control de ventas y liquidaciones"],fuel:["Resumen general","Actividad y resultados de K124"],control:["Control de tienda","Ventas, artículos y comparativas"],logista:["LOGISTA","Albaranes, vencimientos y pagos"],fuelhistory:["Histórico de ventas","Control de ventas de carburante"],parts:["Dashboard partes","Lecturas de sondas y márgenes"],store:["Ventas tienda","Histórico y evolución de ventas"]};
  const t=titles[name]||titles.daily;
  $("mainHeading").textContent=t[0];$("mainSubheading").textContent=t[1];
  if(name==="store")renderStore();
