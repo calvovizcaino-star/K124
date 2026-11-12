@@ -42,7 +42,15 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 .pane{display:none}.pane.active{display:block}
 #pane-daily{padding:0 14px 24px;max-width:1130px;margin:0 auto}
 #dailyFrame{width:100%;height:calc(100vh - 160px);min-height:680px;border:1px solid #dce6f2;border-radius:0 0 15px 15px;background:white}
-.storegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.storegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch}
+.store-left{display:flex;flex-direction:column;gap:10px;min-width:0}
+.store-left-title{background:linear-gradient(145deg,#102d55,#061a37);color:#fff;border-radius:15px;padding:13px 14px;font-size:15px;font-weight:850;letter-spacing:.2px;box-shadow:0 3px 12px #183b2910}
+.store-left .card{flex:1}
+.store-repsol{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.store-repsol>span{font-size:13px;color:var(--muted);display:block}
+.store-repsol>strong{display:block;font-size:clamp(20px,4.5vw,29px);margin-top:9px;color:var(--blue);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.store-repsol>small{display:block;color:var(--muted);font-size:11px;margin-top:5px}
+@media(max-width:380px){.storegrid{gap:7px}.store-left-title{padding:11px 10px;font-size:13px}.storegrid .card{padding:11px}.store-repsol>strong{font-size:19px}}
 .storechart{height:220px;display:flex;align-items:end;gap:6px;padding:10px 3px 24px;border-bottom:1px solid var(--line)}
 .storechart .barwrap{height:100%;flex:1;display:flex;align-items:end;justify-content:center;position:relative;min-width:0}
 .storechart .bar{width:min(100%,30px);background:linear-gradient(180deg,#ffad45,#ff7900);border-radius:6px 6px 2px 2px}
@@ -170,9 +178,12 @@ header.k124-header:after{content:""!important;position:absolute!important;z-inde
  <div class="toolbar"><h1>Ventas de tienda</h1><div class="filters"><select id="storeYear"></select><select id="storeMonth"><option value="all">Todo el año</option></select></div></div>
  <p class="status" id="storeStatus">Datos compartidos de K124</p>
  <section class="storegrid">
-  <article class="card kpi"><span>Facturación tienda</span><strong id="storeTotal">—</strong><small>Ventas registradas</small></article>
-  <article class="card kpi"><span>Efectivo</span><strong id="storeCash">—</strong><small id="storeCashPct">—</small></article>
-  <article class="card kpi"><span>Tarjeta</span><strong id="storeCard">—</strong><small id="storeCardPct">—</small></article>
+  <div class="store-left">
+   <div class="store-left-title">Nuestra Tienda</div>
+   <article class="card kpi"><span>Efectivo</span><strong id="storeCash">—</strong><small id="storeCashPct">—</small></article>
+   <article class="card kpi"><span>Tarjeta</span><strong id="storeCard">—</strong><small id="storeCardPct">—</small></article>
+  </div>
+  <article class="card store-repsol"><span>Tienda Repsol</span><strong id="storeTotal">—</strong><small>Facturación tienda</small></article>
  </section>
  <section class="two">
   <article class="card"><h2>Evolución mensual</h2><div id="storeMonthlyChart" class="storechart"></div></article>
