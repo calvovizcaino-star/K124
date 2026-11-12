@@ -189,7 +189,7 @@ const $=id=>document.getElementById(id);
 const euro=n=>Number(n||0).toLocaleString("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0});
 const num=n=>Number(n||0).toLocaleString("es-ES",{maximumFractionDigits:0});
 const monthNames=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-let shared={},salesHistory={},lastUpdated=null;
+let shared={},salesHistory={},lastUpdated=null,controlStoreData={};
 function obj(key){try{const v=shared[key];return typeof v==="string"?JSON.parse(v||"{}"):(v||{})}catch{return {}}}
 function validDate(k){return /^\d{4}-\d{2}-\d{2}$/.test(k)}
 function dailyRows(){
@@ -294,22 +294,20 @@ function renderParts(){
 $("partsYear").addEventListener("change",renderParts);
 
 function storeMonths(){
- let data=obj("k124_ventas_tienda_v1");
- let entries=Object.entries(data||{}).filter(([k,v])=>/^\d{4}-\d{2}$/.test(k)&&v&&Array.isArray(v.filas));
- // En el mismo iPhone, usa el almacenamiento local de Parte Diario
- // si la última sincronización en la nube todavía no incluye las ventas de tienda.
- if(!entries.length){
-  try{
-   const local=JSON.parse(localStorage.getItem("k124_ventas_tienda_v1")||"{}");
-   const localEntries=Object.entries(local||{}).filter(([k,v])=>/^\d{4}-\d{2}$/.test(k)&&v&&Array.isArray(v.filas));
-   if(localEntries.length)entries=localEntries;
-  }catch(e){}
- }
- return entries.sort(([a],[b])=>a.localeCompare(b));
+ const data=obj("k124_ventas_tienda_v1");
+ const keys=new Set([...Object.keys(data||{}),...Object.keys(controlStoreData||{}).flatMap(y=>/^20\\d{2}$/.test(y)?Array.from({length:12},(_,i)=>y+"-"+String(i+1).padStart(2,"0")):[])]);
+ return [...keys].filter(k=>/^\\d{4}-\\d{2}$/.test(k)).sort().map(k=>{
+  const [y,m]=k.split("-"),control=controlStoreData?.[y]?.[Number(m)-1],original=data[k];
+  if(typeof control==="number"&&Number.isFinite(control)){
+   const base=original&&Array.isArray(original.filas)?original:{filas:[],resumen:{}};
+   return [k,{...base,totalControl:control}];
+  }
+  return original&&Array.isArray(original.filas)?[k,original]:null;
+ }).filter(Boolean);
 }
 function storeSummary(data){
  const rows=data?.filas||[],r=data?.resumen||{};
- return {total:Number(r.suma??r.tienda??rows.reduce((s,x)=>s+Number(x.total??x.tienda??0),0)),cash:Number(r.efectivo??rows.reduce((s,x)=>s+Number(x.efectivo||0),0)),card:Number(r.tarjeta??rows.reduce((s,x)=>s+Number(x.tarjeta||0),0)),rows};
+ return {total:Number(data?.totalControl??r.suma??r.tienda??rows.reduce((s,x)=>s+Number(x.total??x.tienda??0),0)),cash:Number(r.efectivo??rows.reduce((s,x)=>s+Number(x.efectivo||0),0)),card:Number(r.tarjeta??rows.reduce((s,x)=>s+Number(x.tarjeta||0),0)),rows};
 }
 function renderStore(){
  const entries=storeMonths(),years=[...new Set(entries.map(([k])=>k.slice(0,4)))].sort().reverse();
@@ -357,6 +355,10 @@ async function load(){
   const {data,error}=await db.from("k124_datos").select("datos,updated_at").eq("id","principal").maybeSingle();
   if(error)throw error;if(!data?.datos)throw new Error("No hay datos compartidos disponibles.");
   shared=data.datos;lastUpdated=data.updated_at;
+  try{
+   const {data:controlRow,error:controlError}=await db.from("k124_datos").select("datos").eq("id","control_tienda").maybeSingle();
+   if(!controlError&&controlRow?.datos&&typeof controlRow.datos==="object")controlStoreData=controlRow.datos;
+  }catch(e){console.warn("No se pudo leer el histórico de Control de tienda",e)}
   const years=[...new Set([...Object.keys(obj("k124_historial_sondas_v2")).map(k=>k.slice(0,4)),...Object.keys(obj("k124_margen_diario_v1")).map(k=>k.slice(0,4)),String(new Date().getFullYear())])].filter(x=>/^\d{4}$/.test(x)).sort().reverse();
   const old=$("year").value;$("year").innerHTML="";
   years.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;$("year").append(o)});
