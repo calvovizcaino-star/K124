@@ -138,7 +138,20 @@ function showPane(name){
  if(name==="store")renderStore();
 }
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showPane(b.dataset.pane)));
-function storeMonths(){return Object.entries(obj("k124_ventas_tienda_v1")).filter(([k,v])=>/^\\d{4}-\\d{2}$/.test(k)&&v&&Array.isArray(v.filas)).sort(([a],[b])=>a.localeCompare(b))}
+function storeMonths(){
+ let data=obj("k124_ventas_tienda_v1");
+ let entries=Object.entries(data||{}).filter(([k,v])=>/^\d{4}-\d{2}$/.test(k)&&v&&Array.isArray(v.filas));
+ // En el mismo iPhone, usa el almacenamiento local de Parte Diario
+ // si la última sincronización en la nube todavía no incluye las ventas de tienda.
+ if(!entries.length){
+  try{
+   const local=JSON.parse(localStorage.getItem("k124_ventas_tienda_v1")||"{}");
+   const localEntries=Object.entries(local||{}).filter(([k,v])=>/^\d{4}-\d{2}$/.test(k)&&v&&Array.isArray(v.filas));
+   if(localEntries.length)entries=localEntries;
+  }catch(e){}
+ }
+ return entries.sort(([a],[b])=>a.localeCompare(b));
+}
 function storeSummary(data){
  const rows=data?.filas||[],r=data?.resumen||{};
  return {total:Number(r.tienda??rows.reduce((s,x)=>s+Number(x.tienda||0),0)),cash:Number(r.efectivo??rows.reduce((s,x)=>s+Number(x.efectivo||0),0)),card:Number(r.tarjeta??rows.reduce((s,x)=>s+Number(x.tarjeta||0),0)),rows};
