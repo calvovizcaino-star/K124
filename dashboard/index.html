@@ -121,7 +121,7 @@ function monthlyData(){
  const ensure=k=>map[k]||(map[k]={month:k,liters:0,e:0,e10:0,g95:0,g98:0,margin:0,store:0,delivery:0,days:0});
  rows.forEach(r=>{const m=r.key.slice(0,7),x=ensure(m);x.liters+=r.total;x.e+=r.e;x.e10+=r.e10;x.g95+=r.g95;x.g98+=r.g98;x.days++});
  Object.entries(margin).forEach(([k,v])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const x=ensure(k.slice(0,7));x.margin+=Number(Object.hasOwn(marginCorr,k)?marginCorr[k]:v)||0}});
- Object.entries(store).forEach(([k,v])=>{if(/^\d{4}-\d{2}$/.test(k)&&v){const x=ensure(k);if(Array.isArray(v.filas))x.store+=v.filas.reduce((s,r)=>s+Number(r.total||0),0);else x.store+=Number(v.total??v.suma??v.tienda??0)}});
+ Object.entries(store).forEach(([k,v])=>{if(/^\d{4}-\d{2}$/.test(k)&&v){const x=ensure(k);if(Array.isArray(v.filas)){const resumen=v.resumen||{};x.store+=Number(resumen.suma??resumen.tienda??v.total??v.suma??v.tienda??v.filas.reduce((s,r)=>s+Number(r.total||0),0))}else x.store+=Number(v.total??v.suma??v.tienda??0)}});
  Object.entries(deliveries).forEach(([k,v])=>{if(/^\d{4}-\d{2}-\d{2}$/.test(k)){const x=ensure(k.slice(0,7));if(v&&typeof v==="object")x.delivery+=Object.values(v).reduce((s,n)=>s+Number(n||0),0)}});
  return Object.values(map).sort((a,b)=>a.month.localeCompare(b.month));
 }
@@ -154,7 +154,7 @@ function storeMonths(){
 }
 function storeSummary(data){
  const rows=data?.filas||[],r=data?.resumen||{};
- return {total:Number(r.tienda??rows.reduce((s,x)=>s+Number(x.tienda||0),0)),cash:Number(r.efectivo??rows.reduce((s,x)=>s+Number(x.efectivo||0),0)),card:Number(r.tarjeta??rows.reduce((s,x)=>s+Number(x.tarjeta||0),0)),rows};
+ return {total:Number(r.suma??r.tienda??rows.reduce((s,x)=>s+Number(x.total??x.tienda??0),0)),cash:Number(r.efectivo??rows.reduce((s,x)=>s+Number(x.efectivo||0),0)),card:Number(r.tarjeta??rows.reduce((s,x)=>s+Number(x.tarjeta||0),0)),rows};
 }
 function renderStore(){
  const entries=storeMonths(),years=[...new Set(entries.map(([k])=>k.slice(0,4)))].sort().reverse();
