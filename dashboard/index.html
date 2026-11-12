@@ -90,8 +90,8 @@ main.pane{max-width:1180px;margin:20px auto 40px;padding-left:14px;padding-right
 <aside class="k124-sidebar" id="k124Sidebar">
  <div class="k124-sidebrand">K124 <small>GESTIÓN INTEGRAL</small></div>
  <div class="k124-navlabel">MENÚ PRINCIPAL</div>
- <button class="tab active" data-pane="fuel"><span class="navico">⌂</span>Inicio</button>
- <button class="tab" data-pane="daily"><span class="navico">▤</span>Parte diario</button>
+ <button class="tab active" data-pane="daily"><span class="navico">▤</span>Parte diario</button>
+ <button class="tab" data-pane="fuel"><span class="navico">⌂</span>Inicio / Resumen</button>
  <button class="tab" data-pane="control"><span class="navico">🛒</span>Control de tienda</button>
  <button class="tab" data-pane="logista"><span class="navico">▣</span>LOGISTA</button>
  <div class="k124-navlabel">INFORMES Y ESTADÍSTICAS</div>
@@ -107,7 +107,7 @@ main.pane{max-width:1180px;margin:20px auto 40px;padding-left:14px;padding-right
  <button class="tab active" data-pane="fuel">Ventas carburante</button>
  <button class="tab" data-pane="store">Ventas tienda</button>
 </nav>
-<section id="pane-daily" class="pane"><iframe id="dailyFrame" src="../index.html" title="Parte diario K124" loading="lazy"></iframe></section>
+<section id="pane-daily" class="pane active"><iframe id="dailyFrame" src="../index.html" title="Parte diario K124" loading="lazy"></iframe></section>
 <section id="pane-control" class="pane"><iframe id="controlFrame" src="https://calvovizcaino-star.github.io/Control-Tienda/" title="Control de tienda K124" loading="lazy"></iframe></section>
 <section id="pane-logista" class="pane"><iframe id="logistaFrame" src="../logista/" title="LOGISTA K124" loading="lazy"></iframe></section>
 <main class="pane" id="pane-parts">
@@ -120,7 +120,7 @@ main.pane{max-width:1180px;margin:20px auto 40px;padding-left:14px;padding-right
  </section>
  <section class="card section"><h2>Últimos partes</h2><div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Litros</th><th>Margen</th></tr></thead><tbody id="partsRows"></tbody></table></div></section>
 </main>
-<main class="pane active" id="pane-fuel">
+<main class="pane" id="pane-fuel">
  <div class="toolbar"><h1>Inicio · Resumen general</h1><div class="filters"><select id="year"></select><select id="month"><option value="all">Todo el año</option></select><button id="refresh" title="Actualizar">↻</button></div></div>
  <p class="status" id="status">Conectando con los datos compartidos…</p>
  <div id="error"></div>
