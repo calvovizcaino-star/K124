@@ -55,10 +55,21 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 <header><div class="head"><div class="brand">K124 <small>DASHBOARD · PARTE DIARIO</small></div><div class="pill">◉ Solo consulta</div></div></header>
 <nav class="tabs" aria-label="Secciones del panel">
  <button class="tab" data-pane="daily">Parte diario</button>
+ <button class="tab" data-pane="parts">Dashboard partes</button>
  <button class="tab active" data-pane="fuel">Ventas carburante</button>
  <button class="tab" data-pane="store">Ventas tienda</button>
 </nav>
 <section id="pane-daily" class="pane"><iframe id="dailyFrame" src="../index.html" title="Parte diario K124" loading="lazy"></iframe></section>
+<main class="pane" id="pane-parts">
+ <div class="toolbar"><h1>Dashboard partes</h1><div class="filters"><select id="partsYear" aria-label="Año de los partes"></select></div></div>
+ <p class="status">Resumen sencillo de los partes diarios guardados</p>
+ <section class="grid">
+  <article class="card kpi"><span>Partes registrados</span><strong id="partsCount">0</strong><small>Días con lectura</small></article>
+  <article class="card kpi"><span>Litros vendidos</span><strong id="partsLiters">0 L</strong><small>Según sondas</small></article>
+  <article class="card kpi"><span>Margen carburante</span><strong id="partsMargin">0 €</strong><small>Acumulado del año</small></article>
+ </section>
+ <section class="card section"><h2>Últimos partes</h2><div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Litros</th><th>Margen</th></tr></thead><tbody id="partsRows"></tbody></table></div></section>
+</main>
 <main class="pane active" id="pane-fuel">
  <div class="toolbar"><h1>Resumen de actividad</h1><div class="filters"><select id="year"></select><select id="month"><option value="all">Todo el año</option></select><button id="refresh" title="Actualizar">↻</button></div></div>
  <p class="status" id="status">Conectando con los datos compartidos…</p>
@@ -136,8 +147,35 @@ function showPane(name){
  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.pane===name));
  document.querySelectorAll("main.pane,#pane-daily").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));
  if(name==="store")renderStore();
+ if(name==="parts")renderParts();
 }
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showPane(b.dataset.pane)));
+function renderParts(){
+ const rows=dailyRows();
+ const years=[...new Set(rows.map(r=>r.key.slice(0,4)))].sort().reverse();
+ const ys=$("partsYear"),old=ys.value;ys.innerHTML="";
+ years.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;ys.append(o)});
+ if(years.length)ys.value=years.includes(old)?old:years[0];
+ const year=ys.value;
+ const shown=rows.filter(r=>r.key.startsWith(year));
+ const margins=obj("k124_margen_diario_v1"),corr=obj("k124_margen_correcciones_v1");
+ const marginFor=k=>Number(Object.hasOwn(corr,k)?corr[k]:margins[k]||0)||0;
+ const liters=shown.reduce((sum,r)=>sum+r.total,0);
+ const margin=shown.reduce((sum,r)=>sum+marginFor(r.key),0);
+ $("partsCount").textContent=shown.length.toLocaleString("es-ES");
+ $("partsLiters").textContent=num(liters)+" L";
+ $("partsMargin").textContent=euro(margin);
+ const body=$("partsRows");body.innerHTML="";
+ shown.slice().reverse().slice(0,20).forEach(r=>{
+  const tr=document.createElement("tr");
+  const date=new Date(Number(r.key.slice(0,4)),Number(r.key.slice(5,7))-1,Number(r.key.slice(8,10)));
+  [date.toLocaleDateString("es-ES"),num(r.total)+" L",euro(marginFor(r.key))].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.append(td)});
+  body.append(tr);
+ });
+ if(!shown.length)body.innerHTML='<tr><td colspan="3" class="empty">No hay partes guardados para este año</td></tr>';
+}
+$("partsYear").addEventListener("change",renderParts);
+
 function storeMonths(){
  let data=obj("k124_ventas_tienda_v1");
  let entries=Object.entries(data||{}).filter(([k,v])=>/^\d{4}-\d{2}$/.test(k)&&v&&Array.isArray(v.filas));
@@ -209,7 +247,7 @@ async function load(){
   $("month").value="all";
   $("status").textContent="Conectado · actualización automática cada minuto";
   $("updated").textContent="Última sincronización: "+(lastUpdated?new Date(lastUpdated).toLocaleString("es-ES"):"sin fecha");
-  render();renderStore();
+  render();renderStore();renderParts();
  }catch(e){$("status").textContent="No se pudo conectar con los datos";$("error").innerHTML='<div class="error"></div>';$("error").firstChild.textContent=e.message||"Error de conexión"}
 }
 $("year").addEventListener("change",render);$("month").addEventListener("change",render);$("refresh").addEventListener("click",load);
