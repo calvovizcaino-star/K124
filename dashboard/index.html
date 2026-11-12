@@ -221,12 +221,50 @@ function drawBars(id,items,key,kind="blue"){
 function showPane(name){
  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.pane===name));
  document.querySelectorAll("main.pane,#pane-daily,#pane-control,#pane-logista").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));
+ const titles={daily:["Parte diario","Control de ventas y liquidaciones"],fuel:["Resumen general","Actividad y resultados de K124"],control:["Control de tienda","Ventas, artículos y comparativas"],logista:["LOGISTA","Albaranes, vencimientos y pagos"],parts:["Dashboard partes","Lecturas de sondas y márgenes"],store:["Ventas tienda","Histórico y evolución de ventas"]};
+ const t=titles[name]||titles.daily;
+ $("mainHeading").textContent=t[0];$("mainSubheading").textContent=t[1];
  if(name==="store")renderStore();
  if(name==="parts")renderParts();
  document.body.classList.remove("menu-open");
+ $("k124MenuToggle").setAttribute("aria-expanded","false");
  window.scrollTo({top:0,behavior:"instant"});
 }
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showPane(b.dataset.pane)));
+function simplifyEmbeddedHeader(frameId,kind){
+ const frame=$(frameId);if(!frame)return;
+ const apply=()=>{
+  try{
+   const doc=frame.contentDocument;if(!doc)return;
+   const style=doc.createElement("style");style.textContent=kind==="daily"?`
+    header{height:0!important;min-height:0!important;padding:0!important;margin:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+    header:before,header:after{display:none!important}
+    header .top{height:0!important;min-height:0!important;padding:0!important;margin:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+    header .top .brand,header .heading{display:none!important}
+    header .acceso-resumen{position:fixed!important;top:9px!important;right:9px!important;z-index:999999!important}
+    header .boton-menu-resumen{width:43px!important;height:40px!important}
+   `:kind==="control"?`
+    body{padding-top:0!important}
+    header.k124-header{height:0!important;min-height:0!important;padding:0!important;margin:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+    header.k124-header:before,header.k124-header:after{display:none!important}
+    header .header-topline .header-brand,header .heading{display:none!important}
+    header .header-menu{position:fixed!important;top:9px!important;right:9px!important;z-index:999999!important}
+    header .menu-trigger{width:43px!important;height:40px!important}
+   `:`
+    header.k124-header{height:0!important;min-height:0!important;padding:0!important;margin:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+    header.k124-header:before,header.k124-header:after{display:none!important}
+    header .header-brand,header .heading{display:none!important}
+    header .menu-toggle{position:fixed!important;top:9px!important;right:9px!important;z-index:999999!important}
+   `;
+   doc.head.appendChild(style);
+  }catch(e){console.warn("No se pudo adaptar la cabecera de "+frameId,e)}
+ };
+ frame.addEventListener("load",apply);if(frame.contentDocument?.readyState==="complete")apply();
+}
+simplifyEmbeddedHeader("dailyFrame","daily");
+simplifyEmbeddedHeader("controlFrame","control");
+simplifyEmbeddedHeader("logistaFrame","logista");
+
 $("k124MenuToggle").addEventListener("click",()=>document.body.classList.toggle("menu-open"));
 $("k124Scrim").addEventListener("click",()=>document.body.classList.remove("menu-open"));
 function renderParts(){
