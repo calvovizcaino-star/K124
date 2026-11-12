@@ -295,8 +295,8 @@ $("partsYear").addEventListener("change",renderParts);
 
 function storeMonths(){
  const data=obj("k124_ventas_tienda_v1");
- const keys=new Set([...Object.keys(data||{}),...Object.keys(controlStoreData||{}).flatMap(y=>/^20\\d{2}$/.test(y)?Array.from({length:12},(_,i)=>y+"-"+String(i+1).padStart(2,"0")):[])]);
- return [...keys].filter(k=>/^\\d{4}-\\d{2}$/.test(k)).sort().map(k=>{
+ const keys=new Set([...Object.keys(data||{}),...Object.keys(controlStoreData||{}).flatMap(y=>/^20\d{2}$/.test(y)?Array.from({length:12},(_,i)=>y+"-"+String(i+1).padStart(2,"0")):[])]);
+ return [...keys].filter(k=>/^\d{4}-\d{2}$/.test(k)).sort().map(k=>{
   const [y,m]=k.split("-"),control=controlStoreData?.[y]?.[Number(m)-1],original=data[k];
   if(typeof control==="number"&&Number.isFinite(control)){
    const base=original&&Array.isArray(original.filas)?original:{filas:[],resumen:{}};
