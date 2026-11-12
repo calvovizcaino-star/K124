@@ -35,11 +35,31 @@ h1{font-size:22px;margin:0}select,button{font:inherit;border:1px solid var(--lin
 footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 @media(max-width:720px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.card{padding:13px}.chart{height:210px}}
 @media(max-width:380px){.brand{font-size:24px}.pill{font-size:10px}.filters{width:100%}.filters select{flex:1;min-width:0}}
+
+.tabs{max-width:1100px;margin:0 auto;padding:12px 14px 0;display:flex;gap:7px;overflow-x:auto}
+.tab{border:1px solid #ffffff35;background:#ffffff12;color:white;padding:11px 14px;border-radius:11px 11px 0 0;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+.tab.active{background:#f3f7fc;color:#073b83;border-color:#f3f7fc}
+.pane{display:none}.pane.active{display:block}
+#pane-daily{padding:0 14px 24px;max-width:1130px;margin:0 auto}
+#dailyFrame{width:100%;height:calc(100vh - 160px);min-height:680px;border:1px solid #dce6f2;border-radius:0 0 15px 15px;background:white}
+.storegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.storechart{height:220px;display:flex;align-items:end;gap:6px;padding:10px 3px 24px;border-bottom:1px solid var(--line)}
+.storechart .barwrap{height:100%;flex:1;display:flex;align-items:end;justify-content:center;position:relative;min-width:0}
+.storechart .bar{width:min(100%,30px);background:linear-gradient(180deg,#ffad45,#ff7900);border-radius:6px 6px 2px 2px}
+.storechart .barlabel{position:absolute;bottom:-21px;font-size:10px;color:var(--muted)}
+.store-table{overflow:auto}#storeRows td,#storeRows th{padding:10px 8px}
+@media(max-width:700px){.storegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs{gap:5px}.tab{padding:10px 11px;font-size:12px}}
 </style>
 </head>
 <body>
 <header><div class="head"><div class="brand">K124 <small>DASHBOARD · PARTE DIARIO</small></div><div class="pill">◉ Solo consulta</div></div></header>
-<main>
+<nav class="tabs" aria-label="Secciones del panel">
+ <button class="tab" data-pane="daily">Parte diario</button>
+ <button class="tab active" data-pane="fuel">Ventas carburante</button>
+ <button class="tab" data-pane="store">Ventas tienda</button>
+</nav>
+<section id="pane-daily" class="pane"><iframe id="dailyFrame" src="../index.html" title="Parte diario K124" loading="lazy"></iframe></section>
+<main class="pane active" id="pane-fuel">
  <div class="toolbar"><h1>Resumen de actividad</h1><div class="filters"><select id="year"></select><select id="month"><option value="all">Todo el año</option></select><button id="refresh" title="Actualizar">↻</button></div></div>
  <p class="status" id="status">Conectando con los datos compartidos…</p>
  <div id="error"></div>
@@ -59,6 +79,20 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
  </section>
  <section class="card section"><h2>Detalle mensual</h2><div class="tablewrap"><table><thead><tr><th>Mes</th><th>Litros</th><th>Margen</th><th>Tienda</th></tr></thead><tbody id="monthlyRows"><tr><td colspan="4" class="empty">Esperando datos…</td></tr></tbody></table></div></section>
  <footer>Datos compartidos de K124 · Panel de solo lectura · <span id="updated">—</span></footer>
+</main>
+<main class="pane" id="pane-store">
+ <div class="toolbar"><h1>Ventas de tienda</h1><div class="filters"><select id="storeYear"></select><select id="storeMonth"><option value="all">Todo el año</option></select></div></div>
+ <p class="status" id="storeStatus">Datos compartidos de K124</p>
+ <section class="storegrid">
+  <article class="card kpi"><span>Facturación tienda</span><strong id="storeTotal">—</strong><small>Ventas registradas</small></article>
+  <article class="card kpi"><span>Efectivo</span><strong id="storeCash">—</strong><small id="storeCashPct">—</small></article>
+  <article class="card kpi"><span>Tarjeta</span><strong id="storeCard">—</strong><small id="storeCardPct">—</small></article>
+ </section>
+ <section class="two">
+  <article class="card"><h2>Evolución mensual</h2><div id="storeMonthlyChart" class="storechart"></div></article>
+  <article class="card"><h2>Distribución de cobros</h2><div id="storePayBreakdown" class="breakdown"></div></article>
+ </section>
+ <section class="card section"><h2>Detalle diario</h2><div class="store-table"><table><thead><tr><th>Día</th><th>Ventas</th><th>Efectivo</th><th>Tarjeta</th></tr></thead><tbody id="storeRows"></tbody></table></div></section>
 </main>
 <script type="module">
 import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
@@ -97,6 +131,42 @@ function drawBars(id,items,key,kind="blue"){
  if(!items.length){el.innerHTML='<div class="empty">No hay datos para este periodo</div>';return}
  items.forEach(x=>{const w=document.createElement("div");w.className="barwrap";const b=document.createElement("div");b.className="bar"+(kind==="orange"?" orange":"");b.style.height=Math.max(2,Number(x[key]||0)/max*100)+"%";b.title=(x.label||x.month)+": "+(kind==="orange"?euro(x[key]):num(x[key])+" L");const l=document.createElement("span");l.className="barlabel";l.textContent=x.label||monthNames[Number(x.month.slice(5,7))-1];w.append(b,l);el.append(w)});
 }
+
+function showPane(name){
+ document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.pane===name));
+ document.querySelectorAll("main.pane,#pane-daily").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));
+ if(name==="store")renderStore();
+}
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showPane(b.dataset.pane)));
+function storeMonths(){return Object.entries(obj("k124_ventas_tienda_v1")).filter(([k,v])=>/^\\d{4}-\\d{2}$/.test(k)&&v&&Array.isArray(v.filas)).sort(([a],[b])=>a.localeCompare(b))}
+function storeSummary(data){
+ const rows=data?.filas||[],r=data?.resumen||{};
+ return {total:Number(r.tienda??rows.reduce((s,x)=>s+Number(x.tienda||0),0)),cash:Number(r.efectivo??rows.reduce((s,x)=>s+Number(x.efectivo||0),0)),card:Number(r.tarjeta??rows.reduce((s,x)=>s+Number(x.tarjeta||0),0)),rows};
+}
+function renderStore(){
+ const entries=storeMonths(),years=[...new Set(entries.map(([k])=>k.slice(0,4)))].sort().reverse();
+ const ys=$("storeYear"),old=ys.value;ys.innerHTML="";
+ years.forEach(y=>{const o=document.createElement("option");o.value=y;o.textContent=y;ys.append(o)});
+ if(years.length)ys.value=years.includes(old)?old:years[0];
+ const ms=$("storeMonth"),oldm=ms.value;ms.innerHTML='<option value="all">Todo el año</option>';
+ entries.filter(([k])=>k.startsWith(ys.value)).forEach(([k])=>{const m=k.slice(5);const o=document.createElement("option");o.value=m;o.textContent=new Date(Number(k.slice(0,4)),Number(m)-1,1).toLocaleDateString("es-ES",{month:"long"});ms.append(o)});
+ if([...ms.options].some(o=>o.value===oldm))ms.value=oldm;else ms.value="all";
+ const selected=entries.filter(([k])=>k.startsWith(ys.value)&&(ms.value==="all"||k.endsWith("-"+ms.value)));
+ let total=0,cash=0,card=0,chart=[];
+ selected.forEach(([k,d])=>{const s=storeSummary(d);total+=s.total;cash+=s.cash;card+=s.card;chart.push({month:k,total:s.total})});
+ $("storeTotal").textContent=euro(total);$("storeCash").textContent=euro(cash);$("storeCard").textContent=euro(card);
+ const base=Math.max(1,cash+card);$("storeCashPct").textContent=(cash/base*100).toLocaleString("es-ES",{maximumFractionDigits:1})+"% del total";$("storeCardPct").textContent=(card/base*100).toLocaleString("es-ES",{maximumFractionDigits:1})+"% del total";
+ $("storeStatus").textContent=selected.length+" mes(es) con datos registrados";
+ const max=Math.max(1,...chart.map(x=>x.total)),el=$("storeMonthlyChart");el.innerHTML="";
+ chart.forEach(x=>{const w=document.createElement("div");w.className="barwrap";const b=document.createElement("div");b.className="bar";b.style.height=Math.max(2,x.total/max*100)+"%";b.title=x.month+": "+euro(x.total);const l=document.createElement("span");l.className="barlabel";l.textContent=monthNames[Number(x.month.slice(5,7))-1];w.append(b,l);el.append(w)});
+ const breakdown=$("storePayBreakdown");breakdown.innerHTML="";
+ [["Efectivo",cash],["Tarjeta",card]].forEach(([name,val])=>{const row=document.createElement("div");row.className="fuelrow";const n=document.createElement("span");n.textContent=name;const track=document.createElement("div");track.className="track";const fill=document.createElement("div");fill.className="fill";fill.style.width=(val/base*100)+"%";track.append(fill);const v=document.createElement("strong");v.textContent=euro(val);row.append(n,track,v);breakdown.append(row)});
+ const body=$("storeRows");body.innerHTML="";
+ selected.slice().reverse().forEach(([k,d])=>{const rows=d.filas.slice().sort((a,b)=>a.dia-b.dia);rows.forEach(f=>{const tr=document.createElement("tr");[String(f.dia).padStart(2,"0")+"/"+k.slice(5),euro(f.tienda),euro(f.efectivo),euro(f.tarjeta)].forEach(t=>{const td=document.createElement("td");td.textContent=t;tr.append(td)});body.append(tr)})});
+ if(!selected.length){body.innerHTML='<tr><td colspan="4" class="empty">No hay datos de tienda en este periodo</td></tr>';el.innerHTML='<div class="empty">No hay datos para mostrar</div>'}
+}
+$("storeYear").addEventListener("change",renderStore);$("storeMonth").addEventListener("change",renderStore);
+
 function render(){
  const year=$("year").value,month=$("month").value;
  const all=monthlyData().filter(x=>x.month.startsWith(year)),shown=month==="all"?all:all.filter(x=>x.month.endsWith("-"+month));
@@ -126,7 +196,7 @@ async function load(){
   $("month").value="all";
   $("status").textContent="Conectado · actualización automática cada minuto";
   $("updated").textContent="Última sincronización: "+(lastUpdated?new Date(lastUpdated).toLocaleString("es-ES"):"sin fecha");
-  render();
+  render();renderStore();
  }catch(e){$("status").textContent="No se pudo conectar con los datos";$("error").innerHTML='<div class="error"></div>';$("error").firstChild.textContent=e.message||"Error de conexión"}
 }
 $("year").addEventListener("change",render);$("month").addEventListener("change",render);$("refresh").addEventListener("click",load);
