@@ -44,8 +44,10 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 #dailyFrame{width:100%;height:calc(100vh - 160px);min-height:680px;border:1px solid #dce6f2;border-radius:0 0 15px 15px;background:white}
 .storegrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch}
 .store-left{display:flex;flex-direction:column;gap:10px;min-width:0}
-.store-left-title{background:linear-gradient(145deg,#102d55,#061a37);color:#fff;border-radius:15px;padding:13px 14px;font-size:15px;font-weight:850;letter-spacing:.2px;box-shadow:0 3px 12px #183b2910}
+.store-left-title,.store-repsol-title{background:linear-gradient(145deg,#102d55,#061a37);color:#fff;border-radius:15px;padding:13px 14px;font-size:15px;font-weight:850;letter-spacing:.2px;box-shadow:0 3px 12px #183b2910}
 .store-left .card{flex:1}
+.store-right{display:flex;flex-direction:column;gap:10px;min-width:0}
+.store-right .store-repsol{flex:1}
 .store-repsol{display:flex;flex-direction:column;justify-content:center;min-width:0}
 .store-repsol>span{font-size:13px;color:var(--muted);display:block}
 .store-repsol>strong{display:block;font-size:clamp(20px,4.5vw,29px);margin-top:9px;color:var(--blue);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
@@ -189,7 +191,10 @@ header.k124-header:after{content:""!important;position:absolute!important;z-inde
    <article class="card kpi"><span>Efectivo</span><strong id="storeCash">—</strong><small id="storeCashPct">—</small></article>
    <article class="card kpi"><span>Tarjeta</span><strong id="storeCard">—</strong><small id="storeCardPct">—</small></article>
   </div>
-  <article class="card store-repsol"><span>Tienda Repsol</span><strong id="storeTotal">—</strong><small>Facturación tienda</small></article>
+  <div class="store-right">
+   <div class="store-repsol-title">REPSOL</div>
+   <article class="card store-repsol"><span>Tienda Repsol</span><strong id="storeTotal">—</strong><small>Facturación tienda</small></article>
+  </div>
  </section>
  <section class="two">
   <article class="card"><h2>Evolución mensual</h2><div id="storeMonthlyChart" class="storechart"></div></article>
