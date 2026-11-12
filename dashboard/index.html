@@ -55,6 +55,12 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 .storechart .barwrap{height:100%;flex:1;display:flex;align-items:end;justify-content:center;position:relative;min-width:0}
 .storechart .bar{width:min(100%,30px);background:linear-gradient(180deg,#ffad45,#ff7900);border-radius:6px 6px 2px 2px}
 .storechart .barlabel{position:absolute;bottom:-21px;font-size:10px;color:var(--muted)}
+.graph-tip{position:absolute;z-index:8;top:8px;left:8px;max-width:calc(100% - 16px);padding:9px 12px;border:1px solid #cbd9eb;border-radius:11px;background:#102d55;color:#fff;font-size:12px;font-weight:800;line-height:1.35;box-shadow:0 5px 16px #102d5540;pointer-events:none;opacity:0;transform:translateY(3px);transition:opacity .08s,transform .08s;white-space:nowrap}
+.graph-tip.show{opacity:1;transform:translateY(0)}
+.graph-tip small{display:block;color:#ffbf78;font-size:10px;font-weight:700;margin-bottom:2px}
+.chart,.storechart{position:relative;touch-action:pan-y}
+.barwrap{cursor:crosshair}
+
 .store-table{overflow:auto}#storeRows td,#storeRows th{padding:10px 8px}
 @media(max-width:700px){.storegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs{gap:5px}.tab{padding:10px 11px;font-size:12px}}
 
@@ -237,7 +243,27 @@ function drawBars(id,items,key,kind="blue"){
  const el=$(id);el.innerHTML="";
  const max=Math.max(1,...items.map(x=>Number(x[key]||0)));
  if(!items.length){el.innerHTML='<div class="empty">No hay datos para este periodo</div>';return}
- items.forEach(x=>{const w=document.createElement("div");w.className="barwrap";const b=document.createElement("div");b.className="bar"+(kind==="orange"?" orange":"");b.style.height=Math.max(2,Number(x[key]||0)/max*100)+"%";b.title=(x.label||x.month)+": "+(kind==="orange"?euro(x[key]):num(x[key])+" L");const l=document.createElement("span");l.className="barlabel";l.textContent=x.label||monthNames[Number(x.month.slice(5,7))-1];w.append(b,l);el.append(w)});
+ items.forEach(x=>{const w=document.createElement("div");w.className="barwrap";w.dataset.tipLabel=x.label||monthNames[Number(x.month.slice(5,7))-1];w.dataset.tipValue=kind==="orange"?euro(x[key]):(key==="store"?euro(x[key]):num(x[key])+" L");const b=document.createElement("div");b.className="bar"+(kind==="orange"?" orange":"");b.style.height=Math.max(2,Number(x[key]||0)/max*100)+"%";b.title=w.dataset.tipLabel+": "+w.dataset.tipValue;const l=document.createElement("span");l.className="barlabel";l.textContent=x.label||monthNames[Number(x.month.slice(5,7))-1];w.append(b,l);el.append(w)});
+ bindGraphTip(el);
+}
+function bindGraphTip(el){
+ let tip=el.querySelector(".graph-tip");
+ if(!tip){tip=document.createElement("div");tip.className="graph-tip";tip.setAttribute("aria-live","polite");el.append(tip)}
+ const showAt=x=>{
+  const bars=[...el.querySelectorAll(".barwrap")];if(!bars.length)return;
+  const bar=bars.reduce((best,node)=>{const r=node.getBoundingClientRect(),mid=r.left+r.width/2;return !best||Math.abs(mid-x)<best.dist?{node,dist:Math.abs(mid-x)}:best},null);
+  if(!bar||bar.dist>Math.max(34,el.clientWidth/bars.length*.8)){tip.classList.remove("show");return}
+  const node=bar.node;
+  tip.innerHTML="<small>"+node.dataset.tipLabel+"</small>"+node.dataset.tipValue;
+  const rect=el.getBoundingClientRect(),r=node.getBoundingClientRect();
+  const left=Math.max(8,Math.min(el.clientWidth-tip.offsetWidth-8,r.left-rect.left+r.width/2-tip.offsetWidth/2));
+  tip.style.left=left+"px";tip.classList.add("show");
+ };
+ el.onmousemove=e=>showAt(e.clientX);
+ el.onmouseleave=()=>tip.classList.remove("show");
+ el.ontouchstart=e=>{if(e.touches[0])showAt(e.touches[0].clientX)};
+ el.ontouchmove=e=>{if(e.touches[0])showAt(e.touches[0].clientX)};
+ el.ontouchend=()=>{setTimeout(()=>tip.classList.remove("show"),1400)};
 }
 
 function showPane(name){
@@ -346,7 +372,8 @@ function renderStore(){
  const base=Math.max(1,cash+card);$("storeCashPct").textContent=(cash/base*100).toLocaleString("es-ES",{maximumFractionDigits:1})+"% del total";$("storeCardPct").textContent=(card/base*100).toLocaleString("es-ES",{maximumFractionDigits:1})+"% del total";
  $("storeStatus").textContent=selected.length+" mes(es) con datos registrados";
  const max=Math.max(1,...chart.map(x=>x.total)),el=$("storeMonthlyChart");el.innerHTML="";
- chart.forEach(x=>{const w=document.createElement("div");w.className="barwrap";const b=document.createElement("div");b.className="bar";b.style.height=Math.max(2,x.total/max*100)+"%";b.title=x.month+": "+euro(x.total);const l=document.createElement("span");l.className="barlabel";l.textContent=monthNames[Number(x.month.slice(5,7))-1];w.append(b,l);el.append(w)});
+ chart.forEach(x=>{const w=document.createElement("div");w.className="barwrap";w.dataset.tipLabel=new Date(Number(x.month.slice(0,4)),Number(x.month.slice(5,7))-1,1).toLocaleDateString("es-ES",{month:"long",year:"numeric"});w.dataset.tipValue=euro(x.total);const b=document.createElement("div");b.className="bar";b.style.height=Math.max(2,x.total/max*100)+"%";b.title=w.dataset.tipLabel+": "+w.dataset.tipValue;const l=document.createElement("span");l.className="barlabel";l.textContent=monthNames[Number(x.month.slice(5,7))-1];w.append(b,l);el.append(w)});
+ bindGraphTip(el);
  const breakdown=$("storePayBreakdown");breakdown.innerHTML="";
  [["Efectivo",cash],["Tarjeta",card]].forEach(([name,val])=>{const row=document.createElement("div");row.className="fuelrow";const n=document.createElement("span");n.textContent=name;const track=document.createElement("div");track.className="track";const fill=document.createElement("div");fill.className="fill";fill.style.width=(val/base*100)+"%";track.append(fill);const v=document.createElement("strong");v.textContent=euro(val);row.append(n,track,v);breakdown.append(row)});
  const body=$("storeRows");body.innerHTML="";
