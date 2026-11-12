@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#073b83">
-<title>K124 · Dashboard</title>
+<title>K124 · Gestión Integral</title>
 <style>
 :root{--blue:#073b83;--blue2:#0879df;--orange:#ff7900;--bg:#f3f7fc;--ink:#152644;--muted:#64748b;--line:#dce6f2;--green:#16804a}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -49,10 +49,58 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
 .storechart .barlabel{position:absolute;bottom:-21px;font-size:10px;color:var(--muted)}
 .store-table{overflow:auto}#storeRows td,#storeRows th{padding:10px 8px}
 @media(max-width:700px){.storegrid{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs{gap:5px}.tab{padding:10px 11px;font-size:12px}}
-</style>
+
+/* K124 Gestión Integral */
+body{min-height:100vh}
+header{position:relative;padding:17px 20px 18px 270px;border-bottom:5px solid var(--orange)}
+.head{max-width:none}.brand{font-size:26px}.brand small{font-size:10px;letter-spacing:1.2px}
+.tabs{display:none!important}
+.k124-sidebar{position:fixed;z-index:50;left:0;top:0;bottom:0;width:246px;background:linear-gradient(180deg,#062b61,#041b40);color:#fff;padding:20px 13px;display:flex;flex-direction:column;box-shadow:5px 0 18px #062b6118}
+.k124-sidebrand{font-size:27px;font-weight:900;font-style:italic;padding:3px 13px 22px;letter-spacing:-1px}
+.k124-sidebrand small{display:block;font-size:10px;font-style:normal;letter-spacing:1.3px;opacity:.72;margin-top:3px}
+.k124-navlabel{font-size:10px;letter-spacing:1.5px;color:#a9c2e2;padding:12px 13px 7px;font-weight:800}
+.k124-sidebar .tab{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;border-radius:10px;background:transparent;color:#d9e8fb;padding:12px 13px;font-size:14px;font-weight:650;cursor:pointer}
+.k124-sidebar .tab .navico{width:22px;text-align:center;font-size:17px}
+.k124-sidebar .tab.active{background:#ffffff1c;color:#fff;box-shadow:inset 3px 0 var(--orange)}
+.k124-sidebar .tab:hover{background:#ffffff12}
+.k124-sidefoot{margin-top:auto;padding:12px 13px;color:#a9c2e2;font-size:11px;line-height:1.5}
+.k124-menu-toggle{display:none;background:#ffffff18;color:white;border:1px solid #ffffff55;border-radius:9px;padding:8px 11px;font-size:20px}
+main.pane{max-width:1180px;margin:20px auto 40px;padding-left:14px;padding-right:14px}
+#pane-daily,#pane-control,#pane-logista{max-width:none;margin:0;padding:0 18px 25px 264px}
+#dailyFrame,#controlFrame,#logistaFrame{width:100%;height:calc(100vh - 105px);min-height:680px;border:1px solid var(--line);border-radius:13px;background:white}
+#pane-daily.active,#pane-control.active,#pane-logista.active{display:block}
+#pane-fuel,#pane-parts,#pane-store{margin-left:246px}
+@media(max-width:760px){
+ header{padding:12px 14px 12px 66px;min-height:67px}
+ .head{gap:8px}.brand{font-size:22px}.brand small{font-size:9px}
+ .pill{font-size:10px;padding:6px 8px}
+ .k124-menu-toggle{display:block;position:absolute;left:14px;top:13px}
+ .k124-sidebar{transform:translateX(-105%);transition:transform .22s ease;width:min(82vw,285px);box-shadow:10px 0 30px #00152d55}
+ body.menu-open .k124-sidebar{transform:translateX(0)}
+ .k124-scrim{display:none;position:fixed;inset:0;background:#06152b77;z-index:45}
+ body.menu-open .k124-scrim{display:block}
+ #pane-fuel,#pane-parts,#pane-store{margin:15px auto 35px}
+ #pane-daily,#pane-control,#pane-logista{padding:0 10px 20px;margin:0}
+ #dailyFrame,#controlFrame,#logistaFrame{height:calc(100vh - 90px);min-height:620px;border-radius:10px}
+ main.pane{padding-left:12px;padding-right:12px}
+}</style>
 </head>
 <body>
-<header><div class="head"><div class="brand">K124 <small>DASHBOARD · PARTE DIARIO</small></div><div class="pill">◉ Solo consulta</div></div></header>
+
+<aside class="k124-sidebar" id="k124Sidebar">
+ <div class="k124-sidebrand">K124 <small>GESTIÓN INTEGRAL</small></div>
+ <div class="k124-navlabel">MENÚ PRINCIPAL</div>
+ <button class="tab active" data-pane="fuel"><span class="navico">⌂</span>Inicio</button>
+ <button class="tab" data-pane="daily"><span class="navico">▤</span>Parte diario</button>
+ <button class="tab" data-pane="control"><span class="navico">🛒</span>Control de tienda</button>
+ <button class="tab" data-pane="logista"><span class="navico">▣</span>LOGISTA</button>
+ <div class="k124-navlabel">INFORMES Y ESTADÍSTICAS</div>
+ <button class="tab" data-pane="parts"><span class="navico">▥</span>Dashboard partes</button>
+ <button class="tab" data-pane="store"><span class="navico">€</span>Ventas tienda</button>
+ <div class="k124-sidefoot">K124 SL · Gestión de estación<br>Datos compartidos y módulos conectados</div>
+</aside>
+<div class="k124-scrim" id="k124Scrim"></div>
+<header><button class="k124-menu-toggle" id="k124MenuToggle" aria-label="Abrir menú">☰</button><div class="head"><div class="brand">K124 <small>GESTIÓN INTEGRAL</small></div><div class="pill">◉ Panel de gestión</div></div></header>
 <nav class="tabs" aria-label="Secciones del panel">
  <button class="tab" data-pane="daily">Parte diario</button>
  <button class="tab" data-pane="parts">Dashboard partes</button>
@@ -60,6 +108,8 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
  <button class="tab" data-pane="store">Ventas tienda</button>
 </nav>
 <section id="pane-daily" class="pane"><iframe id="dailyFrame" src="../index.html" title="Parte diario K124" loading="lazy"></iframe></section>
+<section id="pane-control" class="pane"><iframe id="controlFrame" src="https://calvovizcaino-star.github.io/Control-Tienda/" title="Control de tienda K124" loading="lazy"></iframe></section>
+<section id="pane-logista" class="pane"><iframe id="logistaFrame" src="../logista/" title="LOGISTA K124" loading="lazy"></iframe></section>
 <main class="pane" id="pane-parts">
  <div class="toolbar"><h1>Dashboard partes</h1><div class="filters"><select id="partsYear" aria-label="Año de los partes"></select></div></div>
  <p class="status">Resumen sencillo de los partes diarios guardados</p>
@@ -71,7 +121,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:18px}
  <section class="card section"><h2>Últimos partes</h2><div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Litros</th><th>Margen</th></tr></thead><tbody id="partsRows"></tbody></table></div></section>
 </main>
 <main class="pane active" id="pane-fuel">
- <div class="toolbar"><h1>Resumen de actividad</h1><div class="filters"><select id="year"></select><select id="month"><option value="all">Todo el año</option></select><button id="refresh" title="Actualizar">↻</button></div></div>
+ <div class="toolbar"><h1>Inicio · Resumen general</h1><div class="filters"><select id="year"></select><select id="month"><option value="all">Todo el año</option></select><button id="refresh" title="Actualizar">↻</button></div></div>
  <p class="status" id="status">Conectando con los datos compartidos…</p>
  <div id="error"></div>
  <section class="grid">
@@ -145,11 +195,15 @@ function drawBars(id,items,key,kind="blue"){
 
 function showPane(name){
  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.pane===name));
- document.querySelectorAll("main.pane,#pane-daily").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));
+ document.querySelectorAll("main.pane,#pane-daily,#pane-control,#pane-logista").forEach(p=>p.classList.toggle("active",p.id==="pane-"+name));
  if(name==="store")renderStore();
  if(name==="parts")renderParts();
+ document.body.classList.remove("menu-open");
+ window.scrollTo({top:0,behavior:"instant"});
 }
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>showPane(b.dataset.pane)));
+$("k124MenuToggle").addEventListener("click",()=>document.body.classList.toggle("menu-open"));
+$("k124Scrim").addEventListener("click",()=>document.body.classList.remove("menu-open"));
 function renderParts(){
  const rows=dailyRows();
  const years=[...new Set(rows.map(r=>r.key.slice(0,4)))].sort().reverse();
