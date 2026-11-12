@@ -200,6 +200,17 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .payment-nav #paymentMonth{grid-column:2!important;grid-row:1!important;width:100%!important;min-width:0!important;height:48px!important;display:block!important;font-size:17px!important;padding:8px 12px!important;}
 .payment-nav #paymentNext{grid-column:3!important;grid-row:1!important;width:48px!important;min-width:48px!important;height:48px!important;}
 .payment-nav #paymentYear{grid-column:2!important;grid-row:2!important;justify-self:center!important;width:132px!important;min-width:132px!important;max-width:132px!important;height:46px!important;display:block!important;font-size:16px!important;padding:8px 12px!important;}
+
+.scan-photo-wrap{position:relative;width:100%;overflow:hidden;border-radius:10px;background:#101827;line-height:0}
+.scan-photo-wrap img{display:block;width:100%;max-height:420px;object-fit:contain}
+.laser-line{display:none;position:absolute;left:0;right:0;top:0;height:3px;z-index:3;pointer-events:none;
+ background:linear-gradient(90deg,transparent 0%,#ff3030 18%,#ff7777 50%,#ff3030 82%,transparent 100%);
+ box-shadow:0 0 7px 2px #ff2020,0 0 20px 5px #ff202088}
+.laser-line:after{content:"";position:absolute;left:0;right:0;top:-16px;height:20px;
+ background:linear-gradient(to bottom,transparent,#ff252522)}
+#scan.scanning .laser-line{display:block;animation:laserSweep 2.1s ease-in-out infinite}
+@keyframes laserSweep{0%{top:0}50%{top:calc(100% - 3px)}100%{top:0}}
+@media(prefers-reduced-motion:reduce){#scan.scanning .laser-line{animation-duration:5s}}
 </style></head><body>
 <header class="top k124-header">
  <div class="header-topline">
@@ -226,7 +237,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 <div id="homePage">
 <div class="grid"><div class="card"><span class="muted">Siguiente pago</span><strong class="big" id="sum">0,00 €</strong></div><div class="card"><span class="muted">Próximos vencimientos</span><strong class="big" id="count">0</strong></div></div>
 <div class="actions"><label class="pick green">📷 HACER FOTO<input id="cam" type="file" accept="image/*" capture="environment"></label><label class="pick white">▧ AÑADIR FOTO<input id="gal" type="file" accept="image/*"></label></div>
-<div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><img id="preview" style="width:100%;max-height:220px;object-fit:contain"></div>
+<div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><div class="scan-photo-wrap"><img id="preview" style="width:100%;max-height:220px;object-fit:contain"><div id="laserLine" class="laser-line"></div></div></div>
 <div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num" required></label><label>Fecha de entrega<input id="doc" type="date" required></label><label>Fecha de vencimiento<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
 <div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Albaranes pendientes de pago</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Albaranes pagados · Histórico</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Datos guardados en este dispositivo.</p>
 </div>
@@ -353,7 +364,7 @@ async function enhance(file){
 }
 async function photo(file){
  if(!file)return;
- $('scan').classList.remove('hidden');$('form').classList.add('hidden');
+ $('scan').classList.remove('hidden');$('scan').classList.add('scanning');$('form').classList.add('hidden');
  $('preview').src=URL.createObjectURL(file);
  $('msg').textContent='Preparando fotografía…';
  ['num','doc','due','total'].forEach(id=>$(id).value='');
@@ -372,7 +383,7 @@ async function photo(file){
   console.error(e);
   $('msg').textContent='No se pudo leer automáticamente. Puedes rellenar los datos manualmente.';
  }
- $('form').classList.remove('hidden');
+ $('scan').classList.remove('scanning');$('form').classList.remove('hidden');
 }
 $('cam').onchange=e=>photo(e.target.files[0]);$('gal').onchange=e=>photo(e.target.files[0]);
 let editingId=null;
