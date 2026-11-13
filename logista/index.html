@@ -306,7 +306,7 @@ async function syncCloud(){
   const status=$('syncStatus');if(status)status.textContent='Sincronizado con la nube';
  }catch(e){
   console.warn('LOGISTA: no se pudo sincronizar con Supabase',e);
-  const status=$('syncStatus');if(status)status.textContent='Guardado en este dispositivo · nube no disponible';
+  const status=$('syncStatus');if(status)status.textContent='Error al guardar en nube: '+(e.message||e.code||'error desconocido');
  }finally{
   cloudSaving=false;
   if(cloudSaveQueued){cloudSaveQueued=false;syncCloud()}
@@ -329,7 +329,7 @@ async function initializeCloud(){
   else if(status)status.textContent='Sincronizado con la nube';
  }catch(e){
   console.warn('LOGISTA: no se pudo cargar la nube',e);
-  if(status)status.textContent='Sin conexión a la nube · datos locales';
+  if(status)status.textContent='Error de conexión: '+(e.message||e.code||'error desconocido');
  }
  draw();
 }
