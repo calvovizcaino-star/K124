@@ -301,7 +301,10 @@ async function syncCloud(){
  if(cloudSaving){cloudSaveQueued=true;return}
  cloudSaving=true;
  try{
-  const {error}=await cloudDb.from('k124_datos').upsert({id:'logista',datos:data,updated_at:new Date().toISOString()},{onConflict:'id'});
+  const {data:row,error:readError}=await cloudDb.from('k124_datos').select('datos').eq('id','principal').single();
+  if(readError)throw readError;
+  const payload=row?.datos&&typeof row.datos==='object'?row.datos:{};
+  const {error}=await cloudDb.from('k124_datos').update({datos:{...payload,logista_docs:data},updated_at:new Date().toISOString()}).eq('id','principal');
   if(error)throw error;
   const status=$('syncStatus');if(status)status.textContent='Sincronizado con la nube';
  }catch(e){
@@ -316,6 +319,23 @@ async function initializeCloud(){
  const status=$('syncStatus');
  if(status)status.textContent='Conectando con la nube…';
  if(!cloudDb){if(status)status.textContent='Modo local';draw();return}
+ try{
+  const {data:row,error}=await cloudDb.from('k124_datos').select('datos').eq('id','principal').single();
+  if(error)throw error;
+  const payload=row?.datos&&typeof row.datos==='object'?row.datos:{};
+  const local=Array.isArray(data)?data:[];
+  const remote=Array.isArray(payload.logista_docs)?payload.logista_docs:[];
+  data=mergeRecords(remote,local);
+  saveLocal();
+  cloudReady=true;
+  if(data.length!==remote.length)await syncCloud();
+  else if(status)status.textContent='Sincronizado con la nube';
+ }catch(e){
+  console.warn('LOGISTA: no se pudo cargar la nube',e);
+  if(status)status.textContent='Error de conexión: '+(e.message||e.code||'error desconocido');
+ }
+ draw();
+}
  try{
   const {data:row,error}=await cloudDb.from('k124_datos').select('datos').eq('id','logista').maybeSingle();
   if(error)throw error;
