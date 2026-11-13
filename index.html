@@ -53,7 +53,7 @@ main{width:min(100% - 24px,900px);margin:6px auto 36px}
 .panel{background:white;border:1px solid var(--borde);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 3px 12px #183b2910}
 h2{font-size:19px;margin:0 0 12px}.ayuda{color:#647168;font-size:15px;line-height:1.5}
 input[type=file]{width:100%;margin:12px 0;font-size:14px}
-.selector-txt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin:12px 0;padding:15px 14px;border:1px solid #c9e1fb;border-radius:12px;background:#e5f1ff;color:#073b83;font-size:14px;font-weight:750;cursor:pointer;min-height:54px}
+.selector-txt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin:12px 0;padding:15px 14px;border:1px solid #c9e1fb;border-radius:12px;background:#e5f1ff;color:#073b83;font-size:14px;font-weight:750;cursor:pointer;min-height:54px;text-align:left}
 .selector-txt small{color:#64748b;font-size:11px;font-weight:500;text-align:right;overflow-wrap:anywhere;max-width:48%}
 .input-archivo-txt{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 .input-archivo-txt:focus-visible+.selector-txt{outline:3px solid #ff7900}
@@ -800,7 +800,7 @@ Selecciona la fecha prevista para completar el mensaje.</div>
 <section class="panel">
  <h2>📄 Actualizar parte diario</h2>
  <p class="ayuda">Selecciona el TXT del parte para actualizar las ventas del día y las tablas del mes y del año.</p>
- <label class="selector-txt" for="archivo"><span>📂 Seleccionar archivo TXT</span><small id="nombreArchivo">Ningún archivo seleccionado</small></label>
+ <button type="button" class="selector-txt" id="seleccionarArchivo"><span>📂 Seleccionar archivo TXT</span><small id="nombreArchivo">Ningún archivo seleccionado</small></button>
  <input id="archivo" class="input-archivo-txt" type="file" accept=".txt,text/plain">
  <button class="principal" id="procesar">Leer parte diario</button>
  <div class="mensaje" id="mensaje" role="status"></div>
@@ -977,6 +977,7 @@ setInterval(cargarVentasOficiales,60000);
 
 const $=id=>document.getElementById(id);
 const archivo=$("archivo"), mensaje=$("mensaje");
+$("seleccionarArchivo").addEventListener("click",()=>archivo.click());
 archivo.addEventListener("change",()=>{$("nombreArchivo").textContent=archivo.files?.[0]?.name||"Ningún archivo seleccionado";});
 const CLAVE="k124_historial_sondas_v2";
 let historial=leerHistorial();
