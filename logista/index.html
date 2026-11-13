@@ -234,7 +234,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
   <p>Control de pagos, vencimientos e histórico de albaranes</p>
  </div>
 </header>
-<div class="sync-status-row"><div class="status">Datos guardados en este dispositivo</div></div>
+<div class="sync-status-row"><div class="status" id="syncStatus">Conectando con la nube…</div></div>
 <main>
 <div id="mainMenuPanel" class="hidden menu-dropdown">
  <button class="menu-choice" id="goDuePage">📅 Fecha a pagar</button>
@@ -246,7 +246,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 <div class="actions"><label class="pick green">📷 HACER FOTO<input id="cam" type="file" accept="image/*" capture="environment"></label><label class="pick white">▧ AÑADIR FOTO<input id="gal" type="file" accept="image/*"></label></div>
 <div id="scan" class="card hidden"><b>Fotografía del albarán</b><p class="muted" id="msg">Leyendo…</p><div class="scan-photo-wrap"><img id="preview" style="width:100%;max-height:420px;object-fit:contain"><svg id="ocrOverlay" class="ocr-overlay" aria-hidden="true"></svg><div id="laserLine" class="laser-line"></div></div><div id="ocrLegend" class="ocr-legend hidden"><span><i class="n"></i>Número</span><span><i class="d"></i>Entrega</span><span><i class="v"></i>Vencimiento</span><span><i class="t"></i>Total</span></div></div>
 <div id="form" class="card hidden"><b>Revisar albarán</b><p class="muted">Comprueba los datos antes de guardar.</p><div class="fields"><label>N.º albarán<input id="num" required></label><label>Fecha de entrega<input id="doc" type="date" required></label><label>Fecha de vencimiento<input id="due" type="date" required></label><label>Total a pagar (€)<input id="total" inputmode="decimal" required></label></div><button class="save" id="save">GUARDAR ALBARÁN</button><p class="muted">El PVP nunca se utiliza para sumar pagos.</p></div>
-<div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Albaranes pendientes de pago</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Albaranes pagados · Histórico</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Datos guardados en este dispositivo.</p>
+<div class="tabs"><button class="on" id="bt1">Pendientes</button><button id="bt2">Pagados</button></div><section id="pending"><h3>Albaranes pendientes de pago</h3><div id="groups"></div></section><section id="history" class="hidden"><h3>Albaranes pagados · Histórico</h3><div id="paid"></div></section><p class="muted" style="text-align:center">Albaranes compartidos con K124.</p>
 </div>
 <section id="duePage" class="app-page hidden">
  <button class="back-home" data-home>← Volver</button>
@@ -284,6 +284,7 @@ const SUPABASE_URL="https://nkbmgtffoxwyfbeznver.supabase.co";
 const SUPABASE_KEY="sb_publishable_8uTKDFTAGjEDxghIYDG5ng_OT8L26R_";
 const cloudDb=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 let data=JSON.parse(localStorage.getItem('logista_docs')||'[]');
+if(!localStorage.getItem('logista_docs_backup_before_cloud'))localStorage.setItem('logista_docs_backup_before_cloud',JSON.stringify(data));
 let cloudReady=false,cloudSaving=false,cloudSaveQueued=false;
 function recordKey(x){return x?.id!=null?'id:'+x.id:'doc:'+cleanNumber(x?.n)+'|'+(x?.due||'')+'|'+Number(x?.total||0)}
 function mergeRecords(primary,secondary){
