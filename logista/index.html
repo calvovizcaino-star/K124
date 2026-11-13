@@ -336,8 +336,7 @@ async function initializeCloud(){
  }
  draw();
 }
- try{
-  const {data:row,error}=await cloudDb.from('k124_datos').select('datos').eq('id','logista').maybeSingle();
+// Migración: corregir registros antiguos donde entrega y vencimiento quedaron intercambiados.
   if(error)throw error;
   const local=Array.isArray(data)?data:[];
   const remote=Array.isArray(row?.datos)?row.datos:[];
