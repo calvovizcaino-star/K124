@@ -133,10 +133,10 @@ header.k124-header:after{content:""!important;position:absolute!important;z-inde
 .k124-menu-toggle{display:flex!important;align-items:center;justify-content:center;position:relative;z-index:4;width:44px;height:42px;background:#ffffff12!important;color:#fff!important;border:1px solid #ffffff66!important;border-radius:10px!important;font-size:24px!important;padding:0!important}
 @media(max-width:760px){header.k124-header{padding:16px 14px 34px!important}.k124-header .header-topline{gap:7px}.k124-header .header-brand{gap:8px}.k124-header .header-mark{width:29px;height:29px;gap:3px}.k124-header .header-mark i{width:6px}.k124-header .header-mark i:nth-child(1){height:10px}.k124-header .header-mark i:nth-child(2){height:16px}.k124-header .header-mark i:nth-child(3){height:22px}.k124-header .header-mark i:nth-child(4){height:29px}.k124-header .header-logo{font-size:36px;letter-spacing:-2.5px}.k124-header .header-logo small{font-size:12px}.k124-header .header-tag{font-size:8px;letter-spacing:1px;padding-left:8px}.k124-header .heading{margin-top:20px}.k124-header .heading h1{font-size:clamp(29px,7.5vw,36px);letter-spacing:-.8px}.k124-header .heading p{font-size:11px}.k124-header:before{height:92px}}
 
-/* Botón principal del Dashboard: debajo de la cabecera y alineado a la izquierda */
-.dashboard-menu-row{display:flex;align-items:center;justify-content:flex-start;width:100%;max-width:1180px;margin:10px auto 0;padding:0 14px;min-height:44px}
-.dashboard-menu-row .k124-menu-toggle{display:flex!important;position:static!important;left:auto!important;top:auto!important;align-items:center;justify-content:center;width:44px;height:42px;padding:8px;background:#fff8f0!important;color:#f47721!important;border:1.5px solid #f47721!important;border-radius:11px;font-size:22px;line-height:1;box-shadow:0 2px 9px #f4772125}
-@media(max-width:760px){header{padding:12px 14px!important;min-height:0!important}.dashboard-menu-row{margin-top:8px;padding:0 14px}}
+/* Menú principal situado en la esquina superior derecha de la cabecera */
+.k124-header .header-topline{width:100%}
+.k124-header .header-topline .k124-menu-toggle{flex:none;width:44px;height:42px;background:#ff7900!important;color:#fff!important;border:1.5px solid #ffad62!important;border-radius:11px!important;font-size:23px!important;line-height:1;box-shadow:0 3px 12px #ff790055}
+@media(max-width:760px){header{padding:12px 14px!important;min-height:0!important}.k124-header .header-topline .k124-menu-toggle{width:44px;height:42px}}
 </style>
 </head>
 <body>
@@ -158,10 +158,11 @@ header.k124-header:after{content:""!important;position:absolute!important;z-inde
 <header class="k124-header">
  <div class="header-topline">
   <div class="header-brand"><div class="header-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="header-logo">K124<small>SL</small></div><div class="header-tag">GESTIÓN INTEGRAL</div></div>
+  <button class="k124-menu-toggle" id="k124MenuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button>
  </div>
  <div class="heading"><div class="eyebrow">K124 SL / GESTIÓN INTEGRAL</div><h1 id="mainHeading">Parte diario</h1><p id="mainSubheading">Control de ventas y liquidaciones</p></div>
 </header>
-<div class="dashboard-menu-row"><button class="k124-menu-toggle" id="k124MenuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button></div>
+
 <nav class="tabs" aria-label="Secciones del panel">
  <button class="tab" data-pane="daily">Parte diario</button>
  <button class="tab" data-pane="parts">Dashboard partes</button>
