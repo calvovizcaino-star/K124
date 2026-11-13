@@ -337,22 +337,6 @@ async function initializeCloud(){
  draw();
 }
 // Migración: corregir registros antiguos donde entrega y vencimiento quedaron intercambiados.
-  if(error)throw error;
-  const local=Array.isArray(data)?data:[];
-  const remote=Array.isArray(row?.datos)?row.datos:[];
-  // La nube prevalece si un mismo albarán ya existe; los registros locales exclusivos se conservan.
-  data=mergeRecords(remote,local);
-  saveLocal();
-  cloudReady=true;
-  if(!row||!Array.isArray(row.datos)||data.length!==remote.length)await syncCloud();
-  else if(status)status.textContent='Sincronizado con la nube';
- }catch(e){
-  console.warn('LOGISTA: no se pudo cargar la nube',e);
-  if(status)status.textContent='Error de conexión: '+(e.message||e.code||'error desconocido');
- }
- draw();
-}
-// Migración: corregir registros antiguos donde entrega y vencimiento quedaron intercambiados.
 let datesMigrated=false;
 for(const x of data){if(x.doc&&x.due&&x.due<x.doc){const t=x.doc;x.doc=x.due;x.due=t;datesMigrated=true;}if(x.paid&&!x.paidAt&&x.due){x.paidAt=x.due;datesMigrated=true;}}
 if(datesMigrated)localStorage.setItem('logista_docs',JSON.stringify(data));
