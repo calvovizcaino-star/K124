@@ -1,0 +1,12 @@
+{
+  "name": "K124 · Dashboard",
+  "short_name": "K124",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#071b3e",
+  "theme_color": "#073b83",
+  "icons": [
+    {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}
