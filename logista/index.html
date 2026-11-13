@@ -277,10 +277,61 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
  <p class="muted">La copia incluye albaranes pendientes y pagados.</p>
 </section>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script><script>
 
 const $=x=>document.getElementById(x),fmt=n=>Number(n||0).toLocaleString('es-ES',{style:'currency',currency:'EUR'});
+const SUPABASE_URL="https://nkbmgtffoxwyfbeznver.supabase.co";
+const SUPABASE_KEY="sb_publishable_8uTKDFTAGjEDxghIYDG5ng_OT8L26R_";
+const cloudDb=window.supabase?.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
 let data=JSON.parse(localStorage.getItem('logista_docs')||'[]');
+let cloudReady=false,cloudSaving=false,cloudSaveQueued=false;
+function recordKey(x){return x?.id!=null?'id:'+x.id:'doc:'+cleanNumber(x?.n)+'|'+(x?.due||'')+'|'+Number(x?.total||0)}
+function mergeRecords(primary,secondary){
+ const out=[],seen=new Set();
+ for(const x of [...(primary||[]),...(secondary||[])]){
+  if(!x||typeof x!=='object')continue;
+  const k=recordKey(x);if(seen.has(k))continue;seen.add(k);out.push(x);
+ }
+ return out;
+}
+function saveLocal(){localStorage.setItem('logista_docs',JSON.stringify(data))}
+async function syncCloud(){
+ if(!cloudDb||!cloudReady)return;
+ if(cloudSaving){cloudSaveQueued=true;return}
+ cloudSaving=true;
+ try{
+  const {error}=await cloudDb.from('k124_datos').upsert({id:'logista',datos:data,updated_at:new Date().toISOString()},{onConflict:'id'});
+  if(error)throw error;
+  const status=$('syncStatus');if(status)status.textContent='Sincronizado con la nube';
+ }catch(e){
+  console.warn('LOGISTA: no se pudo sincronizar con Supabase',e);
+  const status=$('syncStatus');if(status)status.textContent='Guardado en este dispositivo · nube no disponible';
+ }finally{
+  cloudSaving=false;
+  if(cloudSaveQueued){cloudSaveQueued=false;syncCloud()}
+ }
+}
+async function initializeCloud(){
+ const status=$('syncStatus');
+ if(status)status.textContent='Conectando con la nube…';
+ if(!cloudDb){if(status)status.textContent='Modo local';draw();return}
+ try{
+  const {data:row,error}=await cloudDb.from('k124_datos').select('datos').eq('id','logista').maybeSingle();
+  if(error)throw error;
+  const local=Array.isArray(data)?data:[];
+  const remote=Array.isArray(row?.datos)?row.datos:[];
+  // La nube prevalece si un mismo albarán ya existe; los registros locales exclusivos se conservan.
+  data=mergeRecords(remote,local);
+  saveLocal();
+  cloudReady=true;
+  if(!row||!Array.isArray(row.datos)||data.length!==remote.length)await syncCloud();
+  else if(status)status.textContent='Sincronizado con la nube';
+ }catch(e){
+  console.warn('LOGISTA: no se pudo cargar la nube',e);
+  if(status)status.textContent='Sin conexión a la nube · datos locales';
+ }
+ draw();
+}
 // Migración: corregir registros antiguos donde entrega y vencimiento quedaron intercambiados.
 let datesMigrated=false;
 for(const x of data){if(x.doc&&x.due&&x.due<x.doc){const t=x.doc;x.doc=x.due;x.due=t;datesMigrated=true;}if(x.paid&&!x.paidAt&&x.due){x.paidAt=x.due;datesMigrated=true;}}
@@ -435,7 +486,7 @@ $('save').onclick=()=>{
  }else{data.unshift({id:Date.now(),n:num,doc:$('doc').value,due,total,paid:false});}
  store();$('form').classList.add('hidden');$('scan').classList.add('hidden');
 };
-function store(){localStorage.setItem('logista_docs',JSON.stringify(data));draw()}
+function store(){saveLocal();draw();syncCloud()}
 function monthKey(d){return (d||'').slice(0,7)||'sin-fecha'}
 function monthLabel(k){
  if(k==='sin-fecha')return 'Sin fecha de vencimiento';
@@ -589,5 +640,5 @@ window.deleteItem=id=>{
 };
 $('bt1').onclick=()=>tab(false);$('bt2').onclick=()=>tab(true);
 function tab(h){$('pending').classList.toggle('hidden',h);$('history').classList.toggle('hidden',!h);$('bt1').classList.toggle('on',!h);$('bt2').classList.toggle('on',h)}
-draw();
+initializeCloud();
 </script></body></html>
