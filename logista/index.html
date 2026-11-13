@@ -218,6 +218,10 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
 .ocr-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:12px;color:#526477}
 .ocr-legend span{display:flex;align-items:center;gap:5px}.ocr-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
 .ocr-legend i.n{background:#00b7ff}.ocr-legend i.d{background:#ffbd2e}.ocr-legend i.v{background:#27c77b}.ocr-legend i.t{background:#ff6b35}
+
+/* Menú a la izquierda de la fila de sincronización, debajo de la cabecera */
+.sync-status-row{justify-content:space-between!important;align-items:center!important;min-height:42px!important}
+.sync-status-row .menu-toggle{flex:0 0 44px!important;width:44px!important;height:42px!important;margin:0!important;transform:none!important}
 </style></head><body>
 <header class="top k124-header">
  <div class="header-topline">
@@ -226,7 +230,6 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
    <div class="header-logo">K124<small>SL</small></div>
    <div class="header-tag">LOGISTA</div>
   </div>
-  <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-expanded="false" title="Menú"><span></span><span></span><span></span></button>
  </div>
  <div class="heading">
   <div class="eyebrow">K124 SL / GESTIÓN DE ALBARANES</div>
@@ -234,7 +237,7 @@ header.top.k124-header{margin:0 0 0 calc(50% - 50vw)!important}
   <p>Control de pagos, vencimientos e histórico de albaranes</p>
  </div>
 </header>
-<div class="sync-status-row"><div class="status" id="syncStatus">Conectando con la nube…</div></div>
+<div class="sync-status-row"><button class="menu-toggle" id="menuToggle" aria-label="Abrir menú" aria-expanded="false" title="Menú"><span></span><span></span><span></span></button><div class="status" id="syncStatus">Conectando con la nube…</div></div>
 <main>
 <div id="mainMenuPanel" class="hidden menu-dropdown">
  <button class="menu-choice" id="goDuePage">📅 Fecha a pagar</button>
