@@ -82,16 +82,30 @@ document.getElementById('vacAdd').onclick=()=>{
   data[id+'|4|'+day]=who;count++;
   // La persona de vacaciones no puede aparecer en ningún turno.
   for(let ri=0;ri<3;ri++){const shiftKey=id+'|'+ri+'|'+day;if(data[shiftKey]===who)delete data[shiftKey];}
-  // Carlos solo cubre tardes y partidos de viernes. No se le asignan mañanas.
-  const dow=d.getDay(),partyKey=id+'|1|'+day,afternoonKey=id+'|2|'+day;
-  if(dow===5){
-   if(!data[partyKey])data[partyKey]='C';
-  }else{
-   if(!data[afternoonKey])data[afternoonKey]='C';
+  // Completar los turnos que hayan quedado vacíos por la ausencia.
+  const dow=d.getDay(),morningKey=id+'|0|'+day,partyKey=id+'|1|'+day,afternoonKey=id+'|2|'+day;
+  // Carlos solo cubre tardes y el partido de los viernes; nunca mañanas.
+  if(dow===5){if(!data[partyKey])data[partyKey]='C';}
+  else if(!data[afternoonKey]){data[afternoonKey]='C';}
+  // La mañana la cubre otro trabajador disponible, nunca quien está de vacaciones,
+  // de descanso, ya tiene otro turno ese día o hizo tarde/partido ayer.
+  if(!data[morningKey]){
+   const prev=new Date(d);prev.setDate(prev.getDate()-1);
+   const prevId=monthKey(prev.getFullYear(),prev.getMonth()),prevDay=prev.getDate();
+   const prevLate=[data[prevId+'|2|'+prevDay],data[prevId+'|1|'+prevDay]];
+   const candidates=['K','F','R'].filter(p=>
+    p!==who &&
+    data[id+'|3|'+day]!==p &&
+    data[id+'|4|'+day]!==p &&
+    data[id+'|1|'+day]!==p &&
+    data[id+'|2|'+day]!==p &&
+    !prevLate.includes(p)
+   );
+   if(candidates.length)data[morningKey]=candidates[0];
   }
   d.setDate(d.getDate()+1)
  }
- render();setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Se ha retirado a esa persona de los turnos y Carlos cubre tardes y partidos de viernes. Las mañanas deberán cubrirlas Kevin, Frank o Rubén. Pulsa Guardar.');
+ render();setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Se ha retirado a esa persona de los turnos y Carlos cubre tardes y partidos de viernes, y se buscan sustitutos disponibles para las mañanas. Si no hay nadie compatible, quedará señalado para revisión. Pulsa Guardar.');
  document.getElementById('vacPanel').hidden=true;
 };
 document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Edita las casillas y guarda.')};document.getElementById('genRest').onclick=generateRest;document.getElementById('genShifts').onclick=generateShifts;document.getElementById('save').onclick=save;document.getElementById('csv').onclick=()=>{csv();closeMenu()};document.getElementById('print').onclick=()=>{closeMenu();window.print()};const menuPanel=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');function closeMenu(){menuPanel.classList.remove('open');menuToggle.setAttribute('aria-expanded','false')}menuToggle.onclick=()=>{let open=menuPanel.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open))};document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMenu()});load();render();
