@@ -164,7 +164,11 @@ function generateShifts(){
  for(const d of days){
   const id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),dow=d.getDay(),stamp=dateKey(d);
   if(fixedShifts[stamp])continue;
-  const vacation=data[cell(d,4)]||'',rest=data[cell(d,3)]||'';
+  const vacation=data[cell(d,4)]||'';
+  // Si falta un trabajador por vacaciones, no mantenemos el descanso de otro:
+  // los dos trabajadores disponibles cubren mañana y tarde, y Carlos sustituye.
+  const rest=vacation&&vacation!=='C'?'':(data[cell(d,3)]||'');
+  if(vacation&&vacation!=='C')delete data[cell(d,3)];
   // Si hay vacaciones, Carlos sustituye exclusivamente la tarde o el partido del viernes.
   const substitution=vacation&&vacation!=='C'?'C':'';
   const shifts=dow===5?[0,1,2]:[0,2];
