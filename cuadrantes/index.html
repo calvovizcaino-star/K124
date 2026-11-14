@@ -12,9 +12,9 @@ main{max-width:1250px;margin:12px auto;padding:0 9px}.toolbar,.actions{display:f
 </style></head>
 <body><header><div class="head"><div class="brand">K124 SL<small>GESTIÓN INTEGRAL · CUADRANTES</small></div><div class="menuwrap"><button class="menubtn headmenu" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button><div class="menupanel" id="menuPanel"><button id="csv">Exportar CSV</button><button id="print">Imprimir / PDF</button></div></div></div></header>
 <main>
-<div class="toolbar"><h1>Cuadrante de turnos</h1><div class="actions"><label class="note">Mes inicial <input id="start" type="month" value="2026-11"></label><button class="primary" id="prepare">Preparar 4 meses</button><button class="orange" id="genRest">Generar descansos</button><button class="primary" id="genShifts">Generar turnos</button><button id="save">Guardar</button></div></div>
+<div class="toolbar"><h1>Cuadrante de turnos</h1><div class="actions"><label class="note">Mes inicial <input id="start" type="month" value="2026-11"></label><button class="primary" id="prepare">Preparar 4 meses</button><button class="orange" id="genRest">Generar descansos</button><button class="primary" id="genShifts">Generar turnos</button><button class="orange" id="vacToggle">Añadir vacaciones</button><button id="save">Guardar</button></div></div>
 <details class="panel controls"><summary>Equipo y horarios · Mostrar / ocultar</summary><div class="rules"><span class="tag">K · Kevin</span><span class="tag">F · Frank</span><span class="tag">R · Rubén</span><span class="tag">C · Carlos (refuerzo)</span></div><div class="rules"><span class="tag">Mañana 07:00–15:00</span><span class="tag">Tarde 15:00–23:00</span><span class="tag">Partido 14:00–22:00</span></div><p class="note">Carlos queda como cobertura para vacaciones y excepciones. Una persona por turno; cualquier solapamiento excepcional se añade manualmente.</p></details>
-<div id="months" class="months"></div><div id="feedback" class="status" aria-live="polite"></div>
+<section class="panel" id="vacPanel" hidden><strong style="color:var(--blue)">Añadir vacaciones</strong><div class="rules"><label class="note">Trabajador <select id="vacPerson"><option value="K">Kevin</option><option value="F">Frank</option><option value="R">Rubén</option><option value="C">Carlos</option></select></label><label class="note">Desde <input id="vacFrom" type="date"></label><label class="note">Hasta <input id="vacTo" type="date"></label><button class="primary" id="vacAdd">Añadir al cuadrante</button></div><p class="note">Se marcarán todos los días del intervalo en la fila VACACIONES. Si ya hay una persona anotada en esos días, se sustituirá.</p></section><div id="months" class="months"></div><div id="feedback" class="status" aria-live="polite"></div>
 </main>
 <script>
 const people=['K','F','R','C'],rows=['MAÑANA','PARTIDO','TARDE','DESCANSO','VACACIONES'],names={K:'Kevin',F:'Frank',R:'Rubén',C:'Carlos'},key='k124-cuadrantes-v1';let data={};
@@ -67,5 +67,14 @@ function generateShifts(){
  render();setMsg('Turnos generados desde el 14 de noviembre. Se han respetado los descansos y no se han sobrescrito casillas ya editadas. Revisa y pulsa Guardar.');
 }
 function save(){localStorage.setItem(key,JSON.stringify(data));setMsg('Cuadrante guardado en este dispositivo.')}function csv(){let out=['Mes;Día;Turno;Inicial;Nombre'];Object.keys(data).sort().forEach(k=>{let[ym,ri,d]=k.split('|'),p=data[k];out.push([ym,d,rows[+ri],p,names[p]].join(';'))});let blob=new Blob(['\\ufeff'+out.join('\\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='K124-cuadrantes.csv';a.click();URL.revokeObjectURL(a.href)}
+document.getElementById('vacToggle').onclick=()=>{const p=document.getElementById('vacPanel');p.hidden=!p.hidden;};
+document.getElementById('vacAdd').onclick=()=>{
+ const who=document.getElementById('vacPerson').value,from=document.getElementById('vacFrom').value,to=document.getElementById('vacTo').value;
+ if(!from||!to||to<from){setMsg('Selecciona un intervalo de fechas válido.',false);return}
+ let d=new Date(from+'T12:00:00'),end=new Date(to+'T12:00:00'),count=0;
+ while(d<=end){const id=monthKey(d.getFullYear(),d.getMonth()),k=id+'|4|'+d.getDate();data[k]=who;count++;d.setDate(d.getDate()+1)}
+ render();setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Pulsa Guardar para conservar los cambios.');
+ document.getElementById('vacPanel').hidden=true;
+};
 document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Edita las casillas y guarda.')};document.getElementById('genRest').onclick=generateRest;document.getElementById('genShifts').onclick=generateShifts;document.getElementById('save').onclick=save;document.getElementById('csv').onclick=()=>{csv();closeMenu()};document.getElementById('print').onclick=()=>{closeMenu();window.print()};const menuPanel=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');function closeMenu(){menuPanel.classList.remove('open');menuToggle.setAttribute('aria-expanded','false')}menuToggle.onclick=()=>{let open=menuPanel.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open))};document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMenu()});load();render();
 </script></body></html>
