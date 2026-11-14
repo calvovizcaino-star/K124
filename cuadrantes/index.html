@@ -256,7 +256,7 @@ async function generateCpSat(){
    for(const [shift,p] of Object.entries(assignment)){if(shift in shiftRows)next[mk+'|'+shiftRows[shift]+'|'+day]=p}
    const vacation=next[mk+'|4|'+day]||'';
    const resting=['K','F','R'].filter(p=>p!==vacation&&!Object.values(assignment).includes(p));
-   if(resting.length===1)next[mk+'|3|'+day]=resting[0];
+   resting.forEach(p=>{if(p)next[mk+'|3|'+day]=p;});
   }
   data=next;localStorage.setItem(key,JSON.stringify(data));render();setMsg('Cuadrante CP-SAT generado y guardado. Se han mantenido las vacaciones.');
  }catch(e){setMsg('No se pudo generar con OR-Tools: '+e.message+'. El cuadrante anterior sigue intacto.',false)}
