@@ -31,7 +31,7 @@ def solve_roster(
 ) -> dict[str, Any]:
     """Solve a roster.
 
-    vacations: [{"person": "K", "from": "YYYY-MM-DD", "to": "YYYY-MM-DD"}]
+    vacations: [{"person": "K"|"F"|"R"|"C", "from": "YYYY-MM-DD", "to": "YYYY-MM-DD"}]
     fixed: {"YYYY-MM-DD": {"MANANA": "K", ...}}
     previous_late: {"YYYY-MM-DD": ["F"]} for late shifts immediately before start.
     """
@@ -46,10 +46,12 @@ def solve_roster(
     leave: set[tuple[str, date]] = set()
     for item in vacations:
         person = item["person"]
-        if person not in REGULAR:
+        if person not in REGULAR + (CARLOS,):
             raise ValueError(f"Unknown vacation worker: {person}")
         first = date.fromisoformat(item["from"])
         last = date.fromisoformat(item["to"])
+        if last < first:
+            raise ValueError(f"Vacation end is before start for {person}")
         for d in dates:
             if first <= d <= last:
                 leave.add((person, d))
@@ -76,6 +78,8 @@ def solve_roster(
             model.Add(sum(x[p, d, s] for s in SHIFTS) <= 1)
 
         on_leave = [p for p in REGULAR if (p, d) in leave]
+        if (CARLOS, d) in leave:
+            model.Add(sum(x[CARLOS, d, s] for s in SHIFTS) == 0)
         for p in on_leave:
             model.Add(sum(x[p, d, s] for s in SHIFTS) == 0)
 
@@ -83,12 +87,12 @@ def solve_roster(
         if on_leave:
             if len(on_leave) > 1:
                 # A single Carlos cannot cover multiple absences on the same day.
-                model.Add(0 == 1)
+                model.AddBoolOr([])
             else:
                 substitute_shift = "PARTIDO" if d.weekday() == 4 else "TARDE"
                 model.Add(x[CARLOS, d, substitute_shift] == 1)
                 model.Add(sum(x[CARLOS, d, s] for s in SHIFTS) == 1)
-        else:
+        elif (CARLOS, d) not in leave:
             model.Add(sum(x[CARLOS, d, s] for s in SHIFTS) == 0)
 
         # No morning after an afternoon or partido shift on the previous day.
