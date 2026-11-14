@@ -83,17 +83,24 @@ def solve_roster(
         for p in on_leave:
             model.Add(sum(x[p, d, s] for s in SHIFTS) == 0)
 
-        # Carlos covers exactly one late slot on each regular-worker vacation day.
+        # Carlos covers TARDE on vacation days and may cover TARDE on
+        # ordinary days when two regular workers rest together. On Fridays
+        # he covers PARTIDO only when a regular worker is on vacation.
         if on_leave:
             if len(on_leave) > 1:
-                # A single Carlos cannot cover multiple absences on the same day.
                 model.AddBoolOr([])
             else:
                 substitute_shift = "PARTIDO" if d.weekday() == 4 else "TARDE"
                 model.Add(x[CARLOS, d, substitute_shift] == 1)
                 model.Add(sum(x[CARLOS, d, s] for s in SHIFTS) == 1)
         elif (CARLOS, d) not in leave:
-            model.Add(sum(x[CARLOS, d, s] for s in SHIFTS) == 0)
+            if d.weekday() == 4:
+                model.Add(sum(x[CARLOS, d, s] for s in SHIFTS) == 0)
+            else:
+                model.Add(x[CARLOS, d, "MANANA"] == 0)
+                model.Add(x[CARLOS, d, "PARTIDO"] == 0)
+                regular_assignments = sum(x[p, d, s] for p in REGULAR for s in SHIFTS)
+                model.Add(regular_assignments + x[CARLOS, d, "TARDE"] == 2)
 
         # No morning after an afternoon or partido shift on the previous day.
         prev = d - timedelta(days=1)
@@ -115,7 +122,9 @@ def solve_roster(
             model.Add(x[person, d, shift] == 1)
 
     # Exactly two consecutive rest days per regular worker in each complete
-    # Monday-Sunday week. Vacation days are separate from rest days.
+    # Monday-Sunday week. Rest days may coincide across workers; Carlos can
+    # cover the afternoon when two regular workers rest on an ordinary day.
+    # Vacation days are separate from rest days.
     weeks: dict[date, list[date]] = defaultdict(list)
     for d in dates:
         monday = d - timedelta(days=d.weekday())
