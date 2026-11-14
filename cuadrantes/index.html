@@ -27,7 +27,16 @@ function load(){try{data=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){da
 function makeMonth(y,m){let id=monthKey(y,m),days=getDays(y,m),html='<section class="month"><h2>'+new Date(y,m,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'})+'</h2><div class="scroller"><table class="roster"><thead><tr><th>Turno</th>';
 for(let d=1;d<=days;d++){let dt=new Date(y,m,d);html+='<th class="'+(dt.getDay()===6?'sat':'')+'">'+d+'<br>'+['D','L','M','X','J','V','S'][dt.getDay()]+'</th>'}html+='</tr></thead><tbody>';
 rows.forEach((r,ri)=>{html+='<tr><td>'+r+'</td>';for(let d=1;d<=days;d++){let v=data[id+'|'+ri+'|'+d]||'',cls=(ri===4?'vac':ri===3?'rest':ri===1?'part':'')+(new Date(y,m,d).getDay()===6?' sat':'');html+='<td class="'+cls+'"><select aria-label="'+r+' día '+d+'"><option value="">—</option>'+people.map(p=>'<option value="'+p+'" '+(v===p?'selected':'')+'>'+p+'</option>').join('')+'</select></td>'}html+='</tr>'});html+='</tbody></table></div></section>';return{id,html}}
-function render(){let[y,m]=start.value.split('-').map(Number);host.innerHTML='';for(let i=0;i<4;i++){let dt=new Date(y,m-1+i,1),o=makeMonth(dt.getFullYear(),dt.getMonth()),wrap=document.createElement('div');wrap.innerHTML=o.html;wrap.querySelectorAll('tbody tr').forEach((tr,ri)=>tr.querySelectorAll('select').forEach((sel,di)=>sel.addEventListener('change',()=>{let day=di+1,k=o.id+'|'+ri+'|'+day,oldValue=data[k]||'';if(sel.value)data[k]=sel.value;else delete data[k];if(ri<=2&&sel.value!==oldValue&&sel.value!=='C'){let changed=new Date(dt.getFullYear(),dt.getMonth(),day);changed.setDate(changed.getDate()+1);reflowFrom(changed);render();localStorage.setItem(key,JSON.stringify(data));setMsg('Cambio guardado automáticamente. Se ha recalculado el resto del cuadrante desde el día siguiente.')}else if(ri<=2&&sel.value==='C'){localStorage.setItem(key,JSON.stringify(data));setMsg('Carlos asignado manualmente y guardado. El resto del cuadrante no se modifica.')}else{localStorage.setItem(key,JSON.stringify(data));setMsg('Cambio guardado automáticamente.');}})));host.appendChild(wrap.firstElementChild)}} 
+function cleanCarlosDay(id,day,dow){
+ const vac=data[id+'|4|'+day]||'';
+ const correctRow=dow===5?1:2;
+ for(let ri=0;ri<3;ri++){
+  const k=id+'|'+ri+'|'+day;
+  if(data[k]==='C'&&(vac==='C'||!vac||ri!==correctRow))delete data[k];
+ }
+ if(vac&&vac!=='C')data[id+'|'+correctRow+'|'+day]='C';
+}
+function render(){let[y,m]=start.value.split('-').map(Number);host.innerHTML='';for(let i=0;i<4;i++){let dt=new Date(y,m-1+i,1),o=makeMonth(dt.getFullYear(),dt.getMonth()),wrap=document.createElement('div');wrap.innerHTML=o.html;wrap.querySelectorAll('tbody tr').forEach((tr,ri)=>tr.querySelectorAll('select').forEach((sel,di)=>sel.addEventListener('change',()=>{let day=di+1,k=o.id+'|'+ri+'|'+day,oldValue=data[k]||'';if(sel.value)data[k]=sel.value;else delete data[k];if(ri===4){const dow=new Date(dt.getFullYear(),dt.getMonth(),day).getDay();cleanCarlosDay(o.id,day,dow);render();localStorage.setItem(key,JSON.stringify(data));setMsg('Vacaciones actualizadas y cuadrante guardado.');return;}if(ri<=2&&sel.value!==oldValue&&sel.value!=='C'){let changed=new Date(dt.getFullYear(),dt.getMonth(),day);changed.setDate(changed.getDate()+1);reflowFrom(changed);render();localStorage.setItem(key,JSON.stringify(data));setMsg('Cambio guardado automáticamente. Se ha recalculado el resto del cuadrante desde el día siguiente.')}else if(ri<=2&&sel.value==='C'){localStorage.setItem(key,JSON.stringify(data));setMsg('Carlos asignado manualmente y guardado. El resto del cuadrante no se modifica.')}else{localStorage.setItem(key,JSON.stringify(data));setMsg('Cambio guardado automáticamente.');}})));host.appendChild(wrap.firstElementChild)}} 
 function reflowFrom(fromDate){
  let[y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0),startDate=new Date(Math.max(fromDate,first));
  // Recalcular únicamente turnos futuros; se conservan descansos, vacaciones y el día editado.
@@ -78,6 +87,7 @@ function generateShifts(){
  Object.entries(fixedRest).forEach(([s,p])=>{let d=new Date(s+'T12:00:00');if(d>=first&&d<=last)data[monthKey(d.getFullYear(),d.getMonth())+'|3|'+d.getDate()]=p});
  for(let d=new Date(Math.max(first,cut));d<=last;d.setDate(d.getDate()+1)){
   const id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),dow=d.getDay(),date=id+'-'+String(day).padStart(2,'0');
+  cleanCarlosDay(id,day,dow);
   const rest=data[id+'|3|'+day]||'',available=['K','F','R'].filter(p=>p!==rest);
   if(fixedShifts[date]){fixedShifts[date].forEach((p,ri)=>{if(p)put(d,ri,p)});continue}
   if(dow===5){
