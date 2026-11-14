@@ -13,9 +13,9 @@ main{max-width:1250px;margin:12px auto;padding:0 9px}.toolbar,.actions{display:f
 @media(max-width:600px){main{padding:0 7px}.toolbar{gap:7px}.toolbar .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.toolbar .actions>*{min-width:0;width:100%}.toolbar label{grid-column:span 2;display:flex;align-items:center;justify-content:space-between}.toolbar label input{width:58%}.brand{font-size:22px}.month h2{padding:7px 9px}.roster{min-width:790px}.roster th:first-child,.roster td:first-child{width:76px}}
 @media print{header{padding:7px}.toolbar .actions,.panel.controls{display:none!important}main{margin:0;max-width:none}.months{grid-template-columns:1fr 1fr;gap:6px}.month{break-inside:avoid}.roster{min-width:0;font-size:7px}.roster th,.roster td{padding:1px;height:19px}.roster th:first-child,.roster td:first-child{width:58px}.roster select{font-size:7px;padding:0}}
 </style></head>
-<body><header><div class="head"><div class="brand">K124 SL<small>GESTIÓN INTEGRAL · CUADRANTES</small><span class="engine-status"><i></i>NnaHill · MOTOR CARGADO</span></div><div class="menuwrap"><button class="menubtn headmenu" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button><div class="menupanel" id="menuPanel"><button id="backup">Guardar copia de seguridad</button><button id="csv">Exportar CSV</button><button id="print">Imprimir / PDF</button></div></div></div></header>
+<body><header><div class="head"><div class="brand">K124 SL<small>GESTIÓN INTEGRAL · CUADRANTES</small><span class="engine-status"><i></i>Roster Wizard · API SIN CONFIGURAR</span></div><div class="menuwrap"><button class="menubtn headmenu" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button><div class="menupanel" id="menuPanel"><button id="backup">Guardar copia de seguridad</button><button id="csv">Exportar CSV</button><button id="print">Imprimir / PDF</button></div></div></div></header>
 <main>
-<div class="toolbar"><h1><span aria-hidden="true" style="margin-right:7px">📅</span>Cuadrante de turnos</h1><div class="actions"><label class="note">Mes inicial <input id="start" type="month" value="2026-11"></label><button class="primary" id="prepare">Preparar 4 meses</button><button class="orange" id="genRest">Generar descansos</button><button class="primary" id="genShifts">Generar turnos</button><button class="orange" id="vacToggle">Añadir vacaciones</button><button id="save">Guardar</button><button class="danger" id="clearSchedule">Borrar horario</button></div></div>
+<div class="toolbar"><h1><span aria-hidden="true" style="margin-right:7px">📅</span>Cuadrante de turnos</h1><div class="actions"><label class="note">Mes inicial <input id="start" type="month" value="2026-11"></label><button class="primary" id="prepare">Preparar 4 meses</button><button class="orange" id="genRest">Generar descansos</button><button class="primary" id="genShifts">Generar turnos (CP-SAT)</button><button id="engineSettings">Configurar motor</button><button class="orange" id="vacToggle">Añadir vacaciones</button><button id="save">Guardar</button><button class="danger" id="clearSchedule">Borrar horario</button></div></div>
 <details class="panel controls"><summary>Equipo y horarios · Mostrar / ocultar</summary><div class="rules"><span class="tag">K · Kevin</span><span class="tag">F · Frank</span><span class="tag">R · Rubén</span><span class="tag">C · Carlos (refuerzo)</span></div><div class="rules"><span class="tag">Mañana 07:00–15:00</span><span class="tag">Tarde 15:00–23:00</span><span class="tag">Partido 14:00–22:00</span></div><p class="note">Carlos queda como cobertura para vacaciones y excepciones. Una persona por turno; cualquier solapamiento excepcional se añade manualmente.</p></details>
 <section class="panel" id="vacPanel" hidden><strong style="color:var(--blue)">Añadir vacaciones</strong><div class="rules"><label class="note">Trabajador <select id="vacPerson"><option value="K">Kevin</option><option value="F">Frank</option><option value="R">Rubén</option><option value="C">Carlos</option></select></label><label class="note">Desde <input id="vacFrom" type="date"></label><label class="note">Hasta <input id="vacTo" type="date"></label><button class="primary" id="vacAdd">Añadir al cuadrante</button></div><p class="note">Se marcarán todos los días del intervalo en la fila VACACIONES. Si ya hay una persona anotada en esos días, se sustituirá.</p></section><div id="months" class="months"></div><div id="feedback" class="status" aria-live="polite"></div>
 </main>
@@ -205,6 +205,63 @@ function generateShifts(){
  });
  setMsg(holes.length?'Generación con emparejamiento inteligente completada. Quedan '+holes.length+' turnos sin cubrir: revisa vacaciones, descansos y turnos anteriores.':'Turnos generados con emparejamiento inteligente y guardados. Se han respetado vacaciones, descansos y el descanso entre tarde/partido y mañana.',!holes.length);
 }
+
+// Motor OR-Tools remoto: GitHub Pages no ejecuta Python. Nunca sustituir por
+// el generador anterior ni modificar datos si el servicio no responde.
+function engineUrl(){return (localStorage.getItem('k124-roster-api-url')||'').trim().replace(/\\/$/,'')}
+function refreshEngineBadge(){const badge=document.querySelector('.engine-status');if(badge){badge.innerHTML='<i></i>Roster Wizard · '+(engineUrl()?'API CONFIGURADA':'API SIN CONFIGURAR')}}
+function configureEngine(){
+ const url=prompt('Dirección HTTPS del servidor de cuadrantes OR-Tools (ej.: https://servidor.example.com):',engineUrl());
+ if(url===null)return;
+ const clean=url.trim().replace(/\\/$/,'');
+ if(clean&&!/^https:\\/\\/[^\\s]+$/.test(clean)){setMsg('La dirección del motor debe empezar por https://',false);return}
+ if(clean)localStorage.setItem('k124-roster-api-url',clean);
+ else localStorage.removeItem('k124-roster-api-url');
+ refreshEngineBadge();setMsg(clean?'Dirección guardada. Pulsa Generar turnos (CP-SAT) para solicitar el cuadrante.':'Motor remoto desconfigurado. Los horarios guardados no cambian.');
+}
+async function generateCpSat(){
+ const base=engineUrl();if(!base){setMsg('Primero configura la dirección del servidor OR-Tools. El cuadrante existente no se ha modificado.',false);return}
+ const button=document.getElementById('genShifts');button.disabled=true;button.textContent='Calculando…';
+ try{
+  const [y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0);
+  const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+  const days=Math.round((last-first)/86400000)+1;
+  const vacations=[],fixed={},previous_late={};
+  let active=null;
+  for(let d=new Date(first);d<=last;d.setDate(d.getDate()+1)){
+   const mk=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),v=data[mk+'|4|'+day]||'';
+   if(v&&v!=='C'){if(active&&active.person===v&&Math.round((d-active.end)/86400000)===1)active.end=new Date(d);else{if(active)vacations.push({person:active.person,from:iso(active.begin),to:iso(active.end)});active={person:v,begin:new Date(d),end:new Date(d)}}}
+   else if(active){vacations.push({person:active.person,from:iso(active.begin),to:iso(active.end)});active=null}
+  }
+  if(active)vacations.push({person:active.person,from:iso(active.begin),to:iso(active.end)});
+  const yesterday=new Date(first);yesterday.setDate(yesterday.getDate()-1);
+  const prevMk=monthKey(yesterday.getFullYear(),yesterday.getMonth()),pd=yesterday.getDate();
+  const late=[data[prevMk+'|1|'+pd],data[prevMk+'|2|'+pd]].filter(Boolean);
+  if(late.length)previous_late[iso(yesterday)]=late;
+  // Los turnos existentes son editables; no se consideran fijos al regenerar.
+  // Solo se conservan vacaciones y los turnos del día anterior como contexto.
+  const response=await fetch(base+'/solve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({start:iso(first),days,vacations,fixed,previous_late,time_limit_seconds:45})});
+  if(!response.ok)throw Error('El servidor respondió '+response.status);
+  const result=await response.json();
+  if(!['OPTIMAL','FEASIBLE'].includes(result.status)||!result.assignments){setMsg(result.message||'El motor no encontró un cuadrante válido. No se ha cambiado nada.',false);return}
+  // Verificar integridad de todas las jornadas antes de tocar el horario.
+  for(let d=new Date(first);d<=last;d.setDate(d.getDate()+1)){
+   const assigned=result.assignments[iso(d)],needed=d.getDay()===5?['MANANA','PARTIDO','TARDE']:['MANANA','TARDE'];
+   if(!assigned||needed.some(k=>!['K','F','R','C'].includes(assigned[k]))||new Set(needed.map(k=>assigned[k])).size!==needed.length)throw Error('Respuesta incompleta del motor: '+iso(d));
+  }
+  const next={...data},shiftRows={MANANA:0,PARTIDO:1,TARDE:2};
+  for(let d=new Date(first);d<=last;d.setDate(d.getDate()+1)){
+   const mk=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),assignment=result.assignments[iso(d)];
+   for(let ri=0;ri<4;ri++)delete next[mk+'|'+ri+'|'+day];
+   for(const [shift,p] of Object.entries(assignment)){if(shift in shiftRows)next[mk+'|'+shiftRows[shift]+'|'+day]=p}
+   const vacation=next[mk+'|4|'+day]||'';
+   const resting=['K','F','R'].filter(p=>p!==vacation&&!Object.values(assignment).includes(p));
+   if(resting.length===1)next[mk+'|3|'+day]=resting[0];
+  }
+  data=next;localStorage.setItem(key,JSON.stringify(data));render();setMsg('Cuadrante CP-SAT generado y guardado. Se han mantenido las vacaciones.');
+ }catch(e){setMsg('No se pudo generar con OR-Tools: '+e.message+'. El cuadrante anterior sigue intacto.',false)}
+ finally{button.disabled=false;button.textContent='Generar turnos (CP-SAT)'}
+}
 function save(){localStorage.setItem(key,JSON.stringify(data));setMsg('Cuadrante guardado en este dispositivo.')}
 function clearSchedule(){
  if(!confirm("¿Quieres borrar todo el horario de los cuatro meses que se muestran? Se eliminarán turnos, descansos y vacaciones. Esta acción no se puede deshacer."))return;
@@ -263,5 +320,5 @@ document.getElementById('vacAdd').onclick=()=>{
  setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Carlos cubre tardes y partidos de viernes; se han reasignado las mañanas.'+suffix,!uncovered.length);
  document.getElementById('vacPanel').hidden=true;
 };
-document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Edita las casillas y guarda.')};document.getElementById('genRest').onclick=generateRest;document.getElementById('genShifts').onclick=generateShifts;document.getElementById('save').onclick=save;document.getElementById('clearSchedule').onclick=clearSchedule;document.getElementById('backup').onclick=backup;document.getElementById('csv').onclick=()=>{csv();closeMenu()};document.getElementById('print').onclick=()=>{closeMenu();window.print()};const menuPanel=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');function closeMenu(){menuPanel.classList.remove('open');menuToggle.setAttribute('aria-expanded','false')}menuToggle.onclick=()=>{let open=menuPanel.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open))};document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMenu()});load();render();
+document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Edita las casillas y guarda.')};document.getElementById('genRest').onclick=generateRest;document.getElementById('genShifts').onclick=generateCpSat;document.getElementById('engineSettings').onclick=configureEngine;document.getElementById('save').onclick=save;document.getElementById('clearSchedule').onclick=clearSchedule;document.getElementById('backup').onclick=backup;document.getElementById('csv').onclick=()=>{csv();closeMenu()};document.getElementById('print').onclick=()=>{closeMenu();window.print()};const menuPanel=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');function closeMenu(){menuPanel.classList.remove('open');menuToggle.setAttribute('aria-expanded','false')}menuToggle.onclick=()=>{let open=menuPanel.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open))};document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMenu()});load();render();refreshEngineBadge();
 </script></body></html>
