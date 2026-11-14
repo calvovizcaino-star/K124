@@ -71,7 +71,42 @@ function reflowFrom(fromDate){
   }
  }
 }
-function generateRest(){let[y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0),anchor=new Date(2026,10,2);Object.keys(data).forEach(k=>{let[ym,ri]=k.split('|');if(+ri===3&&ym>=monthKey(y,m-1)&&ym<=monthKey(last.getFullYear(),last.getMonth()))delete data[k]});let monday=new Date(first);monday.setDate(monday.getDate()-((monday.getDay()+6)%7));while(monday<=last){let week=Math.floor((monday-anchor)/604800000),order=week%3;if(order<0)order+=3;let assignments=[['K','F','R'],['F','R','K'],['R','K','F']][order],blocks=[[0,1],[2,3],[5,6]];blocks.forEach((block,bi)=>block.forEach(offset=>{let d=new Date(monday);d.setDate(d.getDate()+offset);if(d>=first&&d<=last){let id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),vac=data[id+'|4|'+day];if(vac!==assignments[bi])data[id+'|3|'+day]=assignments[bi];else delete data[id+'|3|'+day];}}));monday.setDate(monday.getDate()+7)}render();localStorage.setItem(key,JSON.stringify(data));setMsg('Descansos generados y guardados automáticamente.');}
+function generateRest(){
+ let[y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0);
+ // Trabajamos semanas completas, también cuando empiezan o terminan fuera
+ // de los cuatro meses visibles, para que nunca quede medio descanso en el borde.
+ const monday=new Date(first);monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
+ const end=new Date(last);end.setDate(end.getDate()+(7-((end.getDay()+6)%7))%7);
+ const keyDate=d=>monthKey(d.getFullYear(),d.getMonth())+'|3|'+d.getDate();
+ for(let d=new Date(monday);d<=end;d.setDate(d.getDate()+1))delete data[keyDate(d)];
+ const anchor=new Date(2026,10,2),weekdayPairs=[[0,1],[1,2],[2,3]],warnings=[];
+ for(let ws=new Date(monday);ws<=end;ws.setDate(ws.getDate()+7)){
+  const week=Math.floor((ws-anchor)/604800000);
+  const rotation=((week%3)+3)%3;
+  const weekendWorker=['K','F','R'][rotation];
+  const others=['K','F','R'].filter(p=>p!==weekendWorker);
+  // El trabajador con domingo libre descansa sábado y domingo.
+  for(const offset of [5,6]){
+   const d=new Date(ws);d.setDate(d.getDate()+offset);
+   if((data[monthKey(d.getFullYear(),d.getMonth())+'|4|'+d.getDate()]||'')!==weekendWorker)data[keyDate(d)]=weekendWorker;
+  }
+  // Los otros dos tienen siempre un bloque de dos días consecutivos de lunes a jueves.
+  others.forEach((person,index)=>{
+   const options=weekdayPairs.filter(pair=>pair.every(offset=>{
+    const d=new Date(ws);d.setDate(d.getDate()+offset);
+    return data[monthKey(d.getFullYear(),d.getMonth())+'|4|'+d.getDate()]!==person;
+   }));
+   if(!options.length){warnings.push(names[person]+' semana '+ws.toLocaleDateString('es-ES'));return;}
+   const pair=options[(rotation+index)%options.length];
+   pair.forEach(offset=>{
+    const d=new Date(ws);d.setDate(d.getDate()+offset);
+    data[keyDate(d)]=person;
+   });
+  });
+ }
+ render();localStorage.setItem(key,JSON.stringify(data));
+ setMsg(warnings.length?'Descansos guardados. No se pudo asignar un bloque completo por vacaciones: '+warnings.join('; '):'Descansos regenerados y guardados: cada trabajador tiene dos días consecutivos por semana.',!warnings.length);
+}
 function generateShifts(){
  let [yy,mm]=start.value.split('-').map(Number),first=new Date(yy,mm-1,1),last=new Date(yy,mm+3,0),cut=new Date(2026,10,14);
  // Incorporación de Rubén: no se generan turnos anteriores al 14/11/2026.
