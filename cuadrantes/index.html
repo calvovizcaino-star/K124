@@ -26,7 +26,7 @@ function monthKey(y,m){return y+'-'+String(m+1).padStart(2,'0')}function getDays
 function load(){try{data=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){data={}}}function setMsg(s,ok=true){feedback.textContent=s;feedback.className='status '+(ok?'ok':'warn')}
 function makeMonth(y,m){let id=monthKey(y,m),days=getDays(y,m),html='<section class="month"><h2>'+new Date(y,m,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'})+'</h2><div class="scroller"><table class="roster"><thead><tr><th>Turno</th>';
 for(let d=1;d<=days;d++){let dt=new Date(y,m,d);html+='<th class="'+(dt.getDay()===6?'sat':'')+'">'+d+'<br>'+['D','L','M','X','J','V','S'][dt.getDay()]+'</th>'}html+='</tr></thead><tbody>';
-rows.forEach((r,ri)=>{html+='<tr><td>'+r+'</td>';for(let d=1;d<=days;d++){let v=data[id+'|'+ri+'|'+d]||'',cls=(ri===4?'vac':ri===3?'rest':ri===1?'part':'')+(new Date(y,m,d).getDay()===6?' sat':'');html+='<td class="'+cls+'"><select aria-label="'+r+' día '+d+'"><option value="">—</option>'+people.map(p=>'<option value="'+p+'" '+(v===p?'selected':'')+'>'+p+'</option>').join('')+'</select></td>'}html+='</tr>'});html+='</tbody></table></div></section>';return{id,html}}
+rows.forEach((r,ri)=>{html+='<tr><td>'+r+'</td>';for(let d=1;d<=days;d++){let v=data[id+'|'+ri+'|'+d]||'',selected=ri===3?String(v).split(','): [v],cls=(ri===4?'vac':ri===3?'rest':ri===1?'part':'')+(new Date(y,m,d).getDay()===6?' sat':'');html+='<td class="'+cls+'"><select '+(ri===3?'multiple size="3"':'')+' aria-label="'+r+' día '+d+'">'+(ri===3?'': '<option value="">—</option>')+people.map(p=>'<option value="'+p+'" '+(selected.includes(p)?'selected':'')+'>'+p+'</option>').join('')+'</select></td>'}html+='</tr>'});html+='</tbody></table></div></section>';return{id,html}}
 function cleanCarlosDay(id,day,dow){
  const vac=data[id+'|4|'+day]||'';
  const correctRow=dow===5?1:2;
@@ -36,7 +36,7 @@ function cleanCarlosDay(id,day,dow){
  }
  if(vac&&vac!=='C')data[id+'|'+correctRow+'|'+day]='C';
 }
-function render(){let[y,m]=start.value.split('-').map(Number);host.innerHTML='';for(let i=0;i<4;i++){let dt=new Date(y,m-1+i,1),o=makeMonth(dt.getFullYear(),dt.getMonth()),wrap=document.createElement('div');wrap.innerHTML=o.html;wrap.querySelectorAll('tbody tr').forEach((tr,ri)=>tr.querySelectorAll('select').forEach((sel,di)=>sel.addEventListener('change',()=>{let day=di+1,k=o.id+'|'+ri+'|'+day,oldValue=data[k]||'';if(sel.value)data[k]=sel.value;else delete data[k];if(ri===4){const dow=new Date(dt.getFullYear(),dt.getMonth(),day).getDay();cleanCarlosDay(o.id,day,dow);render();localStorage.setItem(key,JSON.stringify(data));setMsg('Vacaciones actualizadas y cuadrante guardado.');return;}if(ri<=2&&sel.value!==oldValue&&sel.value!=='C'){let changed=new Date(dt.getFullYear(),dt.getMonth(),day);changed.setDate(changed.getDate()+1);reflowFrom(changed);render();localStorage.setItem(key,JSON.stringify(data));setMsg('Cambio guardado automáticamente. Se ha recalculado el resto del cuadrante desde el día siguiente.')}else if(ri<=2&&sel.value==='C'){localStorage.setItem(key,JSON.stringify(data));setMsg('Carlos asignado manualmente y guardado. El resto del cuadrante no se modifica.')}else{localStorage.setItem(key,JSON.stringify(data));setMsg('Cambio guardado automáticamente.');}})));host.appendChild(wrap.firstElementChild)}} 
+function render(){let[y,m]=start.value.split('-').map(Number);host.innerHTML='';for(let i=0;i<4;i++){let dt=new Date(y,m-1+i,1),o=makeMonth(dt.getFullYear(),dt.getMonth()),wrap=document.createElement('div');wrap.innerHTML=o.html;wrap.querySelectorAll('tbody tr').forEach((tr,ri)=>tr.querySelectorAll('select').forEach((sel,di)=>sel.addEventListener('change',()=>{let day=di+1,k=o.id+'|'+ri+'|'+day,oldValue=data[k]||'';if(ri===3){const chosen=[...sel.selectedOptions].map(o=>o.value);if(chosen.length)data[k]=chosen.join(',');else delete data[k];localStorage.setItem(key,JSON.stringify(data));setMsg('Descansos actualizados y guardados.');return;}if(sel.value)data[k]=sel.value;else delete data[k];if(ri===4){const dow=new Date(dt.getFullYear(),dt.getMonth(),day).getDay();cleanCarlosDay(o.id,day,dow);render();localStorage.setItem(key,JSON.stringify(data));setMsg('Vacaciones actualizadas y cuadrante guardado.');return;}if(ri<=2&&sel.value!==oldValue&&sel.value!=='C'){let changed=new Date(dt.getFullYear(),dt.getMonth(),day);changed.setDate(changed.getDate()+1);reflowFrom(changed);render();localStorage.setItem(key,JSON.stringify(data));setMsg('Cambio guardado automáticamente. Se ha recalculado el resto del cuadrante desde el día siguiente.')}else if(ri<=2&&sel.value==='C'){localStorage.setItem(key,JSON.stringify(data));setMsg('Carlos asignado manualmente y guardado. El resto del cuadrante no se modifica.')}else{localStorage.setItem(key,JSON.stringify(data));setMsg('Cambio guardado automáticamente.');}})));host.appendChild(wrap.firstElementChild)}} 
 function reflowFrom(fromDate){
  let[y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0),startDate=new Date(Math.max(fromDate,first));
  // Recalcular únicamente turnos futuros; se conservan descansos, vacaciones y el día editado.
@@ -45,27 +45,27 @@ function reflowFrom(fromDate){
   for(let ri=0;ri<3;ri++)delete data[id+'|'+ri+'|'+day];
  }
  for(let d=new Date(startDate);d<=last;d.setDate(d.getDate()+1)){
-  const id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),dow=d.getDay(),vac=data[id+'|4|'+day]||'',rest=data[id+'|3|'+day]||'';
+  const id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),dow=d.getDay(),vac=data[id+'|4|'+day]||'',rest=(data[id+'|3|'+day]||'').split(',').filter(Boolean);
   if(vac){
    if(vac!=='C'){if(dow===5)data[id+'|1|'+day]='C';else data[id+'|2|'+day]='C';}
   }
   const used=[data[id+'|1|'+day],data[id+'|2|'+day],vac,rest].filter(Boolean);
   const prev=new Date(d);prev.setDate(prev.getDate()-1);const pid=monthKey(prev.getFullYear(),prev.getMonth()),pd=prev.getDate();
   const blocked=[data[pid+'|1|'+pd],data[pid+'|2|'+pd]].filter(Boolean);
-  let pool=['K','F','R'].filter(p=>p!==vac&&p!==rest&&!used.includes(p)&&!blocked.includes(p));
+  let pool=['K','F','R'].filter(p=>p!==vac&&!rest.includes(p)&&!used.includes(p)&&!blocked.includes(p));
   const put=(ri,p)=>{if(p)data[id+'|'+ri+'|'+day]=p};
   if(dow===5){
    if(!data[id+'|1|'+day]&&!vac){const partyPool=pool.filter(p=>p!==data[id+'|0|'+day]&&p!==data[id+'|2|'+day]);if(partyPool.length){const ix=Math.floor((d-new Date(2026,10,20))/604800000);put(1,partyPool[((ix%partyPool.length)+partyPool.length)%partyPool.length]);}}
-   const remaining=['K','F','R'].filter(p=>p!==vac&&p!==rest&&p!==data[id+'|1|'+day]);
+   const remaining=['K','F','R'].filter(p=>p!==vac&&!rest.includes(p)&&p!==data[id+'|1|'+day]);
    const morning=remaining.find(p=>!blocked.includes(p));if(!data[id+'|0|'+day])put(0,morning);
    const afternoon=remaining.find(p=>p!==morning&&!blocked.includes(p));if(!data[id+'|2|'+day])put(2,afternoon);
   }else{
    if(vac!=='C'&&!data[id+'|2|'+day])put(2,'C');
    const currentAfternoon=data[id+'|2|'+day];
-   const morningPool=['K','F','R'].filter(p=>p!==vac&&p!==rest&&p!==currentAfternoon&&!blocked.includes(p));
+   const morningPool=['K','F','R'].filter(p=>p!==vac&&!rest.includes(p)&&p!==currentAfternoon&&!blocked.includes(p));
    if(!data[id+'|0|'+day])put(0,morningPool[0]);
    if(!data[id+'|2|'+day]){
-    const afternoonPool=['K','F','R'].filter(p=>p!==vac&&p!==rest&&p!==data[id+'|0|'+day]&&!blocked.includes(p));
+    const afternoonPool=['K','F','R'].filter(p=>p!==vac&&!rest.includes(p)&&p!==data[id+'|0|'+day]&&!blocked.includes(p));
     put(2,afternoonPool[0]);
    }
   }
@@ -256,7 +256,7 @@ async function generateCpSat(){
    for(const [shift,p] of Object.entries(assignment)){if(shift in shiftRows)next[mk+'|'+shiftRows[shift]+'|'+day]=p}
    const vacation=next[mk+'|4|'+day]||'';
    const resting=['K','F','R'].filter(p=>p!==vacation&&!Object.values(assignment).includes(p));
-   resting.forEach(p=>{if(p)next[mk+'|3|'+day]=p;});
+   if(resting.length)next[mk+'|3|'+day]=resting.join(',');
   }
   data=next;localStorage.setItem(key,JSON.stringify(data));render();setMsg('Cuadrante CP-SAT generado y guardado. Se han mantenido las vacaciones.');
  }catch(e){setMsg('No se pudo generar con OR-Tools: '+e.message+'. El cuadrante anterior sigue intacto.',false)}
