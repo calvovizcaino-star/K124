@@ -208,13 +208,13 @@ function generateShifts(){
 
 // Motor OR-Tools remoto: GitHub Pages no ejecuta Python. Nunca sustituir por
 // el generador anterior ni modificar datos si el servicio no responde.
-function engineUrl(){return (localStorage.getItem('k124-roster-api-url')||'https://k124-roster-api.onrender.com').trim().replace(/\\/$/,'')}
+function engineUrl(){return (localStorage.getItem('k124-roster-api-url')||'https://k124-roster-api.onrender.com').trim().replace(/\/$/,'')}
 function refreshEngineBadge(){const badge=document.querySelector('.engine-status');if(badge){badge.innerHTML='<i></i>Roster Wizard · '+(engineUrl()?'API CONFIGURADA':'API SIN CONFIGURAR')}}
 function configureEngine(){
  const url=prompt('Dirección HTTPS del servidor de cuadrantes OR-Tools (ej.: https://servidor.example.com):',engineUrl());
  if(url===null)return;
- const clean=url.trim().replace(/\\/$/,'');
- if(clean&&!/^https:\\/\\/[^\\s]+$/.test(clean)){setMsg('La dirección del motor debe empezar por https://',false);return}
+ const clean=url.trim().replace(/\/$/,'');
+ if(clean&&!/^https:\/\/[^\s]+$/.test(clean)){setMsg('La dirección del motor debe empezar por https://',false);return}
  if(clean)localStorage.setItem('k124-roster-api-url',clean);
  else localStorage.removeItem('k124-roster-api-url');
  refreshEngineBadge();setMsg(clean?'Dirección guardada. Pulsa Generar turnos (CP-SAT) para solicitar el cuadrante.':'Motor remoto desconfigurado. Los horarios guardados no cambian.');
