@@ -73,39 +73,61 @@ function reflowFrom(fromDate){
 }
 function generateRest(){
  let[y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0);
- // Trabajamos semanas completas, también cuando empiezan o terminan fuera
- // de los cuatro meses visibles, para que nunca quede medio descanso en el borde.
  const monday=new Date(first);monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
  const end=new Date(last);end.setDate(end.getDate()+(7-((end.getDay()+6)%7))%7);
- const keyDate=d=>monthKey(d.getFullYear(),d.getMonth())+'|3|'+d.getDate();
- for(let d=new Date(monday);d<=end;d.setDate(d.getDate()+1))delete data[keyDate(d)];
+ const keyFor=(d,ri=3)=>monthKey(d.getFullYear(),d.getMonth())+'|'+ri+'|'+d.getDate();
+ for(let d=new Date(monday);d<=end;d.setDate(d.getDate()+1))delete data[keyFor(d)];
  const anchor=new Date(2026,10,2),weekdayPairs=[[0,1],[1,2],[2,3]],warnings=[];
+ // Detectar el primer día de vuelta: ayer estaba de vacaciones y hoy ya no.
+ const returns={};
+ for(let d=new Date(monday);d<=end;d.setDate(d.getDate()+1)){
+  const prev=new Date(d);prev.setDate(prev.getDate()-1);
+  const prevVac=data[keyFor(prev,4)]||'',todayVac=data[keyFor(d,4)]||'';
+  if(['K','F','R'].includes(prevVac)&&todayVac!==prevVac){
+   (returns[prevVac]||(returns[prevVac]=[])).push(new Date(d));
+  }
+ }
  for(let ws=new Date(monday);ws<=end;ws.setDate(ws.getDate()+7)){
-  const week=Math.floor((ws-anchor)/604800000);
-  const rotation=((week%3)+3)%3;
+  const weekEnd=new Date(ws);weekEnd.setDate(weekEnd.getDate()+6);
+  const week=Math.floor((ws-anchor)/604800000),rotation=((week%3)+3)%3;
   const weekendWorker=['K','F','R'][rotation];
   const others=['K','F','R'].filter(p=>p!==weekendWorker);
-  // El trabajador con domingo libre descansa sábado y domingo.
-  for(const offset of [5,6]){
-   const d=new Date(ws);d.setDate(d.getDate()+offset);
-   if((data[monthKey(d.getFullYear(),d.getMonth())+'|4|'+d.getDate()]||'')!==weekendWorker)data[keyDate(d)]=weekendWorker;
+  const returningThisWeek={};
+  ['K','F','R'].forEach(p=>{
+   const hit=(returns[p]||[]).find(d=>d>=ws&&d<=weekEnd);
+   if(hit)returningThisWeek[p]=hit;
+  });
+  // Los descansos especiales de vuelta sustituyen a los descansos ordinarios de esa semana.
+  Object.entries(returningThisWeek).forEach(([p,back])=>{
+   const dow=back.getDay(),count=(dow===5||dow===6||dow===0)?2:1;
+   for(let i=0;i<count;i++){
+    const d=new Date(back);d.setDate(d.getDate()+i);
+    if(data[keyFor(d,4)]!==p)data[keyFor(d)]=p;
+   }
+  });
+  // El descanso rotativo de fin de semana se asigna solo si no hay regreso especial.
+  if(!returningThisWeek[weekendWorker]){
+   for(const offset of [5,6]){
+    const d=new Date(ws);d.setDate(d.getDate()+offset);
+    if(data[keyFor(d,4)]!==weekendWorker)data[keyFor(d)]=weekendWorker;
+   }
   }
-  // Los otros dos tienen siempre un bloque de dos días consecutivos de lunes a jueves.
   others.forEach((person,index)=>{
+   if(returningThisWeek[person])return;
    const options=weekdayPairs.filter(pair=>pair.every(offset=>{
     const d=new Date(ws);d.setDate(d.getDate()+offset);
-    return data[monthKey(d.getFullYear(),d.getMonth())+'|4|'+d.getDate()]!==person;
+    return data[keyFor(d,4)]!==person;
    }));
    if(!options.length){warnings.push(names[person]+' semana '+ws.toLocaleDateString('es-ES'));return;}
    const pair=options[(rotation+index)%options.length];
    pair.forEach(offset=>{
     const d=new Date(ws);d.setDate(d.getDate()+offset);
-    data[keyDate(d)]=person;
+    data[keyFor(d)]=person;
    });
   });
  }
  render();localStorage.setItem(key,JSON.stringify(data));
- setMsg(warnings.length?'Descansos guardados. No se pudo asignar un bloque completo por vacaciones: '+warnings.join('; '):'Descansos regenerados y guardados: cada trabajador tiene dos días consecutivos por semana.',!warnings.length);
+ setMsg(warnings.length?'Descansos guardados. No se pudo asignar un bloque completo por vacaciones: '+warnings.join('; '):'Descansos regenerados. Al volver de vacaciones se asigna 1 día si regresa de lunes a jueves y 2 días si regresa de viernes a domingo, justo desde su vuelta.',!warnings.length);
 }
 function generateShifts(){
  let [yy,mm]=start.value.split('-').map(Number),first=new Date(yy,mm-1,1),last=new Date(yy,mm+3,0),cut=new Date(2026,10,14);
