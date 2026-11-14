@@ -72,8 +72,21 @@ document.getElementById('vacAdd').onclick=()=>{
  const who=document.getElementById('vacPerson').value,from=document.getElementById('vacFrom').value,to=document.getElementById('vacTo').value;
  if(!from||!to||to<from){setMsg('Selecciona un intervalo de fechas válido.',false);return}
  let d=new Date(from+'T12:00:00'),end=new Date(to+'T12:00:00'),count=0;
- while(d<=end){const id=monthKey(d.getFullYear(),d.getMonth()),k=id+'|4|'+d.getDate();data[k]=who;count++;d.setDate(d.getDate()+1)}
- render();setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Pulsa Guardar para conservar los cambios.');
+ while(d<=end){
+  const id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),dateKey=id+'-'+String(day).padStart(2,'0');
+  data[id+'|4|'+day]=who;count++;
+  // La persona de vacaciones no puede aparecer en ningún turno.
+  for(let ri=0;ri<3;ri++){const shiftKey=id+'|'+ri+'|'+day;if(data[shiftKey]===who)delete data[shiftKey];}
+  // Carlos solo cubre tardes y partidos de viernes. No se le asignan mañanas.
+  const dow=d.getDay(),partyKey=id+'|1|'+day,afternoonKey=id+'|2|'+day;
+  if(dow===5){
+   if(!data[partyKey])data[partyKey]='C';
+  }else{
+   if(!data[afternoonKey])data[afternoonKey]='C';
+  }
+  d.setDate(d.getDate()+1)
+ }
+ render();setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Se ha retirado a esa persona de los turnos y Carlos cubre tardes y partidos de viernes. Las mañanas deberán cubrirlas Kevin, Frank o Rubén. Pulsa Guardar.');
  document.getElementById('vacPanel').hidden=true;
 };
 document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Edita las casillas y guarda.')};document.getElementById('genRest').onclick=generateRest;document.getElementById('genShifts').onclick=generateShifts;document.getElementById('save').onclick=save;document.getElementById('csv').onclick=()=>{csv();closeMenu()};document.getElementById('print').onclick=()=>{closeMenu();window.print()};const menuPanel=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');function closeMenu(){menuPanel.classList.remove('open');menuToggle.setAttribute('aria-expanded','false')}menuToggle.onclick=()=>{let open=menuPanel.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open))};document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMenu()});load();render();
