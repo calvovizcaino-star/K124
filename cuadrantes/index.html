@@ -71,7 +71,7 @@ function reflowFrom(fromDate){
   }
  }
 }
-function generateRest(){let[y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0),anchor=new Date(2026,10,2);Object.keys(data).forEach(k=>{let[ym,ri]=k.split('|');if(+ri===3&&ym>=monthKey(y,m-1)&&ym<=monthKey(last.getFullYear(),last.getMonth()))delete data[k]});let monday=new Date(first);monday.setDate(monday.getDate()-((monday.getDay()+6)%7));while(monday<=last){let week=Math.floor((monday-anchor)/604800000),order=week%3;if(order<0)order+=3;let assignments=[['K','F','R'],['F','R','K'],['R','K','F']][order],blocks=[[0,1],[2,3],[5,6]];blocks.forEach((block,bi)=>block.forEach(offset=>{let d=new Date(monday);d.setDate(d.getDate()+offset);if(d>=first&&d<=last){let id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),vac=data[id+'|4|'+day];if(vac!==assignments[bi])data[id+'|3|'+day]=assignments[bi];else delete data[id+'|3|'+day];}}));monday.setDate(monday.getDate()+7)}render();setMsg('Descansos propuestos para cuatro meses. Revisa el patrón y pulsa Guardar. Los turnos aún se asignan aparte.');}
+function generateRest(){let[y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0),anchor=new Date(2026,10,2);Object.keys(data).forEach(k=>{let[ym,ri]=k.split('|');if(+ri===3&&ym>=monthKey(y,m-1)&&ym<=monthKey(last.getFullYear(),last.getMonth()))delete data[k]});let monday=new Date(first);monday.setDate(monday.getDate()-((monday.getDay()+6)%7));while(monday<=last){let week=Math.floor((monday-anchor)/604800000),order=week%3;if(order<0)order+=3;let assignments=[['K','F','R'],['F','R','K'],['R','K','F']][order],blocks=[[0,1],[2,3],[5,6]];blocks.forEach((block,bi)=>block.forEach(offset=>{let d=new Date(monday);d.setDate(d.getDate()+offset);if(d>=first&&d<=last){let id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),vac=data[id+'|4|'+day];if(vac!==assignments[bi])data[id+'|3|'+day]=assignments[bi];else delete data[id+'|3|'+day];}}));monday.setDate(monday.getDate()+7)}render();localStorage.setItem(key,JSON.stringify(data));setMsg('Descansos generados y guardados automáticamente.');}
 function generateShifts(){
  let [yy,mm]=start.value.split('-').map(Number),first=new Date(yy,mm-1,1),last=new Date(yy,mm+3,0),cut=new Date(2026,10,14);
  // Incorporación de Rubén: no se generan turnos anteriores al 14/11/2026.
@@ -113,7 +113,7 @@ function generateShifts(){
    if(afternoon)put(d,2,afternoon);
   }
  }
- render();setMsg('Turnos generados desde el 14 de noviembre. Se han respetado los descansos y no se han sobrescrito casillas ya editadas. Revisa y pulsa Guardar.');
+ render();localStorage.setItem(key,JSON.stringify(data));setMsg('Turnos generados y guardados automáticamente.');
 }
 function save(){localStorage.setItem(key,JSON.stringify(data));setMsg('Cuadrante guardado en este dispositivo.')}function csv(){let out=['Mes;Día;Turno;Inicial;Nombre'];Object.keys(data).sort().forEach(k=>{let[ym,ri,d]=k.split('|'),p=data[k];out.push([ym,d,rows[+ri],p,names[p]].join(';'))});let blob=new Blob(['\\ufeff'+out.join('\\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='K124-cuadrantes.csv';a.click();URL.revokeObjectURL(a.href)}
 document.getElementById('vacToggle').onclick=()=>{const p=document.getElementById('vacPanel');p.hidden=!p.hidden;};
@@ -151,6 +151,7 @@ document.getElementById('vacAdd').onclick=()=>{
   d.setDate(d.getDate()+1);
  }
  render();
+ localStorage.setItem(key,JSON.stringify(data));
  const suffix=uncovered.length?' Atención: no se pudo cubrir la mañana los días '+uncovered.join(', ')+'. Revisa descansos o turnos anteriores.':' Todos los turnos del intervalo tienen sustituto.';
  setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Carlos cubre tardes y partidos de viernes; se han reasignado las mañanas.'+suffix,!uncovered.length);
  document.getElementById('vacPanel').hidden=true;
