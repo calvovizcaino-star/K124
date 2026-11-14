@@ -76,36 +76,37 @@ document.getElementById('vacToggle').onclick=()=>{const p=document.getElementByI
 document.getElementById('vacAdd').onclick=()=>{
  const who=document.getElementById('vacPerson').value,from=document.getElementById('vacFrom').value,to=document.getElementById('vacTo').value;
  if(!from||!to||to<from){setMsg('Selecciona un intervalo de fechas válido.',false);return}
- let d=new Date(from+'T12:00:00'),end=new Date(to+'T12:00:00'),count=0;
+ let d=new Date(from+'T12:00:00'),end=new Date(to+'T12:00:00'),count=0,uncovered=[];
  while(d<=end){
-  const id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),dateKey=id+'-'+String(day).padStart(2,'0');
+  const id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),dow=d.getDay();
   data[id+'|4|'+day]=who;count++;
-  // La persona de vacaciones no puede aparecer en ningún turno.
-  for(let ri=0;ri<3;ri++){const shiftKey=id+'|'+ri+'|'+day;if(data[shiftKey]===who)delete data[shiftKey];}
-  // Completar los turnos que hayan quedado vacíos por la ausencia.
-  const dow=d.getDay(),morningKey=id+'|0|'+day,partyKey=id+'|1|'+day,afternoonKey=id+'|2|'+day;
-  // Carlos solo cubre tardes y el partido de los viernes; nunca mañanas.
-  if(dow===5){if(!data[partyKey])data[partyKey]='C';}
-  else if(!data[afternoonKey]){data[afternoonKey]='C';}
-  // La mañana la cubre otro trabajador disponible, nunca quien está de vacaciones,
-  // de descanso, ya tiene otro turno ese día o hizo tarde/partido ayer.
-  if(!data[morningKey]){
-   const prev=new Date(d);prev.setDate(prev.getDate()-1);
-   const prevId=monthKey(prev.getFullYear(),prev.getMonth()),prevDay=prev.getDate();
-   const prevLate=[data[prevId+'|2|'+prevDay],data[prevId+'|1|'+prevDay]];
-   const candidates=['K','F','R'].filter(p=>
-    p!==who &&
-    data[id+'|3|'+day]!==p &&
-    data[id+'|4|'+day]!==p &&
-    data[id+'|1|'+day]!==p &&
-    data[id+'|2|'+day]!==p &&
-    !prevLate.includes(p)
-   );
-   if(candidates.length)data[morningKey]=candidates[0];
+  // El trabajador de vacaciones se elimina de todos los turnos.
+  for(let ri=0;ri<3;ri++){const k=id+'|'+ri+'|'+day;if(data[k]===who)delete data[k];}
+  const morningKey=id+'|0|'+day,partyKey=id+'|1|'+day,afternoonKey=id+'|2|'+day;
+  // Carlos sustituye siempre el turno de tarde; los viernes, el partido.
+  if(who!=='C'){
+   if(dow===5)data[partyKey]='C';
+   else data[afternoonKey]='C';
   }
-  d.setDate(d.getDate()+1)
+  // Buscar quién cubre la mañana: nunca quien está de vacaciones,
+  // descansando, ya tiene otro turno o hizo tarde/partido ayer.
+  const prev=new Date(d);prev.setDate(prev.getDate()-1);
+  const prevId=monthKey(prev.getFullYear(),prev.getMonth()),prevDay=prev.getDate();
+  const lateYesterday=[data[prevId+'|2|'+prevDay],data[prevId+'|1|'+prevDay]];
+  const candidates=['K','F','R'].filter(p=>
+   p!==who && data[id+'|3|'+day]!==p &&
+   data[id+'|1|'+day]!==p && data[id+'|2|'+day]!==p &&
+   !lateYesterday.includes(p)
+  );
+  if(!data[morningKey]||data[morningKey]===who){
+   if(candidates.length)data[morningKey]=candidates[0];
+   else uncovered.push(day+'/'+(d.getMonth()+1));
+  }
+  d.setDate(d.getDate()+1);
  }
- render();setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Se ha retirado a esa persona de los turnos y Carlos cubre tardes y partidos de viernes, y se buscan sustitutos disponibles para las mañanas. Si no hay nadie compatible, quedará señalado para revisión. Pulsa Guardar.');
+ render();
+ const suffix=uncovered.length?' Atención: no se pudo cubrir la mañana los días '+uncovered.join(', ')+'. Revisa descansos o turnos anteriores.':' Todos los turnos del intervalo tienen sustituto.';
+ setMsg('Vacaciones añadidas para '+names[who]+': '+count+' días. Carlos cubre tardes y partidos de viernes; se han reasignado las mañanas.'+suffix,!uncovered.length);
  document.getElementById('vacPanel').hidden=true;
 };
 document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Edita las casillas y guarda.')};document.getElementById('genRest').onclick=generateRest;document.getElementById('genShifts').onclick=generateShifts;document.getElementById('save').onclick=save;document.getElementById('csv').onclick=()=>{csv();closeMenu()};document.getElementById('print').onclick=()=>{closeMenu();window.print()};const menuPanel=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');function closeMenu(){menuPanel.classList.remove('open');menuToggle.setAttribute('aria-expanded','false')}menuToggle.onclick=()=>{let open=menuPanel.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open))};document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMenu()});load();render();
