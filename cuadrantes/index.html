@@ -12,7 +12,7 @@ main{max-width:1250px;margin:12px auto;padding:0 9px}.toolbar,.actions{display:f
 </style></head>
 <body><header><div class="head"><div class="brand">K124 SL<small>GESTIÓN INTEGRAL · CUADRANTES</small></div><div style="font-size:11px;opacity:.9">Planificación</div></div></header>
 <main>
-<div class="toolbar"><h1>Cuadrante de turnos</h1><div class="actions"><label class="note">Mes inicial <input id="start" type="month" value="2026-11"></label><button class="primary" id="prepare">Preparar 4 meses</button><button class="orange" id="genRest">Generar descansos</button><button id="save">Guardar</button><div class="menuwrap"><button class="menubtn" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button><div class="menupanel" id="menuPanel"><button id="csv">Exportar CSV</button><button id="print">Imprimir / PDF</button></div></div></div></div>
+<div class="toolbar"><h1>Cuadrante de turnos</h1><div class="actions"><label class="note">Mes inicial <input id="start" type="month" value="2026-11"></label><button class="primary" id="prepare">Preparar 4 meses</button><button class="orange" id="genRest">Generar descansos</button><button class="primary" id="genShifts">Generar turnos</button><button id="save">Guardar</button><div class="menuwrap"><button class="menubtn" id="menuToggle" aria-label="Abrir menú" aria-expanded="false">☰</button><div class="menupanel" id="menuPanel"><button id="csv">Exportar CSV</button><button id="print">Imprimir / PDF</button></div></div></div></div>
 <details class="panel controls"><summary>Equipo y horarios · Mostrar / ocultar</summary><div class="rules"><span class="tag">K · Kevin</span><span class="tag">F · Frank</span><span class="tag">R · Rubén</span><span class="tag">C · Carlos (refuerzo)</span></div><div class="rules"><span class="tag">Mañana 07:00–15:00</span><span class="tag">Tarde 15:00–23:00</span><span class="tag">Partido 14:00–22:00</span></div><p class="note">Carlos queda como cobertura para vacaciones y excepciones. Una persona por turno; cualquier solapamiento excepcional se añade manualmente.</p></details>
 <div id="months" class="months"></div><div id="feedback" class="status" aria-live="polite"></div>
 </main>
@@ -26,6 +26,37 @@ for(let d=1;d<=days;d++){let dt=new Date(y,m,d);html+='<th>'+d+'<br>'+['D','L','
 rows.forEach((r,ri)=>{html+='<tr><td>'+r+'</td>';for(let d=1;d<=days;d++){let v=data[id+'|'+ri+'|'+d]||'',cls=ri===4?'vac':ri===3?'rest':ri===1?'part':'';html+='<td class="'+cls+'"><select aria-label="'+r+' día '+d+'"><option value="">—</option>'+people.map(p=>'<option value="'+p+'" '+(v===p?'selected':'')+'>'+p+'</option>').join('')+'</select></td>'}html+='</tr>'});html+='</tbody></table></div></section>';return{id,html}}
 function render(){let[y,m]=start.value.split('-').map(Number);host.innerHTML='';for(let i=0;i<4;i++){let dt=new Date(y,m-1+i,1),o=makeMonth(dt.getFullYear(),dt.getMonth()),wrap=document.createElement('div');wrap.innerHTML=o.html;wrap.querySelectorAll('tbody tr').forEach((tr,ri)=>tr.querySelectorAll('select').forEach((sel,di)=>sel.addEventListener('change',()=>{let k=o.id+'|'+ri+'|'+(di+1);if(sel.value)data[k]=sel.value;else delete data[k];setMsg('Cambio pendiente de guardar.')})));host.appendChild(wrap.firstElementChild)}}
 function generateRest(){let[y,m]=start.value.split('-').map(Number),first=new Date(y,m-1,1),last=new Date(y,m+3,0),anchor=new Date(2026,10,2);Object.keys(data).forEach(k=>{let[ym,ri]=k.split('|');if(+ri===3&&ym>=monthKey(y,m-1)&&ym<=monthKey(last.getFullYear(),last.getMonth()))delete data[k]});let monday=new Date(first);monday.setDate(monday.getDate()-((monday.getDay()+6)%7));while(monday<=last){let week=Math.floor((monday-anchor)/604800000),order=week%3;if(order<0)order+=3;let assignments=[['K','F','R'],['R','K','F'],['F','R','K']][order],blocks=[[0,1],[2,3],[5,6]];blocks.forEach((block,bi)=>block.forEach(offset=>{let d=new Date(monday);d.setDate(d.getDate()+offset);if(d>=first&&d<=last){let id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate();data[id+'|3|'+day]=assignments[bi]}}));monday.setDate(monday.getDate()+7)}render();setMsg('Descansos propuestos para cuatro meses. Revisa el patrón y pulsa Guardar. Los turnos aún se asignan aparte.');}
+function generateShifts(){
+ let [yy,mm]=start.value.split('-').map(Number),first=new Date(yy,mm-1,1),last=new Date(yy,mm+3,0),cut=new Date(2026,10,14);
+ // Incorporación de Rubén: no se generan turnos anteriores al 14/11/2026.
+ // Se completan solo casillas vacías; nunca se pisan cambios manuales.
+ const put=(dt,row,p)=>{let id=monthKey(dt.getFullYear(),dt.getMonth()),k=id+'|'+row+'|'+dt.getDate();if(!data[k])data[k]=p};
+ // Descansos y turnos iniciales confirmados por el usuario.
+ const fixedRest={'2026-11-14':'K','2026-11-15':'K','2026-11-16':'F','2026-11-17':'F','2026-11-18':'R','2026-11-19':'R','2026-11-21':'R'};
+ const fixedShifts={
+ '2026-11-14':['F','','R'],'2026-11-16':['K','','R'],'2026-11-17':['K','','R'],
+ '2026-11-18':['F','','K'],'2026-11-19':['F','','K'],'2026-11-20':['F','R','K'],
+ '2026-11-21':['K','','F']
+ };
+ Object.entries(fixedRest).forEach(([s,p])=>{let d=new Date(s+'T12:00:00');if(d>=first&&d<=last)data[monthKey(d.getFullYear(),d.getMonth())+'|3|'+d.getDate()]=p});
+ for(let d=new Date(Math.max(first,cut));d<=last;d.setDate(d.getDate()+1)){
+  const id=monthKey(d.getFullYear(),d.getMonth()),day=d.getDate(),dow=d.getDay(),date=id+'-'+String(day).padStart(2,'0');
+  const rest=data[id+'|3|'+day]||'',available=['K','F','R'].filter(p=>p!==rest);
+  if(fixedShifts[date]){fixedShifts[date].forEach((p,ri)=>{if(p)put(d,ri,p)});continue}
+  if(dow===5){
+   const fridays=Math.floor((d-new Date(2026,10,20))/604800000);
+   const party=['R','K','F'][((fridays%3)+3)%3];
+   const pair=['K','F','R'].filter(p=>p!==party);
+   const swap=Math.floor((d-new Date(2026,10,20))/604800000)%2!==0;
+   put(d,1,party);put(d,0,swap?pair[1]:pair[0]);put(d,2,swap?pair[0]:pair[1]);
+  }else if(available.length>=2){
+   const week=Math.floor((d-new Date(2026,10,16))/604800000);
+   const swap=((week%2)+2)%2===1;
+   put(d,0,swap?available[1]:available[0]);put(d,2,swap?available[0]:available[1]);
+  }
+ }
+ render();setMsg('Turnos generados desde el 14 de noviembre. Se han respetado los descansos y no se han sobrescrito casillas ya editadas. Revisa y pulsa Guardar.');
+}
 function save(){localStorage.setItem(key,JSON.stringify(data));setMsg('Cuadrante guardado en este dispositivo.')}function csv(){let out=['Mes;Día;Turno;Inicial;Nombre'];Object.keys(data).sort().forEach(k=>{let[ym,ri,d]=k.split('|'),p=data[k];out.push([ym,d,rows[+ri],p,names[p]].join(';'))});let blob=new Blob(['\\ufeff'+out.join('\\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='K124-cuadrantes.csv';a.click();URL.revokeObjectURL(a.href)}
-document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Edita las casillas y guarda.')};document.getElementById('genRest').onclick=generateRest;document.getElementById('save').onclick=save;document.getElementById('csv').onclick=()=>{csv();closeMenu()};document.getElementById('print').onclick=()=>{closeMenu();window.print()};const menuPanel=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');function closeMenu(){menuPanel.classList.remove('open');menuToggle.setAttribute('aria-expanded','false')}menuToggle.onclick=()=>{let open=menuPanel.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open))};document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMenu()});load();render();
+document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Edita las casillas y guarda.')};document.getElementById('genRest').onclick=generateRest;document.getElementById('genShifts').onclick=generateShifts;document.getElementById('save').onclick=save;document.getElementById('csv').onclick=()=>{csv();closeMenu()};document.getElementById('print').onclick=()=>{closeMenu();window.print()};const menuPanel=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');function closeMenu(){menuPanel.classList.remove('open');menuToggle.setAttribute('aria-expanded','false')}menuToggle.onclick=()=>{let open=menuPanel.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open))};document.addEventListener('click',e=>{if(!e.target.closest('.menuwrap'))closeMenu()});load();render();
 </script></body></html>
