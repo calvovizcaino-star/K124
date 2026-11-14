@@ -208,7 +208,7 @@ function generateShifts(){
 
 // Motor OR-Tools remoto: GitHub Pages no ejecuta Python. Nunca sustituir por
 // el generador anterior ni modificar datos si el servicio no responde.
-function engineUrl(){return (localStorage.getItem('k124-roster-api-url')||'').trim().replace(/\\/$/,'')}
+function engineUrl(){return (localStorage.getItem('k124-roster-api-url')||'https://k124-roster-api.onrender.com').trim().replace(/\\/$/,'')}
 function refreshEngineBadge(){const badge=document.querySelector('.engine-status');if(badge){badge.innerHTML='<i></i>Roster Wizard · '+(engineUrl()?'API CONFIGURADA':'API SIN CONFIGURAR')}}
 function configureEngine(){
  const url=prompt('Dirección HTTPS del servidor de cuadrantes OR-Tools (ej.: https://servidor.example.com):',engineUrl());
