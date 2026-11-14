@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#073b83">
+<title>K124 · Cuadrantes</title>
+<style>
+:root{--blue:#073b83;--navy:#041b46;--orange:#ff7900;--bg:#f3f7fc;--ink:#152644;--muted:#64748b;--line:#dce6f2;--green:#16804a;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:linear-gradient(145deg,#07509b,var(--navy));color:white;padding:18px 16px;border-bottom:5px solid var(--orange)}
+.head{max-width:1250px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-size:27px;font-weight:900;font-style:italic;letter-spacing:-1px}.brand small{display:block;font-size:10px;letter-spacing:1.3px;font-style:normal;opacity:.8}
+main{max-width:1250px;margin:18px auto;padding:0 12px}.toolbar,.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.toolbar{justify-content:space-between;margin-bottom:12px}
+h1{font-size:21px;margin:0}button,select,input{font:inherit;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:white;color:var(--blue)}button{font-weight:700;cursor:pointer}button.primary{background:var(--blue);color:white;border-color:var(--blue)}button.orange{background:var(--orange);color:#fff;border-color:var(--orange)}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:13px;margin:12px 0;box-shadow:0 3px 12px #183b2910}
+.note{font-size:12px;color:var(--muted);line-height:1.5}.rules{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.tag{background:#eef4fb;color:var(--blue);border-radius:20px;padding:6px 9px;font-size:11px;font-weight:700}
+.months{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.month{background:white;border:1px solid var(--line);border-radius:13px;overflow:hidden;min-width:0}.month h2{font-size:15px;text-transform:uppercase;background:#eaf1fa;color:var(--blue);padding:10px 12px;margin:0}
+.scroller{overflow-x:auto}.roster{border-collapse:collapse;width:100%;min-width:600px;table-layout:fixed;font-size:11px}.roster th,.roster td{border:1px solid #d8e1ec;text-align:center;padding:4px 2px}.roster th:first-child,.roster td:first-child{width:78px;font-weight:800;background:#f6f9fd;text-align:left;padding-left:7px}.roster thead th{background:#f6f9fd;color:#53657c}.roster select{width:100%;min-width:0;border:0;border-radius:4px;padding:5px 0;font-size:11px;text-align:center;background:transparent;appearance:none}
+.roster td select:focus{outline:2px solid var(--orange);background:#fff8f0}.roster td.vac{background:#fff1d6}.roster td.rest{background:#edf3fa}.roster td.part{background:#fff0e5}
+.status{font-size:12px;margin-top:9px}.status.warn{color:var(--red)}.status.ok{color:var(--green)}
+@media(max-width:800px){.months{grid-template-columns:1fr}.brand{font-size:24px}.toolbar{align-items:flex-start}.toolbar .actions{width:100%}.toolbar .actions>*{flex:1}}
+@media print{header{padding:8px}.toolbar .actions,.panel.controls{display:none!important}main{margin:0;max-width:none}.months{grid-template-columns:1fr 1fr;gap:7px}.month{break-inside:avoid}.roster{min-width:0;font-size:8px}.roster th,.roster td{padding:2px 1px}.roster th:first-child,.roster td:first-child{width:65px}.roster select{font-size:8px;padding:1px 0}}
+</style>
+</head>
+<body>
+<header><div class="head"><div class="brand">K124 SL<small>GESTIÓN INTEGRAL · CUADRANTES</small></div><div style="font-size:12px;opacity:.9">Planificación de personal</div></div></header>
+<main>
+ <div class="toolbar"><h1>Cuadrante de turnos</h1><div class="actions"><label class="note">Mes inicial <input id="start" type="month" value="2026-11"></label><button class="primary" id="prepare">Preparar 4 meses</button><button id="save">Guardar</button><button id="csv">Exportar CSV</button><button id="print">Imprimir / PDF</button></div></div>
+ <section class="panel controls">
+  <strong>Equipo y horarios</strong>
+  <div class="rules"><span class="tag">K · Kevin</span><span class="tag">F · Frank</span><span class="tag">R · Rubén</span><span class="tag">C · Carlos (refuerzo)</span></div>
+  <div class="rules"><span class="tag">Mañana 07:00–15:00</span><span class="tag">Tarde 15:00–23:00</span><span class="tag">Partido 14:00–22:00</span></div>
+  <p class="note">Primera versión: prepara cuatro meses para editar casilla por casilla, guarda los cambios en este dispositivo y permite imprimir o exportar. Carlos se reserva para coberturas y excepciones. La generación automática se activará cuando validemos todas las reglas y el patrón real de rotación.</p>
+ </section>
+ <div id="months" class="months"></div><div id="feedback" class="status" aria-live="polite"></div>
+</main>
+<script>
+const people=['K','F','R','C'], rows=['MAÑANA','PARTIDO','TARDE','DESCANSO','VACACIONES'];
+const names={K:'Kevin',F:'Frank',R:'Rubén',C:'Carlos'};
+const key='k124-cuadrantes-v1';let data={};
+const start=document.getElementById('start'), host=document.getElementById('months'), feedback=document.getElementById('feedback');
+function monthKey(y,m){return y+'-'+String(m+1).padStart(2,'0')}
+function getDays(y,m){return new Date(y,m+1,0).getDate()}
+function load(){try{data=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){data={}}}
+function setMsg(s,ok=true){feedback.textContent=s;feedback.className='status '+(ok?'ok':'warn')}
+function makeMonth(y,m){let id=monthKey(y,m),days=getDays(y,m),html='<section class="month"><h2>'+new Date(y,m,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'})+'</h2><div class="scroller"><table class="roster"><thead><tr><th>Turno</th>';
+for(let d=1;d<=days;d++){let dt=new Date(y,m,d);html+='<th>'+d+'<br>'+['D','L','M','X','J','V','S'][dt.getDay()]+'</th>'}
+html+='</tr></thead><tbody>';
+rows.forEach((r,ri)=>{html+='<tr><td>'+r+'</td>';for(let d=1;d<=days;d++){let k=id+'|'+ri+'|'+d,v=data[k]||'';let cls=ri===4?'vac':ri===3?'rest':ri===1?'part':'';html+='<td class="'+cls+'"><select aria-label="'+r+' '+d+' '+names[v]+'"><option value="">—</option>'+people.map(p=>'<option value="'+p+'" '+(v===p?'selected':'')+'>'+p+'</option>').join('')+'</select></td>'}html+='</tr>'});
+html+='</tbody></table></div></section>';return {id,html}}
+function render(){let [y,m]=start.value.split('-').map(Number);host.innerHTML='';for(let i=0;i<4;i++){let date=new Date(y,m-1+i,1),o=makeMonth(date.getFullYear(),date.getMonth()),wrap=document.createElement('div');wrap.innerHTML=o.html;wrap.querySelectorAll('select').forEach((sel,idx)=>{let day=Math.floor(idx/rows.length)+1;});let selects=wrap.querySelectorAll('tbody tr');selects.forEach((tr,ri)=>tr.querySelectorAll('select').forEach((sel,di)=>sel.addEventListener('change',()=>{let day=di+1,k=o.id+'|'+ri+'|'+day;if(sel.value)data[k]=sel.value;else delete data[k];setMsg('Cambio pendiente de guardar.')})));host.appendChild(wrap.firstElementChild)}}
+function save(){localStorage.setItem(key,JSON.stringify(data));setMsg('Cuadrante guardado en este dispositivo.')}
+function csv(){let out=['Mes;Día;Turno;Inicial;Nombre'];Object.keys(data).sort().forEach(k=>{let [ym,ri,d]=k.split('|'),p=data[k];out.push([ym,d,rows[+ri],p,names[p]].join(';'))});let blob=new Blob(['\ufeff'+out.join('\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='K124-cuadrantes.csv';a.click();URL.revokeObjectURL(a.href)}
+document.getElementById('prepare').onclick=()=>{render();setMsg('Cuatro meses preparados. Completa o modifica las casillas y guarda.')};
+document.getElementById('save').onclick=save;document.getElementById('csv').onclick=csv;document.getElementById('print').onclick=()=>window.print();
+load();render();
+</script>
+</body></html>
