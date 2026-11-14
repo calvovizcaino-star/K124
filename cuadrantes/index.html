@@ -88,12 +88,14 @@ function generateRest(){
   const weekEnd=new Date(ws);weekEnd.setDate(weekEnd.getDate()+6);
   const week=Math.floor((ws-anchor)/604800000),rotation=((week%3)+3)%3;
   const weekendWorker=['K','F','R'][rotation],others=['K','F','R'].filter(p=>p!==weekendWorker);
-  const returning={};
-  ['K','F','R'].forEach(p=>{const hit=(returns[p]||[]).find(d=>d>=ws&&d<=weekEnd);if(hit)returning[p]=hit;});
-  const assigned={K:[],F:[],R:[]};
-  // Regreso de viernes a domingo: dos descansos consecutivos desde el regreso.
-  // Regreso de lunes a jueves: el día de vuelta cuenta como uno y se añade
-  // un segundo descanso ordinario; nunca se superan dos en la semana.
+  const assigned={K:[],F:[],R:[]},vacationDays={K:0,F:0,R:0},returning={};
+  ['K','F','R'].forEach(p=>{
+   for(let d=new Date(ws);d<=weekEnd;d.setDate(d.getDate()+1))if(data[keyFor(d,4)]===p)vacationDays[p]++;
+   const hit=(returns[p]||[]).find(d=>d>=ws&&d<=weekEnd);
+   if(hit)returning[p]=hit;
+  });
+  // Solo se generan dos descansos para quien no está de vacaciones esa semana.
+  // Si vuelve de vacaciones, los descansos especiales sustituyen a los ordinarios.
   Object.entries(returning).forEach(([p,back])=>{
    const dow=back.getDay(),count=(dow===5||dow===6||dow===0)?2:1;
    for(let i=0;i<count;i++){
@@ -101,18 +103,12 @@ function generateRest(){
     if(d<=weekEnd&&data[keyFor(d,4)]!==p){data[keyFor(d)]=p;assigned[p].push(new Date(d));}
    }
   });
-  // Asignación de los dos días semanales restantes, respetando los días ya asignados.
   ['K','F','R'].forEach((p,index)=>{
-   const need=2-assigned[p].length;
-   if(need<=0)return;
+   if(vacationDays[p]>0&&!returning[p])return;
+   const target=2-assigned[p].length;
+   if(target<=0)return;
    const preferred=p===weekendWorker?[5,6]:weekdayPairs[(rotation+index)%weekdayPairs.length];
-   const candidates=[];
-   for(let offset=0;offset<7;offset++){
-    const d=new Date(ws);d.setDate(d.getDate()+offset);
-    if(data[keyFor(d,4)]===p||assigned[p].some(x=>x.getTime()===d.getTime()))continue;
-    candidates.push({d,offset});
-   }
-   const order=[...preferred,...candidates.map(x=>x.offset)].filter((v,i,arr)=>arr.indexOf(v)===i);
+   const order=[...preferred,...[0,1,2,3,4,5,6]].filter((v,i,arr)=>arr.indexOf(v)===i);
    for(const offset of order){
     if(assigned[p].length>=2)break;
     const d=new Date(ws);d.setDate(d.getDate()+offset);
@@ -123,7 +119,7 @@ function generateRest(){
   });
  }
  render();localStorage.setItem(key,JSON.stringify(data));
- setMsg(warnings.length?'Descansos guardados, pero revisa estas semanas por coincidencia con vacaciones: '+warnings.join('; '):'Descansos regenerados: máximo dos días por trabajador y semana. Los regresos de vacaciones quedan incluidos dentro de esos dos días.',!warnings.length);
+ setMsg(warnings.length?'Descansos guardados. Revisa estas semanas porque no se pudieron asignar dos días a quien no estaba de vacaciones: '+warnings.join('; '):'Descansos regenerados: los trabajadores que no están de vacaciones tienen dos días de descanso por semana. Los días de vacaciones no cuentan como descansos.',!warnings.length);
 }
 function generateShifts(){
  let [yy,mm]=start.value.split('-').map(Number),first=new Date(yy,mm-1,1),last=new Date(yy,mm+3,0),cut=new Date(2026,10,14);
