@@ -671,13 +671,13 @@ header::after{left:0!important;right:0!important;width:100%!important}
  <section class="panel">
   <div class="cabecera-vista"><h2>💶 Margen de carburante</h2><select id="selectorFechaMargen" class="selector-periodo" aria-label="Seleccionar mes"></select></div>
   <p class="etiqueta-periodo" id="infoMargenDia">Selecciona un mes para consultar los días registrados.</p>
-  <div class="tabla-contenedor"><table><thead><tr><th>Fecha</th><th>Margen total</th></tr></thead><tbody id="filasMargenDias"></tbody></table></div>
+  <div class="tabla-contenedor"><table><thead><tr><th>Fecha</th><th>Margen total</th><th>Modificado</th><th></th></tr></thead><tbody id="filasMargenDias"></tbody></table></div>
  </section>
  <section class="panel">
   <div class="cabecera-vista"><h2>📅 Margen mensual</h2><select id="selectorMesMargen" class="selector-periodo" aria-label="Seleccionar mes de margen"></select></div>
   <div class="tienda-total"><span>Margen acumulado del mes</span><strong id="margenMes">—</strong></div>
   <div class="tienda-kpis"><div class="tienda-kpi"><span>Días registrados</span><strong id="margenDiasMes">—</strong></div><div class="tienda-kpi"><span>Media diaria</span><strong id="margenMediaMes">—</strong></div></div>
-  <div class="tabla-contenedor"><table><thead><tr><th>Fecha</th><th>Margen total</th></tr></thead><tbody id="filasMargenMes"></tbody></table></div>
+  <div class="tabla-contenedor"><table><thead><tr><th>Fecha</th><th>Margen total</th><th>Modificado</th><th></th></tr></thead><tbody id="filasMargenMes"></tbody></table></div>
  </section>
  <section class="panel">
   <div class="cabecera-vista"><h2>📊 Margen anual</h2><select id="selectorAnoMargen" class="selector-periodo" aria-label="Seleccionar año de margen"></select></div>
@@ -1224,7 +1224,7 @@ function pintarMargen(){
  const mes=mesSel.value,delMes=claves.filter(k=>k.startsWith(mes)).sort().reverse();
  $("infoMargenDia").textContent=mes?delMes.length+" día(s) con margen guardado en "+mesSel.options[mesSel.selectedIndex].text+".":"Importa un TXT que contenga el apartado «Margen Carburante».";
  const filasDias=$("filasMargenDias");filasDias.innerHTML="";
- delMes.forEach(k=>{const tr=document.createElement("tr"),f=document.createElement("td"),v=document.createElement("td");f.textContent=formatoClave(k);v.textContent=euros(valorMargenDia(k));tr.append(f,v);if(k124Admin){const e=document.createElement("td"),b=document.createElement("button");b.type="button";b.className="btn-lapiz";b.textContent="✏️";b.title="Corregir margen";b.addEventListener("click",()=>editarMargenDia(k));e.appendChild(b);tr.appendChild(e)}filasDias.appendChild(tr)});
+ delMes.forEach(k=>{const tr=document.createElement("tr"),f=document.createElement("td"),v=document.createElement("td"),m=document.createElement("td");f.textContent=formatoClave(k);v.textContent=euros(valorMargenDia(k));m.textContent=Object.prototype.hasOwnProperty.call(correccionesMargen,k)?"✓":"—";m.style.color=Object.prototype.hasOwnProperty.call(correccionesMargen,k)?"#16804a":"#94a3b8";m.style.fontWeight="800";m.style.textAlign="center";tr.append(f,v,m);if(k124Admin){const e=document.createElement("td"),b=document.createElement("button");b.type="button";b.className="btn-lapiz";b.textContent="✏️";b.title="Corregir margen";b.addEventListener("click",()=>editarMargenDia(k));e.appendChild(b);tr.appendChild(e)}filasDias.appendChild(tr)});
  const totalMes=delMes.reduce((s,k)=>s+Number(margenesDiarios[k]||0),0);
  $("margenMes").textContent=mes?euros(totalMes):"—";$("margenDiasMes").textContent=mes?String(delMes.length):"—";$("margenMediaMes").textContent=delMes.length?euros(totalMes/delMes.length):"—";
  const mesSel2=$("selectorMesMargen"),mesPrev2=mesSel2.value;mesSel2.innerHTML="";
@@ -1232,7 +1232,7 @@ function pintarMargen(){
  if(meses.includes(mesPrev2))mesSel2.value=mesPrev2;else if(mes)mesSel2.value=mes;
  const filasMes=$("filasMargenMes");filasMes.innerHTML="";
  const delMes2=claves.filter(k=>k.startsWith(mesSel2.value)).sort().reverse();
- delMes2.forEach(k=>{const tr=document.createElement("tr"),f=document.createElement("td"),v=document.createElement("td");f.textContent=formatoClave(k);v.textContent=euros(valorMargenDia(k));tr.append(f,v);if(k124Admin){const e=document.createElement("td"),b=document.createElement("button");b.type="button";b.className="btn-lapiz";b.textContent="✏️";b.title="Corregir margen";b.addEventListener("click",()=>editarMargenDia(k));e.appendChild(b);tr.appendChild(e)}filasMes.appendChild(tr)});
+ delMes2.forEach(k=>{const tr=document.createElement("tr"),f=document.createElement("td"),v=document.createElement("td"),m=document.createElement("td");f.textContent=formatoClave(k);v.textContent=euros(valorMargenDia(k));m.textContent=Object.prototype.hasOwnProperty.call(correccionesMargen,k)?"✓":"—";m.style.color=Object.prototype.hasOwnProperty.call(correccionesMargen,k)?"#16804a":"#94a3b8";m.style.fontWeight="800";m.style.textAlign="center";tr.append(f,v,m);if(k124Admin){const e=document.createElement("td"),b=document.createElement("button");b.type="button";b.className="btn-lapiz";b.textContent="✏️";b.title="Corregir margen";b.addEventListener("click",()=>editarMargenDia(k));e.appendChild(b);tr.appendChild(e)}filasMes.appendChild(tr)});
  const anos=[...new Set(claves.map(k=>k.slice(0,4)))].sort().reverse();const anoSel=$("selectorAnoMargen"),anoPrev=anoSel.value;anoSel.innerHTML="";anos.forEach(a=>{const o=document.createElement("option");o.value=a;o.textContent=a;anoSel.appendChild(o)});if(anos.includes(anoPrev))anoSel.value=anoPrev;else if(anos.length)anoSel.value=anos[0];
  const ano=anoSel.value,filasAno=$("filasMargenAno");filasAno.innerHTML="";let totalAno=0;
  for(let m=1;m<=12;m++){const pref=ano+"-"+String(m).padStart(2,"0"),ks=claves.filter(k=>k.startsWith(pref));if(!ks.length)continue;const suma=ks.reduce((v,k)=>v+Number(margenesDiarios[k]||0),0);totalAno+=suma;const tr=document.createElement("tr"),n=document.createElement("td"),v=document.createElement("td");n.textContent=new Date(+ano,m-1,1).toLocaleDateString("es-ES",{month:"long"});v.textContent=euros(suma);tr.append(n,v);filasAno.appendChild(tr)}
