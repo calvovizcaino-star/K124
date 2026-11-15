@@ -563,7 +563,7 @@ header::after{left:0!important;right:0!important;width:100%!important}
 </header>
 <main>
 <section class="panel panel-resumen-general" id="panelResumenGeneral">
- <div class="resumen-cabecera"><h2>📊 Resumen general</h2><button type="button" class="secundario" id="volverVentasDia">← Volver</button></div>
+ <div class="resumen-cabecera"><h2>📊 Resumen general</h2><button type="button" class="secundario" id="volverVentasDia">← Volver a sondas</button></div>
  <div class="cabecera-vista" style="margin:12px 0"><p class="etiqueta-periodo" id="periodoResumen" style="margin:0"></p><select id="selectorMesResumen" class="selector-periodo" aria-label="Seleccionar mes del resumen"></select></div>
  <div class="resumen-kpis">
   <div class="resumen-kpi"><span>Litros vendidos</span><strong id="resumenLitros">—</strong><small>Carburante este mes</small></div>
@@ -1984,7 +1984,14 @@ function pintarResumenGeneral(){
 $("selectorMesResumen").addEventListener("change",pintarResumenGeneral);
 $("botonMenuResumen").addEventListener("click",()=>{const menu=$("menuResumenDesplegable");const abierto=menu.classList.toggle("abierto");$("botonMenuResumen").setAttribute("aria-expanded",String(abierto));});
 $("abrirResumen").addEventListener("click",()=>{$("menuResumenDesplegable").classList.remove("abierto");$("botonMenuResumen").setAttribute("aria-expanded","false");pintarResumenGeneral();document.body.classList.add("resumen-abierto");window.scrollTo(0,0)});
-$("volverVentasDia").addEventListener("click",()=>{document.body.classList.remove("resumen-abierto");window.scrollTo(0,0)});
+$("volverVentasDia").addEventListener("click",()=>{
+ document.body.classList.remove("resumen-abierto","historial-cisternas");
+ document.querySelectorAll(".vista").forEach(v=>v.classList.toggle("activa",v.id==="vista-dia"));
+ cerrarMenuHerramientas();
+ const sondas=$("sondasDiariasInicio");
+ window.scrollTo({top:0,behavior:"instant"});
+ if(sondas)sondas.scrollIntoView({behavior:"smooth",block:"start"});
+});
 function cerrarMenuHerramientas(){ $("menuResumenDesplegable").classList.remove("abierto"); $("botonMenuResumen").setAttribute("aria-expanded","false"); }
 document.addEventListener("click",e=>{if(!e.target.closest(".acceso-resumen"))cerrarMenuHerramientas();});
 function abrirHistorialCisternas(){
