@@ -877,6 +877,7 @@ async function k124StartCloud(){
   if(error){errorBox.textContent="No se pudo iniciar sesión. Comprueba el correo y la contraseña.";errorBox.style.display="block";return}
   if(data.user.id!=="9eb23d4b-3514-4685-9e32-5ecfe9de9b41"){await k124Supabase.auth.signOut();errorBox.textContent="Esta cuenta no tiene permisos de administrador.";errorBox.style.display="block";return}
   k124Admin=true;k124SetReadOnly(false);k124ShowModal(false);
+  await cargarVentasOficiales();
   const row=await k124FetchCloud();
   if(!row||!row.datos||!Object.keys(row.datos).length){await k124PushCloud();alert("K124 ya ha guardado en la nube los datos que tenías en este teléfono.");}
   else{k124ApplyLocal(row.datos);await k124RefreshUI();alert("Datos compartidos cargados correctamente.");}
@@ -955,19 +956,18 @@ k124InstallPushButton();
 
 
 // Fuente oficial de litros: K124 Ventas (fila historico_ventas).
-const K124_VENTAS_URL=K124_SUPABASE_URL+"/rest/v1/k124_datos?id=eq.historico_ventas&select=datos,updated_at";
 let k124VentasHistorico={};
 let k124VentasActualizado=null;
 let k124VistasListas=false;
 let k124VentasError=null;
 async function cargarVentasOficiales(){
  try{
-  const r=await fetch(K124_VENTAS_URL,{headers:{apikey:K124_SUPABASE_KEY,Authorization:"Bearer "+K124_SUPABASE_KEY}});
-  if(!r.ok)throw new Error("HTTP "+r.status);
-  const rows=await r.json();
-  if(!rows.length||!rows[0].datos)throw new Error("No se encontró el histórico de K124 Ventas.");
-  k124VentasHistorico=rows[0].datos;
-  k124VentasActualizado=rows[0].updated_at||null;
+  const {data:row,error}=await k124Supabase.from("k124_datos")
+   .select("datos,updated_at").eq("id","historico_ventas").maybeSingle();
+  if(error)throw error;
+  if(!row?.datos)throw new Error("El histórico de K124 Ventas no está disponible para esta sesión.");
+  k124VentasHistorico=row.datos;
+  k124VentasActualizado=row.updated_at||null;
   k124VentasError=null;
  }catch(e){k124VentasError=e;console.warn("K124 Ventas:",e)}
  if(k124VistasListas&&document.getElementById("selectorAno")?.value)pintarVistas();
@@ -1779,7 +1779,7 @@ function pintarResumenAnual(a){
  $("ventaAnual").textContent=fmt(vendidosAnuales);
  const estadoFuente=$("estadoFuenteVentas");
  if(k124VentasError){
-  estadoFuente.textContent="No se ha podido consultar K124 Ventas. Revisa la conexión; se mantienen los últimos datos cargados en esta pantalla.";
+  estadoFuente.textContent=k124Admin?"No se ha podido actualizar K124 Ventas. Comprueba la conexión.":"Inicia sesión para consultar las ventas mensuales de K124 Ventas.";
  }else{
   const fecha=k124VentasActualizado?new Date(k124VentasActualizado).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"}):"sin fecha registrada";
   const datoMes=datosAno[MESES_LARGOS[mesActual].toUpperCase()];
@@ -1796,7 +1796,7 @@ function pintarResumenAnual(a){
   if(m.vendidos!==null&&m.vendidos!==undefined){
    valor.append(document.createTextNode(fmt(m.vendidos)+" L "));
    if(m.corregido){const marca=document.createElement("span");marca.className="etiqueta-corregido";marca.textContent="CORREGIDO";valor.appendChild(marca)}
-  }else valor.textContent="Pendiente";
+  }else valor.textContent=k124VentasError&&!k124VentasHistorico[String(a.anio)]?"Sin datos disponibles":"Pendiente";
   cab.append(nombre,valor);item.appendChild(cab);
   if(m.previstos!==null){
    const linea=document.createElement("div");linea.className="barra-linea";
