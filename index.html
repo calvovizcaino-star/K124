@@ -1029,10 +1029,8 @@ function leerPedidosHistorico(){try{const d=JSON.parse(localStorage.getItem(CLAV
 function guardarPedidosHistorico(){localStorage.setItem(CLAVE_PEDIDOS_HISTORICO,JSON.stringify(pedidosHistorico))}
 if(pedidoPendiente&&!pedidosHistorico.some(p=>p.guardado===pedidoPendiente.guardado)){pedidosHistorico.unshift({...pedidoPendiente,id:pedidoPendiente.guardado||"pendiente-anterior"});guardarPedidosHistorico()}
 const OBJETIVOS_TANQUES=[21000,25000,5000,26000,4000,13000];
-const NOMBRES_TANQUES=[
- "Diésel e+ TANQUE 1","Efitec 95 TANQUE 2","Diésel E+10 TANQUE 3",
- "Diésel e+ TANQUE 4","Efitec 98 TANQUE 5","Efitec 95 TANQUE 6"
-];
+const PRODUCTOS_TANQUES=["Diésel e+","Efitec 95","Diésel E+10","Diésel e+","Efitec 98","Efitec 95"];
+const NOMBRES_TANQUES=PRODUCTOS_TANQUES.map((producto,i)=>`${producto} TANQUE ${i+1}`);
 let sondasActuales=leerSondasActuales();
 let cantidadesPedido=calcularPedidoInicial();
 
@@ -1362,12 +1360,19 @@ function fechaPedidoTexto(){
 }
 function textoMensajePedido(){
  const lineas=["Próximo pedido Carburante"];
+ const totales=new Map();
  [0,3,2,1,5,4].forEach(i=>{
   const n=NOMBRES_TANQUES[i];
   const litros=Math.max(0,Math.round(Number(cantidadesPedido[i])||0));
+  const producto=PRODUCTOS_TANQUES[i];
+  totales.set(producto,(totales.get(producto)||0)+litros);
   lineas.push(`${n}: ${String(litros).padStart(4,"0")} litros`);
  });
  lineas.push(`Pedido previsto: ${fechaPedidoTexto()}`);
+ lineas.push("", "Total por producto");
+ for(const [producto,litros] of totales){
+  lineas.push(`${producto}: ${litrosFmt(litros)} L`);
+ }
  return lineas.join("\n");
 }
 function pintarSondasInicio(){
