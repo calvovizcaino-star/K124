@@ -821,7 +821,7 @@ Selecciona la fecha prevista para completar el mensaje.</div>
 <div class="modal-descargas" id="modalDescargas" role="dialog" aria-modal="true" aria-labelledby="tituloDescargas">
  <div class="modal-descargas-caja">
   <h2 id="tituloDescargas">🚛 Descargas de combustible</h2>
-  <p class="modal-ayuda" id="textoDescargas">Se han detectado posibles descargas. Introduce los litros recibidos en cada tanque. Si no hubo descarga, deja 0.</p>
+  <p class="modal-ayuda" id="textoDescargas">Introduce los litros del albarán. Si solo conoces los pedidos, usa esa cantidad como referencia. Deja 0 en los tanques sin descarga.</p>
   <div id="filasDescargas"></div>
   <div class="modal-descargas-acciones">
    <button type="button" class="secundario" id="cancelarDescargas">Cancelar</button>
@@ -1054,8 +1054,8 @@ function pedirLitrosDescarga(pendientes,prellenado={}){
    const fila=document.createElement("div");fila.className="descarga-fila";
    const info=document.createElement("div");
    const nombre=document.createElement("strong");nombre.textContent=`Tanque ${t.tanque} · ${t.producto}`;
-   const ayuda=document.createElement("small");ayuda.textContent="Litros recibidos";info.append(nombre,ayuda);
-   const input=document.createElement("input");input.type="number";input.min="0";input.step="1";input.inputMode="numeric";input.placeholder="0";input.value=Object.prototype.hasOwnProperty.call(prellenado,t.tanque)?String(prellenado[t.tanque]):"0";input.dataset.tanque=String(t.tanque);input.setAttribute("aria-label",`Litros recibidos tanque ${t.tanque}`);
+   const ayuda=document.createElement("small");ayuda.textContent=`Anterior: ${litrosFmt(t.anterior)} L · Actual: ${litrosFmt(t.actual)} L`;info.append(nombre,ayuda);
+   const input=document.createElement("input");input.type="text";input.inputMode="numeric";input.placeholder="0";input.value=Object.prototype.hasOwnProperty.call(prellenado,t.tanque)?String(prellenado[t.tanque]):"0";input.dataset.tanque=String(t.tanque);input.setAttribute("aria-label",`Litros recibidos tanque ${t.tanque}`);
    fila.append(info,input);contenedor.appendChild(fila);
   }
   const cerrar=()=>{modal.classList.remove("visible");$("guardarDescargas").removeEventListener("click",guardar);$("cancelarDescargas").removeEventListener("click",cancelar)};
@@ -1063,10 +1063,18 @@ function pedirLitrosDescarga(pendientes,prellenado={}){
   const guardar=()=>{
    const valores={};
    for(const input of contenedor.querySelectorAll("input")){
-    const texto=input.value.trim(),n=Number(texto);
+    const texto=input.value.trim(),n=/^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(texto)?Number(texto.replace(/\./g,"")):NaN;
     if(texto===""||!Number.isFinite(n)||n<0||!Number.isInteger(n)){alert(`Introduce un número entero de litros válido para el tanque ${input.dataset.tanque}.`);input.focus();return}
     valores[input.dataset.tanque]=n;
    }
+   const avisos=[];
+   for(const t of pendientes){
+    const falta=t.actual-t.anterior-valores[t.tanque];
+    if(falta<=0)continue;
+    if(!valores[t.tanque]){alert(`T${t.tanque}: la lectura ha subido ${litrosFmt(falta)} L. Revisa las sondas o los litros descargados.`);return}
+    avisos.push(`T${t.tanque} · ${t.producto}: la sonda marca ${litrosFmt(falta)} L más de lo esperado.`);
+   }
+   if(avisos.length&&!confirm(avisos.join("\n")+"\n\n¿Guardar el parte con los litros indicados y dejar la venta de esos tanques en 0 L provisionalmente? Pulsa Cancelar para revisar las cifras."))return;
    cerrar();resolve(valores);
   };
   $("guardarDescargas").addEventListener("click",guardar);
@@ -1075,41 +1083,35 @@ function pedirLitrosDescarga(pendientes,prellenado={}){
   const primero=contenedor.querySelector("input");if(primero)primero.focus();
  });
 }
-async function calcularVentasDesdeSondas(lecturas,keyDia,tanquesSinPregunta=[]){
+async function calcularVentasDesdeSondas(lecturas,keyDia){
  const entrega={...(entregasDiarias[keyDia]||{})};
  const productos={e:0,e10:0,g95:0,g98:0};
  const mapa={1:"e",2:"g95",3:"e10",4:"e",5:"g98",6:"g95"};
- tanquesSinPregunta.forEach(n=>{if(!Object.prototype.hasOwnProperty.call(entrega,n))entrega[n]=0;});
- const pendientes=lecturas.filter(t=>Number(t.anterior)-Number(t.actual)<=0&&!tanquesSinPregunta.includes(t.tanque)&&!Object.prototype.hasOwnProperty.call(entrega,t.tanque));
- if(pendientes.length){
-  const pedidoLlegado=pedidoPendiente&&pedidoAplicableAFecha(keyDia,pedidoPendiente.fecha)?pedidoPendiente:null;
-  if(pedidoLlegado){
-   const totalPedido=(pedidoLlegado.litros||[]).reduce((a,b)=>a+Number(b||0),0);
-   const detallePedido=(pedidoLlegado.litros||[]).map((v,i)=>`Tanque ${i+1}: ${litrosFmt(v)} L`).join("\\n");
-   const variacion=confirm("🚛 HA LLEGADO EL PEDIDO GUARDADO\\n\\nPedido previsto para el "+fechaPedidoTextoDesde(pedidoLlegado.fecha)+"\\nTotal: "+litrosFmt(totalPedido)+" L\\n\\n"+detallePedido+"\\n\\n¿Ha habido alguna variación en las cantidades recibidas?\\n\\nAceptar: revisar y modificar litros.\\nCancelar: utilizar directamente las cantidades guardadas.");
-   if(variacion){
-    const prellenado={};
-    pendientes.forEach(t=>{prellenado[t.tanque]=Number(pedidoLlegado.litros?.[t.tanque-1]||0)});
-    const introducidos=await pedirLitrosDescarga(pendientes,prellenado);
-    for(const t of pendientes)entrega[t.tanque]=introducidos[t.tanque];
-   }else{
-    for(const t of pendientes)entrega[t.tanque]=Number(pedidoLlegado.litros?.[t.tanque-1]||0);
-   }
-  }else{
-   const introducidos=await pedirLitrosDescarga(pendientes,{});
-   for(const t of pendientes)entrega[t.tanque]=introducidos[t.tanque];
-  }
+ const diferenciasSonda={};
+ const hayIndicio=lecturas.some(t=>t.actual>=t.anterior&&!Object.prototype.hasOwnProperty.call(entrega,t.tanque));
+ const pedidoLlegado=pedidoPendiente&&pedidoAplicableAFecha(keyDia,pedidoPendiente.fecha)?pedidoPendiente:null;
+ const usarPedido=pedidoLlegado&&hayIndicio&&!Object.values(entrega).some(n=>n>0);
+ let revisar=hayIndicio;
+ if(usarPedido){
+  for(const t of lecturas)entrega[t.tanque]=Number(pedidoLlegado.litros?.[t.tanque-1]||0);
+  const detalle=lecturas.map(t=>`T${t.tanque} · ${t.producto}: ${litrosFmt(entrega[t.tanque])} L`).join("\n");
+  revisar=confirm(`Pedido previsto para ${fechaPedidoTextoDesde(pedidoLlegado.fecha)}\n\n${detalle}\n\n¿Quieres revisar los litros recibidos? Aceptar para editarlos o cancelar para usar las cantidades previstas.`);
  }
+ const descuadre=lecturas.some(t=>{
+  const falta=t.actual-t.anterior-Number(entrega[t.tanque]||0);
+  return falta>0&&(historial[keyDia]?.diferenciasSonda?.[t.tanque]!==falta||!entrega[t.tanque]);
+ });
+ if(revisar||descuadre)Object.assign(entrega,await pedirLitrosDescarga(lecturas,entrega));
  for(const t of lecturas){
   const recibidos=Number(entrega[t.tanque]||0);
   const venta=Number(t.anterior)+recibidos-Number(t.actual);
-  if(venta<0)throw new Error(`El cálculo del tanque ${t.tanque} sigue siendo negativo. Revisa los litros descargados.`);
-  productos[mapa[t.tanque]]+=venta;
+  if(venta<0)diferenciasSonda[t.tanque]=-venta;
+  productos[mapa[t.tanque]]+=Math.max(0,venta);
  }
  entregasDiarias[keyDia]=entrega;guardarEntregasDiarias();
- if(pedidoPendiente&&pedidoAplicableAFecha(keyDia,pedidoPendiente.fecha)){pedidoPendiente=null;guardarPedidoPendiente();pintarPedidoPendienteVisible();actualizarEstadoPedidoGuardado()}
+ if(usarPedido&&Object.values(entrega).some(n=>n>0)){pedidoPendiente=null;guardarPedidoPendiente();pintarPedidoPendienteVisible();actualizarEstadoPedidoGuardado()}
  const total=productos.e+productos.e10+productos.g95+productos.g98;
- return {...productos,total};
+ return {...productos,total,diferenciasSonda};
 }
 function filaConCorreccionDiaria(f){
  const c=correccionesDiarias[f.key],corregido=c!==undefined&&c!==null;
@@ -1433,8 +1435,8 @@ async function recalcularVentasSondas(){
  const boton=$("sondasInicio")?.querySelector("button");
  if(boton){boton.disabled=true;boton.textContent="RECALCULANDO…";}
  try{
-  const ventas=await calcularVentasDesdeSondas(lecturasCalculo||sondasActuales,keyDia,tanquesCorregidosAyer);
-  historial[keyDia]={...(historial[keyDia]||{}),fecha:fechaTexto,e:ventas.e,e10:ventas.e10,g95:ventas.g95,g98:ventas.g98,total:ventas.total};
+  const ventas=await calcularVentasDesdeSondas(sondasActuales,keyDia);
+  historial[keyDia]={...(historial[keyDia]||{}),fecha:fechaTexto,...ventas};
   if(correccionesDiarias[keyDia]&&typeof correccionesDiarias[keyDia]==="object"){
    correccionesDiarias[keyDia]={e:ventas.e,e10:ventas.e10,g95:ventas.g95,g98:ventas.g98};
    guardarCorreccionesDiarias();
@@ -1524,8 +1526,17 @@ function editarDescargaHistorica(fecha){
  if(fila){
   const mapa={1:"e",2:"g95",3:"e10",4:"e",5:"g98",6:"g95"};
   const ventas={e:Number(fila.e)||0,e10:Number(fila.e10)||0,g95:Number(fila.g95)||0,g98:Number(fila.g98)||0};
-  for(let n=1;n<=6;n++)ventas[mapa[n]]+=Number(actual[n]||0)-Number(anterior[n]||0);
+  const diferencias={...(fila.diferenciasSonda||{})};
+  for(let n=1;n<=6;n++){
+   const cambio=Number(actual[n]||0)-Number(anterior[n]||0);
+   if(diferencias[n]){
+    const venta=cambio-diferencias[n];
+    ventas[mapa[n]]+=Math.max(0,venta);
+    if(venta<0)diferencias[n]=-venta;else delete diferencias[n];
+   }else ventas[mapa[n]]+=cambio;
+  }
   if(Object.values(ventas).some(v=>v<0)){alert("La corrección dejaría alguna venta negativa. No se ha guardado ningún cambio.");return}
+  fila.diferenciasSonda=diferencias;
   fila.e=ventas.e;fila.e10=ventas.e10;fila.g95=ventas.g95;fila.g98=ventas.g98;fila.total=ventas.e+ventas.e10+ventas.g95+ventas.g98;
   if(correccionesDiarias[fecha]&&typeof correccionesDiarias[fecha]==="object"){correccionesDiarias[fecha]={...ventas};guardarCorreccionesDiarias()}
   guardar();
@@ -1660,6 +1671,8 @@ function pintarUltimo(datos,fecha,key){
  $("ultimoPanel").hidden=false;$("fechaUltimo").textContent="Fecha del parte: "+fecha;
  $("uE").textContent=numeroES(datos.e)+" L";$("uE10").textContent=numeroES(datos.e10)+" L";
  $("u95").textContent=numeroES(datos.g95)+" L";$("u98").textContent=numeroES(datos.g98)+" L";$("uTotal").textContent=numeroES(datos.total)+" L";
+ const diferencias=Object.entries(datos.diferenciasSonda||{});
+ if(diferencias.length)$("fechaUltimo").textContent+=" · Diferencia de sonda: "+diferencias.map(([t,n])=>`T${t} +${litrosFmt(n)} L`).join(", ")+(datos.corregido?" · Venta corregida manualmente.":" · Venta pendiente de revisar. Total provisional.");
  pintarTiendaInicio(key);
 }
 function pintarUltimaGuardada(){
@@ -1856,9 +1869,11 @@ $("procesar").addEventListener("click",async()=>{
     const fechaAnterior=new Date(Number(p[2]),Number(p[1])-1,Number(p[0]));
     const fechaActual=new Date(fechaParte.anio,fechaParte.mes-1,fechaParte.dia);
     const diferenciaDias=Math.round((fechaActual-fechaAnterior)/86400000);
-    if(diferenciaDias===0||diferenciaDias===1){
+    if(diferenciaDias===0){
+     lecturasCalculo=aplicarSondasFijadas(lecturas).map((t,i)=>({...t,anterior:sondasDiaAnterior[i]?.anterior??t.anterior}));
+    }else if(diferenciaDias===1){
      lecturasCalculo=lecturas.map((t,i)=>{
-      const valorGuardado=valoresSondasFijadas[i]??valoresSondasFijadas[i+1];
+      const valorGuardado=valoresSondasFijadas[i];
       const tieneValorFijado=valorGuardado!==undefined&&valorGuardado!==null&&valorGuardado!=="";
       if(!sondasFijadas[i]&&!tieneValorFijado)return t;
       const valorFijado=Number(valorGuardado);
@@ -1883,8 +1898,8 @@ $("procesar").addEventListener("click",async()=>{
   const keyVentas=claveFecha(fechaVentasObj);
   const textoFechaVentas=formatoClave(keyVentas);
   if(lecturas){
-   const v=await calcularVentasDesdeSondas(lecturasCalculo||lecturas,keyDia,tanquesCorregidosAyer);
-   historial[keyDia]={...(historial[keyDia]||{}),fecha:fechaParte.texto,e:v.e,e10:v.e10,g95:v.g95,g98:v.g98,total:v.total};
+   const v=await calcularVentasDesdeSondas(lecturasCalculo,keyDia);
+   historial[keyDia]={...(historial[keyDia]||{}),fecha:fechaParte.texto,...v};
    anadidos=1;
    // Para el parte del 03/11/2026, reconstruir también las ventas del día 02
    // usando las sondas reales del día 01 y las lecturas "Anterior" del día 03 (día 02).
@@ -1913,11 +1928,10 @@ $("procesar").addEventListener("click",async()=>{
    anadidos=1;
   }
   if(lecturas){
-   sondasActuales=lecturas;
+   sondasActuales=lecturasCalculo.map(t=>({...t,diferencia:t.anterior-t.actual}));
    tanquesCorregidosAyer.forEach(n=>{
     sondasFijadas[n-1]=false;
     delete valoresSondasFijadas[n-1];
-    delete valoresSondasFijadas[n];
    });
    if(tanquesCorregidosAyer.length){guardarSondasFijadas();guardarValoresSondasFijadas();}
    guardarSondasActuales();cantidadesPedido=calcularPedidoInicial();pintarPedido();
